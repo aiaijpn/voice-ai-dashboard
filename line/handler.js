@@ -1,6 +1,8 @@
 const axios = require("axios");
 const { appendRow } = require("../sheet/saver");
 
+console.log("handler.js version: 2026-02-24-01");
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -85,3 +87,4 @@ const handleEvent = async (event) => {
 };
 
 module.exports = { handleEvent };
+
