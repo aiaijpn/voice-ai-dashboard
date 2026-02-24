@@ -8,7 +8,8 @@ async function appendRow(row) {
   if (!credsRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is missing");
 
   const credentials = JSON.parse(credsRaw);
-
+  credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
+  
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -37,3 +38,4 @@ async function appendRow(row) {
 }
 
 module.exports = { appendRow };
+
