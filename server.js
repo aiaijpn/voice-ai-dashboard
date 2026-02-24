@@ -2,6 +2,8 @@
 const express = require("express");
 const axios = require("axios");
 
+console.log("🚀 SERVER BOOT: server.js is running");
+
 const app = express();
 app.use(express.json());
 
