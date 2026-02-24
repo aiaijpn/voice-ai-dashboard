@@ -1,238 +1,99 @@
-// server.js (CommonJS)
-const express = require("express");
-const axios = require("axios");
+// server.js
+"use strict";
 
+const express = require("express");
+
+// 入口ログ（起動確認）
 console.log("🚀 SERVER BOOT: server.js is running");
+console.log("⏱️  BOOT TIME:", new Date().toISOString());
+
+// 環境変数の存在チェック（値は出さない）
+const requiredEnv = [
+  "CHANNEL_ACCESS_TOKEN",
+  "OPENAI_API_KEY",
+  "OPENAI_MODEL",
+  "SPREADSHEET_ID",
+  "GOOGLE_SERVICE_ACCOUNT_JSON",
+];
+
+for (const key of requiredEnv) {
+  const ok = !!process.env[key];
+  console.log(`🔧 ENV ${key}: ${ok ? "OK" : "MISSING"}`);
+}
+
+const { handleEvent } = require("./line/handler");
 
 const app = express();
-app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+// JSONパース（LINE webhook受信）
+app.use(express.json({ limit: "2mb" }));
 
-const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
-if (!CHANNEL_ACCESS_TOKEN) console.warn("⚠️ CHANNEL_ACCESS_TOKEN is missing");
-if (!OPENAI_API_KEY) console.warn("⚠️ OPENAI_API_KEY is missing");
-
-function nowISO() {
-  return new Date().toISOString();
-}
-
-function clampInt(n, min, max, fallback) {
-  const x = Number(n);
-  if (!Number.isFinite(x)) return fallback;
-  const y = Math.trunc(x);
-  return Math.max(min, Math.min(max, y));
-}
-
-/**
- * OpenAI Responses API + Structured Outputs (json_schema strict)
- * Returns: { reply_text, summary, category, urgency_score }
- */
-async function callOpenAI_B(text) {
-  const instructions = `
-あなたは「LINE×AI×ダッシュボード」デモのAIです。
-ユーザーの入力から、(1)返信文、(2)要約、(3)分類、(4)緊急度 を必ず生成してください。
-
-分類 category は必ず 0〜4 の整数：
-0=対象外（雑談/挨拶/無関係）
-1=売上・集客
-2=顧客対応
-3=業務効率
-4=経営判断
-
-urgency_score は必ず 1〜9 の整数：
-1〜5=低、6〜7=中、8〜9=高
-
-注意：
-- reply_text はLINE向けに、短く・丁寧・次の一歩が分かる形。
-- summary は保存用、30文字前後の日本語。
-- 余計なキーは出さない。スキーマに厳密準拠。
-`.trim();
-
-  const schema = {
-    type: "object",
-    additionalProperties: false,
-    properties: {
-      reply_text: {
-        type: "string",
-        description: "LINEに返信する文章（日本語、短く、丁寧、次の一歩が分かる）",
-      },
-      summary: {
-        type: "string",
-        description: "保存用の短い要約（日本語、30文字前後）",
-      },
-      category: {
-        type: "integer",
-        description: "0=対象外,1=売上集客,2=顧客対応,3=業務効率,4=経営判断",
-      },
-      urgency_score: {
-        type: "integer",
-        description: "1〜9（1-5低、6-7中、8-9高）",
-      },
-    },
-    required: ["reply_text", "summary", "category", "urgency_score"],
-  };
-
-  // タイムアウト（遅延対策）
-  const OPENAI_TIMEOUT_MS = 18_000;
-
-  const res = await axios.post(
-    "https://api.openai.com/v1/responses",
-    {
-      model: OPENAI_MODEL,
-      instructions,
-      input: text,
-      // Structured Outputs: text.format json_schema strict
-      text: {
-        format: {
-          type: "json_schema",
-          name: "voice_ai_dashboard_v1",
-          strict: true,
-          schema,
-        },
-      },
-      // デモなので保存はOFF推奨（コスト/データ取り回し的に）
-      store: false,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      timeout: OPENAI_TIMEOUT_MS,
-    }
-  );
-
-  // Responses APIの返りから “JSONテキスト” を拾ってパースする
-  const data = res.data;
-
-  // 1) output_text があればそれを優先（SDKの helper 相当）
-  // 2) 無ければ output[].content[].text を探索
-  const rawText =
-    (typeof data.output_text === "string" && data.output_text) ||
-    (Array.isArray(data.output)
-      ? data.output
-          .flatMap((o) => (Array.isArray(o.content) ? o.content : []))
-          .map((c) => c.text)
-          .find((t) => typeof t === "string" && t.trim().length > 0)
-      : null);
-
-  if (!rawText) {
-    throw new Error("OpenAI response has no text to parse");
-  }
-
-  // JSONが壊れた/余計なテキストが混ざった場合の救済
-  let obj;
-  try {
-    obj = JSON.parse(rawText);
-  } catch {
-    const m = rawText.match(/\{[\s\S]*\}/);
-    if (!m) throw new Error("Failed to extract JSON object from model output");
-    obj = JSON.parse(m[0]);
-  }
-
-  // 最低限のガード（念のため）
-  const reply_text =
-    typeof obj.reply_text === "string" && obj.reply_text.trim()
-      ? obj.reply_text.trim()
-      : "受信しました！内容を確認します🔥";
-
-  const summary =
-    typeof obj.summary === "string" && obj.summary.trim()
-      ? obj.summary.trim()
-      : "要約生成に失敗";
-
-  const category = clampInt(obj.category, 0, 4, 0);
-  const urgency_score = clampInt(obj.urgency_score, 1, 9, 3);
-
-  return { reply_text, summary, category, urgency_score };
-}
-
-async function replyToLine(replyToken, messageText) {
-  const url = "https://api.line.me/v2/bot/message/reply";
-  await axios.post(
-    url,
-    {
-      replyToken,
-      messages: [{ type: "text", text: messageText }],
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 10_000,
-    }
-  );
-}
-
-// Render health check用
+// ヘルスチェック
 app.get("/", (req, res) => {
-  res.status(200).send("OK");
+  console.log("✅ GET / healthcheck");
+  res.status(200).send("ok");
 });
 
-// LINE Webhook
+// Render用（念のため）
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ ok: true, time: new Date().toISOString() });
+});
+
+// Webhook受信（LINE DevelopersのWebhook URLはここに向ける）
 app.post("/webhook", async (req, res) => {
-  // LINEはまず 200 を早めに返すのが安全
-  res.sendStatus(200);
+  const rid = Math.random().toString(16).slice(2, 8);
+  const start = Date.now();
 
   try {
-    const events = req.body.events || [];
-    for (const event of events) {
-      if (event.type !== "message") continue;
-      if (!event.replyToken) continue;
+    console.log("========================================");
+    console.log(`📩 [${rid}] POST /webhook received`);
+    console.log(`📌 [${rid}] time=${new Date().toISOString()}`);
+    console.log(`📌 [${rid}] headers x-line-signature=${req.headers["x-line-signature"] ? "present" : "none"}`);
+    console.log(`📦 [${rid}] body keys=`, Object.keys(req.body || {}));
 
-      const userText = event.message && event.message.text;
-      if (!userText) continue;
+    const events = req.body?.events || [];
+    console.log(`📨 [${rid}] events length=${events.length}`);
 
-      const t = nowISO();
+    // LINEへの応答はタイムアウトが怖いので、先に200返す（超重要）
+    res.status(200).send("OK");
 
-      // ---- L4(B案)ここが中核 ----
-      let ai;
-      try {
-        ai = await callOpenAI_B(userText);
-      } catch (e) {
-        console.error("❌ OpenAI error:", e?.message || e);
-        ai = {
-          reply_text:
-            "今ちょっと頭をフル回転中です🙏 もう一度だけ送ってもらえますか？",
-          summary: "OpenAIエラー",
-          category: 0,
-          urgency_score: 5,
-        };
-      }
-
-      // LINE返信
-      try {
-        await replyToLine(event.replyToken, ai.reply_text);
-      } catch (e) {
-        console.error("❌ LINE reply error:", e?.message || e);
-      }
-
-      // L5へ繋ぐ：ログ（1行で）
-      // timestamp | user_text | summary | category | urgency_score
-      console.log(
-        JSON.stringify(
-          {
-            timestamp: t,
-            user_text: userText,
-            summary: ai.summary,
-            category: ai.category,
-            urgency_score: ai.urgency_score,
-          },
-          null,
-          0
-        )
-      );
+    if (!events.length) {
+      console.log(`⚠️  [${rid}] no events -> done`);
+      return;
     }
+
+    // イベント処理（並列）
+    const results = await Promise.allSettled(
+      events.map(async (ev, idx) => {
+        console.log(`➡️  [${rid}] handleEvent start idx=${idx} type=${ev.type} msgType=${ev.message?.type}`);
+        await handleEvent(ev);
+        console.log(`✅ [${rid}] handleEvent done  idx=${idx}`);
+      })
+    );
+
+    // 結果集計ログ
+    const okCount = results.filter((r) => r.status === "fulfilled").length;
+    const ng = results
+      .map((r, i) => ({ r, i }))
+      .filter((x) => x.r.status === "rejected")
+      .map((x) => ({
+        idx: x.i,
+        reason: String(x.r.reason?.message || x.r.reason),
+      }));
+
+    console.log(`📊 [${rid}] results ok=${okCount} ng=${ng.length}`);
+    if (ng.length) console.log(`❌ [${rid}] rejected details=`, ng);
+
+    console.log(`⏱️  [${rid}] total ms=${Date.now() - start}`);
   } catch (err) {
-    console.error("❌ webhook handler error:", err?.message || err);
+    // ここはres返し済みの可能性が高いので、ログだけ厚く
+    console.error(`💥 [${rid}] webhook handler error:`, err?.response?.data || err?.message || err);
+    console.error(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
   }
 });
 
+// ポート
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🟢 Server running on port ${PORT}`);
 });
