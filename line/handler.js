@@ -45,6 +45,7 @@ const handleEvent = async (event) => {
             name: "voice_analysis",
             schema: {
               type: "object",
+              additionalProperties: false,   // ★これ追加（必須）
               properties: {
                 reply_text: { type: "string" },
                 summary: { type: "string" },
@@ -115,3 +116,4 @@ const handleEvent = async (event) => {
 };
 
 module.exports = { handleEvent };
+
