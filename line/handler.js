@@ -111,7 +111,9 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       if (appendUsageRow) {
         await appendUsageRow({
           ts: new Date().toISOString(),
-          bot_id: String(ctx.bot_id || ctx.botId || "unknown"),
+          // bot_id（暫定固定：実験機は1BOT運用）
+          // 将来：Webhookを /webhook/{bot_id} 形式にし、ctx.bot_id で動的判定予定（3BOT対応）
+          bot_id: process.env.BOT_ID || "voice-ai-dashboard",
           model: modelUsed,
           input_tokens: inputTokens,
           output_tokens: outputTokens,
@@ -175,6 +177,7 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent };
+
 
 
 
