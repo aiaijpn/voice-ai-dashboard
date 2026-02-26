@@ -2,6 +2,7 @@
 
 const axios = require("axios");
 const { appendRow } = require("../sheet/saver");
+const { appendRow, appendUsageRow } = require("../sheet/saver");
 
 console.log("📦 handler.js loaded:", new Date().toISOString());
 
@@ -87,6 +88,51 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 
     console.log(`✅ [${rid}] OpenAI response received`);
 
+    // ===== Usage 保存（課金可視化）=====
+    const usage = response.data.usage || {};
+    const inputTokens = usage.input_tokens ?? 0;
+    const outputTokens = usage.output_tokens ?? 0;
+    const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
+
+    // まずは gpt-4o-mini 前提の推定単価（USD / 1M tokens）
+    const IN_PER_M = 0.15;
+    const OUT_PER_M = 0.60;
+
+    const costUsd =
+      (inputTokens / 1_000_000) * IN_PER_M + (outputTokens / 1_000_000) * OUT_PER_M;
+
+    const usdJpy = Number(process.env.USDJPY || 150);
+    const costJpy = costUsd * usdJpy;
+
+    // model / resp_id
+    const modelUsed = response.data.model || OPENAI_MODEL;
+    const respId = response.data.id || "";
+
+    try {
+      if (appendUsageRow) {
+        await appendUsageRow({
+          ts: new Date().toISOString(),
+          bot_id: String(ctx.bot_id || ctx.botId || "unknown"),
+          model: modelUsed,
+          input_tokens: inputTokens,
+          output_tokens: outputTokens,
+          total_tokens: totalTokens,
+          cost_usd: costUsd,
+          cost_jpy: costJpy,
+          rid,
+          resp_id: respId,
+        });
+        console.log(`✅ [${rid}] UsageLog append success`);
+      } else {
+        console.log(`⚠️ [${rid}] appendUsageRow not found (skip usage log)`);
+      }
+    } catch (e) {
+      console.error(`⚠️ [${rid}] UsageLog append failed:`, e?.message || e);
+    }
+
+
+    
+
     const parsed = JSON.parse(response.data.output[0].content[0].text);
     console.log(`📊 [${rid}] parsed result=`, parsed);
 
@@ -130,4 +176,5 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent };
+
 
