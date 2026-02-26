@@ -1,7 +1,6 @@
 "use strict";
 
 const axios = require("axios");
-const { appendRow } = require("../sheet/saver");
 const { appendRow, appendUsageRow } = require("../sheet/saver");
 
 console.log("📦 handler.js loaded:", new Date().toISOString());
@@ -176,5 +175,6 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent };
+
 
 
