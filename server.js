@@ -148,7 +148,8 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
     );
 
     console.log("✅ OPERATOR broadcast success");
-    return res.status(200).send("broadcast ok");
+    return res.redirect("/operator");
+    
   } catch (err) {
     const status = err?.response?.status;
     const data = err?.response?.data;
