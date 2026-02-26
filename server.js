@@ -119,7 +119,7 @@ app.post("/operator/tone", basicAuth, (req, res) => {
   if (!tone) return res.status(400).send("tone is required");
   globalThis.OPERATOR_AI_TONE = tone;
   console.log("🎛️ OPERATOR tone set:", tone);
-  return res.status(200).send(`tone set: ${tone}`);
+  return res.redirect("/operator");
 });
 
 app.post("/operator/broadcast", basicAuth, async (req, res) => {
