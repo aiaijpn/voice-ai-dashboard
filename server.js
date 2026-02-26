@@ -2,7 +2,7 @@
 "use strict";
 
 const express = require("express");
-const axios = require("axios"); // ★追加
+const axios = require("axios");
 
 // 入口ログ（起動確認）
 console.log("🚀 SERVER BOOT: server.js is running");
@@ -15,7 +15,6 @@ const requiredEnv = [
   "OPENAI_MODEL",
   "SPREADSHEET_ID",
   "GOOGLE_SERVICE_ACCOUNT_JSON",
-  // ★追加（コントロールパネル用）
   "BASIC_USER",
   "BASIC_PASS",
 ];
@@ -29,14 +28,16 @@ const { handleEvent } = require("./line/handler");
 
 const app = express();
 
+// ★ 口調（テイスト）をメモリ保持（実験機：最速）
+globalThis.OPERATOR_AI_TONE = globalThis.OPERATOR_AI_TONE || "polite";
+
 // JSONパース（LINE webhook受信）
 app.use(express.json({ limit: "2mb" }));
-
-// ★追加：HTMLフォーム送信（application/x-www-form-urlencoded）を受ける
+// HTMLフォーム（operator panel）
 app.use(express.urlencoded({ extended: false }));
 
 // =============================
-// ★ Basic認証（超簡易）
+// Basic認証（超簡易）
 // =============================
 function basicAuth(req, res, next) {
   const user = process.env.BASIC_USER || "";
@@ -58,33 +59,71 @@ function basicAuth(req, res, next) {
 }
 
 // =============================
-// ★ 超簡易コントロールパネル
+// ヘルスチェック
+// =============================
+app.get("/", (req, res) => {
+  console.log("✅ GET / healthcheck");
+  res.status(200).send("ok");
+});
+
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ ok: true, time: new Date().toISOString() });
+});
+
+// =============================
+// Operator Panel（超簡易）
 // =============================
 app.get("/operator", basicAuth, (req, res) => {
-  res
-    .status(200)
-    .send(`<!doctype html>
+  const current = globalThis.OPERATOR_AI_TONE || "polite";
+
+  res.status(200).send(`<!doctype html>
 <html lang="ja">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Operator Panel</title></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Operator Panel</title>
+</head>
 <body style="font-family: system-ui; padding: 16px;">
   <h2>Operator Panel（実験機）</h2>
-  <p>Broadcast送信（全員へ）</p>
+
+  <h3>AI口調（テイスト）</h3>
+  <form method="POST" action="/operator/tone">
+    <select name="tone">
+      <option value="polite" ${current === "polite" ? "selected" : ""}>丁寧</option>
+      <option value="casual" ${current === "casual" ? "selected" : ""}>カジュアル</option>
+      <option value="sales" ${current === "sales" ? "selected" : ""}>営業寄り</option>
+      <option value="gentle" ${current === "gentle" ? "selected" : ""}>やさしい</option>
+    </select>
+    <button type="submit">口調変更</button>
+  </form>
+  <p style="color:#666;">現在: <b>${current}</b></p>
+
+  <hr/>
+
+  <h3>Broadcast送信（全員へ）</h3>
   <form method="POST" action="/operator/broadcast">
     <textarea name="message" rows="6" style="width:100%; max-width:720px;" placeholder="送信メッセージ"></textarea>
     <div style="margin-top:8px;">
       <button type="submit">送信</button>
     </div>
   </form>
+
   <hr/>
-  <p style="color:#666; font-size:12px;">※実験機：ログ保存なし</p>
+  <p style="color:#666; font-size:12px;">※実験機：ログ保存なし／再起動で口調が初期化される可能性あり</p>
 </body>
 </html>`);
 });
 
-// ★ Broadcast送信（Messaging API）
+app.post("/operator/tone", basicAuth, (req, res) => {
+  const tone = String(req.body?.tone || "").trim();
+  if (!tone) return res.status(400).send("tone is required");
+  globalThis.OPERATOR_AI_TONE = tone;
+  console.log("🎛️ OPERATOR tone set:", tone);
+  return res.status(200).send(`tone set: ${tone}`);
+});
+
 app.post("/operator/broadcast", basicAuth, async (req, res) => {
-  const message = (req.body?.message || "").trim();
+  const message = String(req.body?.message || "").trim();
   if (!message) return res.status(400).send("message is required");
 
   const token = process.env.CHANNEL_ACCESS_TOKEN;
@@ -96,13 +135,9 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
     console.log("⏱️  time:", new Date().toISOString());
     console.log("📝 message length:", message.length);
 
-    // LINE Messaging API broadcast
-    // POST https://api.line.me/v2/bot/message/broadcast
     await axios.post(
       "https://api.line.me/v2/bot/message/broadcast",
-      {
-        messages: [{ type: "text", text: message }],
-      },
+      { messages: [{ type: "text", text: message }] },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -118,22 +153,15 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
     const status = err?.response?.status;
     const data = err?.response?.data;
     console.error("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
-    return res.status(500).send(`broadcast failed: ${status || ""} ${JSON.stringify(data || {})}`);
+    return res
+      .status(500)
+      .send(`broadcast failed: ${status || ""} ${JSON.stringify(data || {})}`);
   }
 });
 
-// ヘルスチェック
-app.get("/", (req, res) => {
-  console.log("✅ GET / healthcheck");
-  res.status(200).send("ok");
-});
-
-// Render用（念のため）
-app.get("/healthz", (req, res) => {
-  res.status(200).json({ ok: true, time: new Date().toISOString() });
-});
-
-// Webhook受信（LINE DevelopersのWebhook URLはここに向ける）
+// =============================
+// Webhook受信
+// =============================
 app.post("/webhook", async (req, res) => {
   const rid = Math.random().toString(16).slice(2, 8);
   const start = Date.now();
@@ -160,13 +188,15 @@ app.post("/webhook", async (req, res) => {
       return;
     }
 
+    const tone = globalThis.OPERATOR_AI_TONE || "polite";
+
     // イベント処理（並列）
     const results = await Promise.allSettled(
       events.map(async (ev, idx) => {
         console.log(
           `➡️  [${rid}] handleEvent start idx=${idx} type=${ev.type} msgType=${ev.message?.type}`
         );
-        await handleEvent(ev);
+        await handleEvent(ev, { tone });
         console.log(`✅ [${rid}] handleEvent done  idx=${idx}`);
       })
     );
@@ -186,7 +216,6 @@ app.post("/webhook", async (req, res) => {
 
     console.log(`⏱️  [${rid}] total ms=${Date.now() - start}`);
   } catch (err) {
-    // ここはres返し済みの可能性が高いので、ログだけ厚く
     console.error(
       `💥 [${rid}] webhook handler error:`,
       err?.response?.data || err?.message || err
