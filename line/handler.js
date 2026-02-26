@@ -55,8 +55,8 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       {
         model: OPENAI_MODEL,
         input: [
-          { role: "system", content: [{ type: "text", text: systemPrompt }] },
-          { role: "user", content: [{ type: "text", text: userText }] },
+          { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
+          { role: "user", content: [{ type: "input_text", text: userText }] },
         ],
         text: {
           format: {
@@ -130,3 +130,4 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent };
+
