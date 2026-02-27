@@ -156,6 +156,7 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       text: userText,
       timestamp: Date.now(),
       rawEvent: event,
+      ai: parsed, // ← 追加（parsed.reply_text を service 側で使う）
     });
 
     // messageService が返す replyText を優先（無ければ従来のAI返信）
@@ -187,3 +188,4 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent }; 
+
