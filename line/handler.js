@@ -2,6 +2,7 @@
 
 const axios = require("axios");
 const { appendRow, appendUsageRow } = require("../sheet/saver");
+const { processMessage } = require("../services/messageService");
 
 console.log("📦 handler.js loaded:", new Date().toISOString());
 
@@ -131,9 +132,6 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       console.error(`⚠️ [${rid}] UsageLog append failed:`, e?.message || e);
     }
 
-
-    
-
     const parsed = JSON.parse(response.data.output[0].content[0].text);
     console.log(`📊 [${rid}] parsed result=`, parsed);
 
@@ -151,6 +149,18 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 
     console.log(`✅ [${rid}] Sheet append success`);
 
+    // ===== messageService（分割の“接続”だけ。現状の機能は維持）=====
+    const svc = await processMessage({
+      bot_id: process.env.BOT_ID || "voice-ai-dashboard",
+      userId: event.source?.userId || "",
+      text: userText,
+      timestamp: Date.now(),
+      rawEvent: event,
+    });
+
+    // messageService が返す replyText を優先（無ければ従来のAI返信）
+    const replyText = svc?.replyText || parsed.reply_text;
+
     // ===== LINE返信 =====
     console.log(`📤 [${rid}] Sending reply to LINE...`);
 
@@ -158,7 +168,7 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       "https://api.line.me/v2/bot/message/reply",
       {
         replyToken: event.replyToken,
-        messages: [{ type: "text", text: parsed.reply_text }],
+        messages: [{ type: "text", text: replyText }],
       },
       {
         headers: {
@@ -176,8 +186,4 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
   }
 };
 
-module.exports = { handleEvent };
-
-
-
-
+module.exports = { handleEvent }; 
