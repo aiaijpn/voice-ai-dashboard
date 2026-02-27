@@ -1,7 +1,6 @@
 "use strict";
 
 const axios = require("axios");
-const { appendRow } = require("../sheet/saver");
 const { processMessage } = require("../services/messageService");
 
 console.log("📦 handler.js loaded:", new Date().toISOString());
@@ -30,7 +29,7 @@ const handleEvent = async (event, ctx = {}) => {
 
     const tone = String(ctx.tone || "polite");
 
-    // ===== serviceへ委譲（OpenAI呼び出しも service側）=====
+    // ===== serviceへ完全委譲 =====
     const svc = await processMessage({
       rid,
       bot_id: process.env.BOT_ID || "voice-ai-dashboard",
@@ -41,27 +40,9 @@ const handleEvent = async (event, ctx = {}) => {
       rawEvent: event,
     });
 
-    const parsed = svc?.ai;
     const replyText = svc?.replyText || "受信しました";
+
     console.log(`🧩 [${rid}] service replyText=`, replyText);
-
-    // ===== Google Sheets 保存（従来通り）=====
-    if (parsed) {
-      console.log(`📄 [${rid}] Saving to Google Sheets...`);
-
-      await appendRow({
-        timestamp: new Date().toISOString(),
-        user_text: userText,
-        summary: parsed.summary,
-        category: parsed.category,
-        urgency_score: parsed.urgency_score,
-        reply_text: parsed.reply_text,
-      });
-
-      console.log(`✅ [${rid}] Sheet append success`);
-    } else {
-      console.log(`⚠️ [${rid}] parsed(ai) is empty. Skip sheet append.`);
-    }
 
     // ===== LINE返信 =====
     console.log(`📤 [${rid}] Sending reply to LINE...`);
