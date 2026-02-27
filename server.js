@@ -225,6 +225,13 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+// ===============================
+// Health Check（Renderスリープ対策）
+// ===============================
+app.get("/health", (req, res) => {
+  res.status(200).send("ok");
+});
+
 // ポート
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
