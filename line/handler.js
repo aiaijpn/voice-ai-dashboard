@@ -160,7 +160,10 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
     });
 
     // messageService が返す replyText を優先（無ければ従来のAI返信）
-    const replyText = svc?.replyText || parsed.reply_text;
+    const replyText =
+      svc?.replyText && svc.replyText !== "受信しました"
+      ? svc.replyText
+      : parsed.reply_text;
 
     // ===== LINE返信 =====
     console.log(`📤 [${rid}] Sending reply to LINE...`);
@@ -188,4 +191,5 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 };
 
 module.exports = { handleEvent }; 
+
 
