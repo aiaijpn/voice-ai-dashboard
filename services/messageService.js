@@ -4,9 +4,9 @@ const axios = require("axios");
 const { appendUsageRow } = require("../sheet/saver");
 
 // services/messageService.js
-// 役割：LINE受信後の「考える処理」を集約（OpenAI→解析→返信方針）
-// 現段階：OpenAI呼び出し＆Usage保存は service に移動済
-// 将来：appendRow（本文ログ）も repository/service に移して handler を更に薄くする
+// 役割：LINE受信後の「考える処理」を集約（OpenAI→解析→返信）
+// 現段階：OpenAI呼び出し＆Usage保存は service
+// 将来：appendRow（本文ログ）も repository/service に移す
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
@@ -23,32 +23,50 @@ const toneGuideMap = {
   gentle: "やさしく安心感。相手の気持ちを尊重しつつ短く。",
 };
 
-function safeParseJsonFromResponsesApi(resp) {
-  // あなたの現行レスポンス形式に合わせつつ、落ちにくいフォールバックを用意
-  const t =
+function getRawTextFromResponsesApi(resp) {
+  // Responses API は状況により取得パスが揺れるので多段フォールバック
+  return (
     resp?.data?.output?.[0]?.content?.[0]?.text ||
     resp?.data?.output_text ||
     resp?.data?.text ||
-    "";
+    ""
+  );
+}
 
-  if (!t) return null;
+function tryParseJson(raw) {
+  if (!raw) return null;
 
+  // 1) 正攻法
   try {
-    return JSON.parse(t);
-  } catch {
-    // たまに前後にゴミが混ざるケース用：最初の { から最後の } を抽出
-    const s = String(t);
-    const a = s.indexOf("{");
-    const b = s.lastIndexOf("}");
-    if (a >= 0 && b > a) {
-      try {
-        return JSON.parse(s.slice(a, b + 1));
-      } catch {
-        return null;
-      }
-    }
-    return null;
+    return JSON.parse(raw);
+  } catch {}
+
+  // 2) 前後ゴミ除去（最初の { ～ 最後の }）
+  const s = String(raw);
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+  if (a >= 0 && b > a) {
+    try {
+      return JSON.parse(s.slice(a, b + 1));
+    } catch {}
   }
+  return null;
+}
+
+function extractReplyText(raw) {
+  if (!raw) return "";
+
+  // JSONが壊れてても reply_text だけ抜ければ勝ち
+  // "reply_text":"...." を雑に抜く（エスケープ対応は最小）
+  const m = String(raw).match(/"reply_text"\s*:\s*"([\s\S]*?)"\s*(,|\})/);
+  if (!m) return "";
+
+  // ざっくり unescape（\" と \n 程度）
+  return m[1]
+    .replace(/\\"/g, '"')
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "")
+    .trim();
 }
 
 async function processMessage(context) {
@@ -70,15 +88,15 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
 `.trim();
 
   console.log(`🤖 [${rid}] (service) calling OpenAI... tone=${tone}`);
+  console.log(`🧾 [${rid}] (service) text_len=${String(text).length}`);
 
-  // ===== OpenAI Structured Output（Responses API）=====
   const response = await axios.post(
     "https://api.openai.com/v1/responses",
     {
       model: OPENAI_MODEL,
       input: [
         { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
-        { role: "user", content: [{ type: "input_text", text }] },
+        { role: "user", content: [{ type: "input_text", text: String(text) }] },
       ],
       text: {
         format: {
@@ -115,7 +133,6 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
   const outputTokens = usage.output_tokens ?? 0;
   const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
 
-  // gpt-4o-mini 想定の推定単価（USD / 1M tokens）
   const IN_PER_M = 0.15;
   const OUT_PER_M = 0.60;
 
@@ -143,25 +160,28 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
         resp_id: respId,
       });
       console.log(`✅ [${rid}] (service) UsageLog append success`);
-    } else {
-      console.log(`⚠️ [${rid}] (service) appendUsageRow not found (skip usage log)`);
     }
   } catch (e) {
     console.error(`⚠️ [${rid}] (service) UsageLog append failed:`, e?.message || e);
   }
 
-  // ===== parse =====
-  const parsed = safeParseJsonFromResponsesApi(response);
-  console.log(`📊 [${rid}] (service) parsed=`, parsed);
+  // ===== parse（堅牢）=====
+  const raw = getRawTextFromResponsesApi(response);
+  console.log(`🧩 [${rid}] (service) raw_len=${String(raw).length}`);
 
-  // 最低限のフォールバック
+  const parsed = tryParseJson(raw);
+
+  // ここが肝：JSONが壊れても reply_text だけ抜く
+  const extracted = extractReplyText(raw);
+
   const replyText =
     parsed?.reply_text ||
+    extracted ||
     (text ? `受信しました：${text}` : "受信しました");
 
   return {
     replyText,
-    ai: parsed, // handler が Sheets に保存するため渡す
+    ai: parsed || null, // handler の Sheets 保存用（取れたら）
     meta: {
       bot_id,
       userId,
@@ -169,6 +189,8 @@ summary/category/urgency_score は口調の影響を受けず、内容理解に�
       resp_id: respId,
       tokens: { inputTokens, outputTokens, totalTokens },
       cost: { usd: costUsd, jpy: costJpy },
+      parsed_ok: !!parsed,
+      extracted_ok: !!extracted,
     },
   };
 }
