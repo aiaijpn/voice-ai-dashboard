@@ -1,4 +1,4 @@
-// server.js
+﻿// server.js
 "use strict";
 
 const { log, error } = require("./utils/logger");
@@ -7,8 +7,8 @@ const express = require("express");
 const axios = require("axios");
 
 // 入口ログ（起動確認）
-console.log("🚀 SERVER BOOT: server.js is running");
-console.log("⏱️  BOOT TIME:", new Date().toISOString());
+log("🚀 SERVER BOOT: server.js is running");
+log("⏱️  BOOT TIME:", new Date().toISOString());
 
 // 環境変数の存在チェック（値は出さない）
 const requiredEnv = [
@@ -23,7 +23,7 @@ const requiredEnv = [
 
 for (const key of requiredEnv) {
   const ok = !!process.env[key];
-  console.log(`🔧 ENV ${key}: ${ok ? "OK" : "MISSING"}`);
+  log(`🔧 ENV ${key}: ${ok ? "OK" : "MISSING"}`);
 }
 
 const { handleEvent } = require("./line/handler");
@@ -64,7 +64,7 @@ function basicAuth(req, res, next) {
 // ヘルスチェック
 // =============================
 app.get("/", (req, res) => {
-  console.log("✅ GET / healthcheck");
+  log("✅ GET / healthcheck");
   res.status(200).send("ok");
 });
 
@@ -120,7 +120,7 @@ app.post("/operator/tone", basicAuth, (req, res) => {
   const tone = String(req.body?.tone || "").trim();
   if (!tone) return res.status(400).send("tone is required");
   globalThis.OPERATOR_AI_TONE = tone;
-  console.log("🎛️ OPERATOR tone set:", tone);
+  log("🎛️ OPERATOR tone set:", tone);
   return res.redirect("/operator");
 });
 
@@ -132,10 +132,10 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
   if (!token) return res.status(500).send("CHANNEL_ACCESS_TOKEN missing");
 
   try {
-    console.log("========================================");
-    console.log("📣 OPERATOR broadcast requested");
-    console.log("⏱️  time:", new Date().toISOString());
-    console.log("📝 message length:", message.length);
+    log("========================================");
+    log("📣 OPERATOR broadcast requested");
+    log("⏱️  time:", new Date().toISOString());
+    log("📝 message length:", message.length);
 
     await axios.post(
       "https://api.line.me/v2/bot/message/broadcast",
@@ -149,13 +149,13 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
       }
     );
 
-    console.log("✅ OPERATOR broadcast success");
+    log("✅ OPERATOR broadcast success");
     return res.redirect("/operator");
     
   } catch (err) {
     const status = err?.response?.status;
     const data = err?.response?.data;
-    console.error("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
+    error("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
     return res
       .status(500)
       .send(`broadcast failed: ${status || ""} ${JSON.stringify(data || {})}`);
@@ -170,24 +170,24 @@ app.post("/webhook", async (req, res) => {
   const start = Date.now();
 
   try {
-    console.log("========================================");
-    console.log(`📩 [${rid}] POST /webhook received`);
-    console.log(`📌 [${rid}] time=${new Date().toISOString()}`);
-    console.log(
+    log("========================================");
+    log(`📩 [${rid}] POST /webhook received`);
+    log(`📌 [${rid}] time=${new Date().toISOString()}`);
+    log(
       `📌 [${rid}] headers x-line-signature=${
         req.headers["x-line-signature"] ? "present" : "none"
       }`
     );
-    console.log(`📦 [${rid}] body keys=`, Object.keys(req.body || {}));
+    log(`📦 [${rid}] body keys=`, Object.keys(req.body || {}));
 
     const events = req.body?.events || [];
-    console.log(`📨 [${rid}] events length=${events.length}`);
+    log(`📨 [${rid}] events length=${events.length}`);
 
     // LINEへの応答はタイムアウトが怖いので、先に200返す（超重要）
     res.status(200).send("OK");
 
     if (!events.length) {
-      console.log(`⚠️  [${rid}] no events -> done`);
+      log(`⚠️  [${rid}] no events -> done`);
       return;
     }
 
@@ -196,11 +196,11 @@ app.post("/webhook", async (req, res) => {
     // イベント処理（並列）
     const results = await Promise.allSettled(
       events.map(async (ev, idx) => {
-        console.log(
+        log(
           `➡️  [${rid}] handleEvent start idx=${idx} type=${ev.type} msgType=${ev.message?.type}`
         );
         await handleEvent(ev, { tone });
-        console.log(`✅ [${rid}] handleEvent done  idx=${idx}`);
+        log(`✅ [${rid}] handleEvent done  idx=${idx}`);
       })
     );
 
@@ -214,16 +214,16 @@ app.post("/webhook", async (req, res) => {
         reason: String(x.r.reason?.message || x.r.reason),
       }));
 
-    console.log(`📊 [${rid}] results ok=${okCount} ng=${ng.length}`);
-    if (ng.length) console.log(`❌ [${rid}] rejected details=`, ng);
+    log(`📊 [${rid}] results ok=${okCount} ng=${ng.length}`);
+    if (ng.length) log(`❌ [${rid}] rejected details=`, ng);
 
-    console.log(`⏱️  [${rid}] total ms=${Date.now() - start}`);
+    log(`⏱️  [${rid}] total ms=${Date.now() - start}`);
   } catch (err) {
-    console.error(
+    error(
       `💥 [${rid}] webhook handler error:`,
       err?.response?.data || err?.message || err
     );
-    console.error(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
+    error(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
   }
 });
 
@@ -237,5 +237,6 @@ app.get("/health", (req, res) => {
 // ポート
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🟢 Server running on port ${PORT}`);
+  log(`🟢 Server running on port ${PORT}`);
 });
+
