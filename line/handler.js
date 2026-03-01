@@ -59,6 +59,10 @@ const handleEvent = async (event, ctx = {}) => {
     const userText = event.message.text;
     console.log(`📝 [${rid}] userText=`, userText);
 
+    // ===== 既読トークン（2025/11〜 Messaging API）=====
+    const markAsReadToken = event.message?.markAsReadToken;
+    console.log(`👁️ [${rid}] markAsReadToken=`, markAsReadToken ? "FOUND" : "NONE");
+
     const tone = String(ctx.tone || "polite");
     const bot_id = process.env.BOT_ID || "voice-ai-dashboard";
     const userId = event.source?.userId || "";
@@ -140,6 +144,31 @@ const handleEvent = async (event, ctx = {}) => {
     );
 
     console.log(`🎉 [${rid}] LINE reply success`);
+
+    // ===== 既読付与（2025/11〜 Messaging API）=====
+    // token が無い場合はスキップ。失敗しても返信は止めない（温度維持優先）
+    if (markAsReadToken) {
+      try {
+        console.log(`👁️ [${rid}] Marking as read...`);
+        await axios.post(
+          "https://api.line.me/v2/bot/chat/markAsRead",
+          { markAsReadToken },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
+            },
+            timeout: 15000,
+          }
+        );
+        console.log(`✅ [${rid}] markAsRead success`);
+      } catch (e) {
+        console.log(`⚠️ [${rid}] markAsRead failed:`, e.response?.data || e.message || e);
+      }
+    } else {
+      console.log(`👁️ [${rid}] markAsRead skipped (no token)`);
+    }
+
     console.log(`⬅️ [${rid}] handleEvent done`);
   } catch (error) {
     console.error("💥 Handler error:", error.response?.data || error.message || error);
