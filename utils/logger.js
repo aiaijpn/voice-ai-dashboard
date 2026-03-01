@@ -1,10 +1,19 @@
-﻿'use strict';
+'use strict';
 
-// logger.js - DEBUG logging wrapper
+// logger.js - production safe logging wrapper
+
 const isDebug = process.env.DEBUG === 'true';
 
+// 通常ログ（DEBUG=true の時のみ出力）
 const log = (...args) => {
-  if (isDebug) console.log(...args);
+  if (isDebug) {
+    console.log(...args);
+  }
 };
 
-module.exports = { log };
+// エラーログ（常に出力）
+const error = (...args) => {
+  console.error(...args);
+};
+
+module.exports = { log, error };
