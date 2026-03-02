@@ -1,5 +1,6 @@
 "use strict";
 
+const { log, error } = require("../utils/logger");
 const { google } = require("googleapis");
 
 // 共通：Sheets クライアント生成（毎回同じ）
@@ -105,3 +106,4 @@ module.exports = {
   appendRow,
   appendUsageRow,
 };
+
