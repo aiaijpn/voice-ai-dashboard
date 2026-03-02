@@ -1,7 +1,7 @@
 ﻿// ファイル: voice-ai-dashboard/line/handler.js
 "use strict";
 
-const { log } = require("../utils/logger");　//logラッパー 2026/3/1
+const { log, error } = require("../utils/logger");
 
 const axios = require("axios");
 const { processMessage } = require("../services/messageService");
@@ -178,4 +178,5 @@ const handleEvent = async (event, ctx = {}) => {
 };
 
 module.exports = { handleEvent };
+
 
