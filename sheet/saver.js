@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 const { log, error } = require("../utils/logger");
 const { google } = require("googleapis");
@@ -15,7 +15,7 @@ function getSheetsClient() {
   try {
     credentials = JSON.parse(credsRaw);
   } catch (e) {
-    console.error("❌ GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
+    error("❌ GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
     throw e;
   }
 
@@ -36,11 +36,11 @@ function getSheetsClient() {
 
 // 既存：logs シートへ保存（A:F）
 async function appendRow(row) {
-  console.log("📗 saver.js appendRow called");
+  log("📗 saver.js appendRow called");
 
   const { sheets, spreadsheetId } = getSheetsClient();
 
-  console.log("📗 appending row to logs!A:F", {
+  log("📗 appending row to logs!A:F", {
     timestamp: row.timestamp,
     user_text: row.user_text,
   });
@@ -69,7 +69,7 @@ async function appendRow(row) {
 
 // 追加：UsageLog シートへ保存（A:J）
 async function appendUsageRow(u) {
-  console.log("📊 saver.js appendUsageRow called");
+  log("📊 saver.js appendUsageRow called");
 
   const { sheets, spreadsheetId } = getSheetsClient();
 
@@ -88,7 +88,7 @@ async function appendUsageRow(u) {
     ],
   ];
 
-  console.log("📊 appending row to UsageLog!A:J", values[0]);
+  log("📊 appending row to UsageLog!A:J", values[0]);
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
@@ -98,7 +98,7 @@ async function appendUsageRow(u) {
     requestBody: { values },
   });
 
-  console.log("✅ UsageLog append success");
+  log("✅ UsageLog append success");
   return true;
 }
 
@@ -106,4 +106,5 @@ module.exports = {
   appendRow,
   appendUsageRow,
 };
+
 
