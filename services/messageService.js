@@ -102,6 +102,9 @@ ${systemPrompt}
 `.trim();
 }
 
+  log(`🧩 [${rid}] operatorProfile len=${operatorProfile.length}`);
+  log(`🧩 [${rid}] systemPrompt head=${systemPrompt.slice(0, 100).replace(/\n/g, "\\n")}`);
+
   const response = await axios.post(
     "https://api.openai.com/v1/responses",
     {
