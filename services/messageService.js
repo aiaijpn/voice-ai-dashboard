@@ -1,6 +1,6 @@
 ﻿"use strict";
 
-const { log, error } = require("../utils/logger");
+const { log, error: logError } = require("../utils/logger");
 const axios = require("axios");
 const { appendUsageRow } = require("../sheet/saver");
 const { appendVoiceRow } = require("../repositories/sheetRepository");
