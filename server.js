@@ -241,7 +241,7 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
   } catch (err) {
     const status = err?.response?.status;
     const data = err?.response?.data;
-    error("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
+    logError("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
     return res
       .status(500)
       .send(`broadcast failed: ${status || ""} ${JSON.stringify(data || {})}`);
@@ -305,11 +305,11 @@ app.post("/webhook", async (req, res) => {
 
     log(`⏱️  [${rid}] total ms=${Date.now() - start}`);
   } catch (err) {
-    error(
+    logError(
       `💥 [${rid}] webhook handler error:`,
       err?.response?.data || err?.message || err
     );
-    error(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
+    logError(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
   }
 });
 
