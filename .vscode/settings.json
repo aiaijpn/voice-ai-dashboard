@@ -1,6 +1,5 @@
 {
     "files.readonlyInclude": {
-        "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\line\\handler.js": true,
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\line\\historyStore.js": true,
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\repositories\\sheetRepository.js": true,
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\node_modules\\**": true,

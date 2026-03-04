@@ -172,7 +172,7 @@ const handleEvent = async (event, ctx = {}) => {
     }
 
     log(`⬅️ [${rid}] handleEvent done`);
-  } catch (error) {
+  } catch (e) {
     error("💥 Handler error:", error.response?.data || error.message || error);
   }
 };
