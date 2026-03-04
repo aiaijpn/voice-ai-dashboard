@@ -79,10 +79,9 @@ async function processMessage(context) {
   const toneGuide = toneGuideMap[String(tone)] || toneGuideMap.polite;
 
   const systemPrompt = `
-あなたはLINE上のAIアシスタント。
 出力は必ず指定JSONスキーマに一致させること（余計なキー禁止）。
-reply_text は次の口調ルールに従う：${toneGuide}
-summary/category/urgency_score は口調の影響を受けず、内容理解に基づいて返すこと。
+reply_text は次の口調ルールに従う: ${toneGuide}
+summary/category/urgency_score は回答の影響を受けず内容理解に基づいて返す。
 `.trim();
 
   log(`🤖 [${rid}] (service) calling OpenAI...`);
