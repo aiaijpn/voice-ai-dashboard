@@ -1,7 +1,7 @@
 ﻿// server.js
 "use strict";
 
-const { log, error } = require("./utils/logger");
+const { log, error: logError } = require("./utils/logger");
 
 const express = require("express");
 const axios = require("axios");
