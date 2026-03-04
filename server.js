@@ -6,6 +6,12 @@ const { log, error } = require("./utils/logger");
 const express = require("express");
 const axios = require("axios");
 
+const operatorProfileRoutes = require("./routes/operatorProfile");
+
+const app = express();
+
+app.use("/api/operator", operatorProfileRoutes);
+
 // 入口ログ（起動確認）
 log("🚀 SERVER BOOT: server.js is running");
 log("⏱️  BOOT TIME:", new Date().toISOString());
@@ -28,7 +34,7 @@ for (const key of requiredEnv) {
 
 const { handleEvent } = require("./line/handler");
 
-const app = express();
+//const app = express();
 
 // ★ 口調（テイスト）をメモリ保持（実験機：最速）
 globalThis.OPERATOR_AI_TONE = globalThis.OPERATOR_AI_TONE || "polite";
@@ -109,10 +115,90 @@ app.get("/operator", basicAuth, (req, res) => {
       <button type="submit">送信</button>
     </div>
   </form>
+<hr/>
+
+<h3>Operatorプロフィール（M1）</h3>
+<p style="color:#666;font-size:14px;">
+AIが参照する人格文章（長文OK）
+</p>
+
+<textarea id="opProfileText"
+rows="10"
+style="width:100%;max-width:720px;font-size:16px;"
+placeholder="例：話し方、価値観、売り方、禁止事項など"></textarea>
+
+<br><br>
+
+<button type="button" onclick="saveOperatorProfile()">
+プロフィール保存
+</button>
+
+<p id="opProfileStatus" style="color:#666;font-size:12px;"></p>
+
 
   <hr/>
   <p style="color:#666; font-size:12px;">※実験機：ログ保存なし／再起動で口調が初期化される可能性あり</p>
-</body>
+
+<script>
+
+async function loadOperatorProfile(){
+  try{
+    const r = await fetch("/api/operator/profile");
+    const d = await r.json();
+
+    document.getElementById("opProfileText").value =
+      d.profile_text || "";
+
+    if(d.updated_at){
+      document.getElementById("opProfileStatus").innerText =
+      "updated : " + d.updated_at;
+    }
+
+  }catch(e){
+    document.getElementById("opProfileStatus").innerText =
+    "読み込み失敗";
+  }
+}
+
+async function saveOperatorProfile(){
+
+  const text =
+    document.getElementById("opProfileText").value;
+
+  document.getElementById("opProfileStatus").innerText =
+  "保存中...";
+
+  try{
+
+    const r = await fetch("/api/operator/profile",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        profile_text:text
+      })
+    });
+
+    const d = await r.json();
+
+    document.getElementById("opProfileStatus").innerText =
+      "保存OK";
+
+  }catch(e){
+
+    document.getElementById("opProfileStatus").innerText =
+      "保存失敗";
+
+  }
+}
+
+window.onload = loadOperatorProfile;
+
+</script>
+
+
+  </body>
 </html>`);
 });
 
