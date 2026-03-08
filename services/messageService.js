@@ -6,6 +6,7 @@ const axios = require("axios");
 const { appendUsageRow } = require("../sheet/saver");
 const { appendVoiceRow } = require("../repositories/sheetRepository");
 const { getProfile } = require("./operatorProfileService");
+const { insertAd } = require("../ads/adService");
 
 // 役割：LINE受信後の「考える処理」を集約
 // ・OpenAI呼び出し
@@ -217,10 +218,10 @@ ${systemPrompt}
     logError(`⚠️ [${rid}] Voice save failed:`, e?.message || e);
   }
 
-  return {
-    replyText,
-    ai: parsed || null,
-  };
+let finalReply = replyText;
+finalReply = await insertAd(finalReply);
+
+return finalReply;
 }
 
 module.exports = { processMessage };
