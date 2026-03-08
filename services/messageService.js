@@ -7,6 +7,7 @@ const { appendUsageRow } = require("../sheet/saver");
 const { appendVoiceRow } = require("../repositories/sheetRepository");
 const { getProfile } = require("./operatorProfileService");
 const { insertAd } = require("../ads/adService");
+const { generateReply } = require("../ai/classifier");
 
 // 役割：LINE受信後の「考える処理」を集約
 // ・OpenAI呼び出し
@@ -196,8 +197,13 @@ ${systemPrompt}
   const parsed = safeParse(raw);
   const extracted = extractReply(raw);
 
+  const aiReply = await generateReply({
+   botId,
+   userText: text
+  });
+
   const replyText =
-    parsed?.reply_text ||
+    aiReply  ||
     extracted ||
     (text ? `受信しました：${text}` : "受信しました");
 
