@@ -7,7 +7,6 @@ const { appendUsageRow } = require("../sheet/saver");
 const { appendVoiceRow } = require("../repositories/sheetRepository");
 const { getProfile } = require("./operatorProfileService");
 const { insertAd } = require("../ads/adService");
-const { generateReply } = require("../ai/classifier");
 
 // 役割：LINE受信後の「考える処理」を集約
 // ・OpenAI呼び出し
@@ -41,6 +40,7 @@ function getRawText(resp) {
 
 function safeParse(raw) {
   if (!raw) return null;
+
   try {
     return JSON.parse(raw);
   } catch {
@@ -50,7 +50,9 @@ function safeParse(raw) {
     if (a >= 0 && b > a) {
       try {
         return JSON.parse(s.slice(a, b + 1));
-      } catch {}
+      } catch {
+        return null;
+      }
     }
     return null;
   }
@@ -58,8 +60,10 @@ function safeParse(raw) {
 
 function extractReply(raw) {
   if (!raw) return "";
+
   const m = String(raw).match(/"reply_text"\s*:\s*"([\s\S]*?)"\s*(,|\})/);
   if (!m) return "";
+
   return m[1]
     .replace(/\\"/g, '"')
     .replace(/\\n/g, "\n")
@@ -78,7 +82,6 @@ async function processMessage(context) {
 
   const toneGuide = toneGuideMap[String(tone)] || toneGuideMap.polite;
 
-  // ★ ここは後で上書きするので let にする（const だと落ちる）
   let systemPrompt = `
 出力は必ず指定JSONスキーマに一致させること（余計なキー禁止）。
 reply_text は次の口調ルールに従う: ${toneGuide}
@@ -88,12 +91,12 @@ summary/category/urgency_score は回答の影響を受けず内容理解に基�
   log(`🤖 [${rid}] (service) calling OpenAI...`);
 
   // ===== Operatorプロフィール取得＆整形 =====
-  const op = await getProfile(); // ★ await 必須
+  const op = await getProfile();
   const operatorProfile = String(op?.profile_text || "")
-    .replace(/\r/g, "") // CR削除
-    .replace(/\\n/g, "\n") // 文字としての \n を改行へ（必要なら）
-    .replace(/"/g, "'") // JSON破壊防止（保険）
-    .replace(/\t/g, " ") // タブ除去
+    .replace(/\r/g, "")
+    .replace(/\\n/g, "\n")
+    .replace(/"/g, "'")
+    .replace(/\t/g, " ")
     .trim();
 
   log(`🧩 [${rid}] operatorProfile len=${operatorProfile.length}`);
@@ -123,8 +126,14 @@ ${systemPrompt}
     {
       model: OPENAI_MODEL,
       input: [
-        { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
-        { role: "user", content: [{ type: "input_text", text: String(text) }] },
+        {
+          role: "system",
+          content: [{ type: "input_text", text: systemPrompt }],
+        },
+        {
+          role: "user",
+          content: [{ type: "input_text", text: String(text) }],
+        },
       ],
       text: {
         format: {
@@ -159,7 +168,7 @@ ${systemPrompt}
   const usage = response.data.usage || {};
   const inputTokens = usage.input_tokens ?? 0;
   const outputTokens = usage.output_tokens ?? 0;
-  const totalTokens = usage.total_tokens ?? inputTokens + outputTokens;
+  const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
 
   const IN_PER_M = 0.15;
   const OUT_PER_M = 0.60;
@@ -188,7 +197,6 @@ ${systemPrompt}
       log(`💰 [${rid}] (service) Usage saved`);
     }
   } catch (e) {
-    // ★ error is not defined を避ける（logError を使う）
     logError(`⚠️ [${rid}] Usage save failed:`, e?.message || e);
   }
 
@@ -197,15 +205,16 @@ ${systemPrompt}
   const parsed = safeParse(raw);
   const extracted = extractReply(raw);
 
-  const aiReply = await generateReply({
-   botId,
-   userText: text
-  });
+  log(`🧾 [${rid}] raw head=${String(raw).slice(0, 200).replace(/\n/g, "\\n")}`);
+  log(`🧾 [${rid}] parsed exists=${parsed ? "YES" : "NO"}`);
+  log(`🧾 [${rid}] extracted head=${String(extracted).slice(0, 120).replace(/\n/g, "\\n")}`);
 
   const replyText =
-    aiReply  ||
+    parsed?.reply_text ||
     extracted ||
     (text ? `受信しました：${text}` : "受信しました");
+
+  log(`💬 [${rid}] (service) replyText=${String(replyText).slice(0, 200).replace(/\n/g, "\\n")}`);
 
   // ===== 本文ログ保存（repository経由）=====
   try {
@@ -224,10 +233,11 @@ ${systemPrompt}
     logError(`⚠️ [${rid}] Voice save failed:`, e?.message || e);
   }
 
-let finalReply = replyText;
-finalReply = await insertAd(finalReply);
+  // ===== 広告付与 =====
+  let finalReply = replyText;
+  finalReply = await insertAd(finalReply);
 
-return finalReply;
+  return finalReply;
 }
 
 module.exports = { processMessage };
