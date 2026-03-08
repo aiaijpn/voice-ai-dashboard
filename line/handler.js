@@ -2,7 +2,6 @@
 "use strict";
 
 const { log, error: logError } = require("../utils/logger");
-
 const axios = require("axios");
 const { processMessage } = require("../services/messageService");
 
@@ -14,21 +13,18 @@ log("🔧 ENV CHECK (handler)");
 log(" - CHANNEL_ACCESS_TOKEN:", CHANNEL_ACCESS_TOKEN ? "OK" : "MISSING");
 
 // historyStore は STEP2 で新規作成する想定。
-// 先に handler.js を直しても落ちないように「存在すれば使う」方式にしてある。
+// 先に handler.js を直しても落ちないように「存在すれば使う」方式
 let historyStore = null;
+
 try {
   historyStore = require("./historyStore");
   log("🧠 historyStore: OK (./historyStore)");
 } catch (e) {
-  log("🧠 historyStore: NOT FOUND (STEP2で追加予定) -> history disabled for now");
+  log("🧠 historyStore: NOT FOUND -> history disabled");
 }
 
-const HISTORY_MAX = Number(process.env.HISTORY_MAX || 10); // 直近N件（role単位）
+const HISTORY_MAX = Number(process.env.HISTORY_MAX || 10);
 
-/**
- * 履歴をAIに混ぜるための軽量フォーマット
- * ※ processMessage 側を触らなくても、textに混ぜれば会話が繋がる
- */
 function buildTextWithHistory(userText, history = []) {
   if (!history || history.length === 0) return userText;
 
@@ -50,85 +46,79 @@ const handleEvent = async (event, ctx = {}) => {
   try {
     log("========================================");
     log(`➡️ [${rid}] handleEvent start`);
-    log(`   type=${event.type}`);
-    log(`   messageType=${event.message?.type}`);
+    log(`type=${event.type}`);
+    log(`messageType=${event.message?.type}`);
 
     if (event.type !== "message" || event.message.type !== "text") {
-      log(`⚠️ [${rid}] Not a text message. Skip.`);
+      log(`⚠️ [${rid}] Not text message`);
       return;
     }
 
     const userText = event.message.text;
     log(`📝 [${rid}] userText=`, userText);
 
-    // ===== 既読トークン（2025/11〜 Messaging API）=====
     const markAsReadToken = event.message?.markAsReadToken;
-    log(`👁️ [${rid}] markAsReadToken=`, markAsReadToken ? "FOUND" : "NONE");
 
     const tone = String(ctx.tone || "polite");
     const bot_id = process.env.BOT_ID || "voice-ai-dashboard";
     const userId = event.source?.userId || "";
+
     const historyKey = `${bot_id}:${userId || "no_userId"}`;
 
-    // ===== 履歴ロード（あれば）=====
+    // ===== 履歴ロード =====
     let history = [];
+
     if (historyStore?.getHistory) {
       try {
         history = await historyStore.getHistory(historyKey);
-        log(`🧠 [${rid}] history loaded: key=${historyKey} len=${history.length}`);
+        log(`🧠 [${rid}] history loaded len=${history.length}`);
       } catch (e) {
-        log(`🧠 [${rid}] history load failed:`, e.message || e);
+        log(`history load error`, e.message);
       }
-    } else {
-      log(`🧠 [${rid}] historyStore disabled -> skip load`);
     }
 
-    // ===== 今回ユーザー発言を履歴に保存（あれば）=====
+    // ===== ユーザー発言保存 =====
     if (historyStore?.appendMessage) {
       try {
-        await historyStore.appendMessage(historyKey, { role: "user", content: userText });
-        log(`🧠 [${rid}] history appended (user)`);
-        // append後、最新を再取得（N件制限はstore側でもOKだが念のため）
+        await historyStore.appendMessage(historyKey, {
+          role: "user",
+          content: userText,
+        });
+
         history = await historyStore.getHistory(historyKey);
       } catch (e) {
-        log(`🧠 [${rid}] history append(user) failed:`, e.message || e);
+        log(`history append error`, e.message);
       }
     }
 
-    // ===== 履歴をテキストに混ぜる（store無しでもOK）=====
     const textForAI = buildTextWithHistory(userText, history);
-    if (history.length > 0) {
-      log(`🧾 [${rid}] textForAI includes history (len=${history.length})`);
-    }
 
-    // ===== serviceへ委譲 =====
-    const svc = await processMessage({
-      rid,
-      bot_id,
-      userId,
-      text: textForAI,
-      tone,
-      timestamp: Date.now(),
-      rawEvent: event,
-      // もし processMessage 側が history を扱えるようになったら、そのまま使える
-      history: history.slice(-HISTORY_MAX),
-    });
+    // ===== AI処理 =====
+    const replyText =
+      (await processMessage({
+        rid,
+        bot_id,
+        userId,
+        text: textForAI,
+        tone,
+      })) || "受信しました";
 
-    const replyText = svc?.replyText || "受信しました";
     log(`🧩 [${rid}] service replyText=`, replyText);
 
-    // ===== AI返答を履歴に保存（あれば）=====
+    // ===== AI発言履歴保存 =====
     if (historyStore?.appendMessage) {
       try {
-        await historyStore.appendMessage(historyKey, { role: "assistant", content: replyText });
-        log(`🧠 [${rid}] history appended (assistant)`);
+        await historyStore.appendMessage(historyKey, {
+          role: "assistant",
+          content: replyText,
+        });
       } catch (e) {
-        log(`🧠 [${rid}] history append(assistant) failed:`, e.message || e);
+        log(`history append error`, e.message);
       }
     }
 
     // ===== LINE返信 =====
-    log(`📤 [${rid}] Sending reply to LINE...`);
+    log(`📤 [${rid}] sending reply`);
 
     await axios.post(
       "https://api.line.me/v2/bot/message/reply",
@@ -147,11 +137,9 @@ const handleEvent = async (event, ctx = {}) => {
 
     log(`🎉 [${rid}] LINE reply success`);
 
-    // ===== 既読付与（2025/11〜 Messaging API）=====
-    // token が無い場合はスキップ。失敗しても返信は止めない（温度維持優先）
+    // ===== 既読 =====
     if (markAsReadToken) {
       try {
-        log(`👁️ [${rid}] Marking as read...`);
         await axios.post(
           "https://api.line.me/v2/bot/chat/markAsRead",
           { markAsReadToken },
@@ -160,23 +148,18 @@ const handleEvent = async (event, ctx = {}) => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
             },
-            timeout: 15000,
           }
         );
-        log(`✅ [${rid}] markAsRead success`);
+        log(`👁️ [${rid}] markAsRead success`);
       } catch (e) {
-        log(`⚠️ [${rid}] markAsRead failed:`, e.response?.data || e.message || e);
+        log(`markAsRead failed`, e.message);
       }
-    } else {
-      log(`👁️ [${rid}] markAsRead skipped (no token)`);
     }
 
     log(`⬅️ [${rid}] handleEvent done`);
   } catch (e) {
-    error("💥 Handler error:", error.response?.data || error.message || error);
+    logError("💥 Handler error:", e.response?.data || e.message || e);
   }
 };
 
 module.exports = { handleEvent };
-
-
