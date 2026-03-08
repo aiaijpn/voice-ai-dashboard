@@ -52,15 +52,20 @@ async function generateReply({ botId, userText }) {
 
   // ※ Responses API
   const response = await client.responses.create({
-    model,
-    input: userText,
-  });
+  model,
+  input: userText,
+});
+
+console.log("=== OPENAI RAW RESPONSE ===");
+console.log(JSON.stringify(response, null, 2));
 
   // 返信テキスト（環境やモデルで取り方が揺れるので安全に）
   const replyText =
     response.output_text ||
     (response.output?.[0]?.content?.[0]?.text ?? "") ||
     "（返信生成に失敗）";
+
+  console.log("AI replyText:", replyText);
 
   // usage
   const usage = response.usage || {};
