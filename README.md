@@ -1,7 +1,11 @@
-# voice-ai-dashboard 
+# voice-ai-dashboard
+
+LINE × AI × Google Sheets を使った
+会話型ダッシュボードシステム。
+
+---
 
 ## Project Structure
-
 
 | 種類      | ファイル                   |
 | ------- | ---------------------- |
@@ -12,5 +16,32 @@
 | 会話エンジン  | conversation_engine.md |
 | Git操作   | git_command.md         |
 
+---
 
-プロジェクト全体が理解できる docs/architecture_overview.md
+## Architecture Overview
+
+プロジェクト全体の構造は
+以下のドキュメントで確認できます。
+
+```
+docs/architecture_overview.md
+```
+
+---
+
+## Documentation
+
+詳細設計は `docs` フォルダにまとめています。
+
+```
+docs/
+├ architecture_overview.md
+├ system_architecture.md
+├ module_design.md
+├ persona_system.md
+├ ad_module.md
+├ conversation_engine.md
+├ git_command.md
+├ coding_rules.md
+└ development_workflow.md
+```
