@@ -1,5 +1,4 @@
-﻿// ファイル: voice-ai-dashboard/line/handler.js
-"use strict";
+﻿"use strict";
 
 const { log, error: logError } = require("../utils/logger");
 const axios = require("axios");
@@ -94,15 +93,22 @@ const handleEvent = async (event, ctx = {}) => {
     const textForAI = buildTextWithHistory(userText, history);
 
     // ===== AI処理 =====
-    const replyText =
-      (await processMessage({
-        rid,
-        bot_id,
-        userId,
-        text: textForAI,
-        tone,
-      })) || "受信しました";
+    const result = await processMessage({
+      rid,
+      bot_id,
+      userId,
+      text: textForAI,
+      tone,
+    });
 
+    if (!result?.success) {
+      logError(`❌ [${rid}] service fail:`, result?.message || "unknown error");
+      return;
+    }
+
+    const replyText = result?.data?.replyText || "受信しました";
+
+    log(`🧩 [${rid}] service result message=`, result.message);
     log(`🧩 [${rid}] service replyText=`, replyText);
 
     // ===== AI発言履歴保存 =====

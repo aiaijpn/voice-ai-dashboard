@@ -18,24 +18,42 @@ function ensureFile() {
 
 function getProfile() {
   ensureFile();
+
   const raw = fs.readFileSync(DATA_PATH, "utf8");
+
   try {
     return JSON.parse(raw);
   } catch {
     const init = { profile_text: "", updated_at: null };
-    fs.writeFileSync(DATA_PATH, JSON.stringify(init, null, 2), "utf8");
+
+    fs.writeFileSync(
+      DATA_PATH,
+      JSON.stringify(init, null, 2),
+      "utf8"
+    );
+
     return init;
   }
 }
 
 function saveProfile(profile_text) {
   ensureFile();
+
   const payload = {
     profile_text: String(profile_text ?? ""),
     updated_at: new Date().toISOString(),
   };
-  fs.writeFileSync(DATA_PATH, JSON.stringify(payload, null, 2), "utf8");
+
+  fs.writeFileSync(
+    DATA_PATH,
+    JSON.stringify(payload, null, 2),
+    "utf8"
+  );
+
   return payload;
 }
 
-module.exports = { getProfile, saveProfile };
+module.exports = {
+  getProfile,
+  saveProfile,
+};
