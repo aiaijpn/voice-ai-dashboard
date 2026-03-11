@@ -4,6 +4,8 @@ const classifyMessage = require("./classifyMessage");
 const handleConversation = require("./handleConversation");
 const buildReply = require("./buildReply");
 
+console.log("messageService/index.js loaded:", new Date().toISOString());
+
 async function processMessage(context) {
 
   const classified = await classifyMessage(context);

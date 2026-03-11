@@ -20,7 +20,7 @@ const {
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
-log("📦 messageService.js loaded:", new Date().toISOString());
+log("📦 LEGACY messageService.js loaded:", new Date().toISOString());
 log("🔧 ENV CHECK (service)");
 log(" - OPENAI_API_KEY:", OPENAI_API_KEY ? "OK" : "MISSING");
 log(" - OPENAI_MODEL:", OPENAI_MODEL);
