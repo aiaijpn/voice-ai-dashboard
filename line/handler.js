@@ -128,7 +128,7 @@ const handleEvent = async (event, ctx = {}) => {
     log(`📤 [${rid}] sending reply`);
 
     const sendResult = await lineSender.sendReply(event.replyToken, [
-      [{ type: "text", text: replyText },
+      { type: "text", text: replyText },
     ]);
 
     if (!sendResult?.success) {
