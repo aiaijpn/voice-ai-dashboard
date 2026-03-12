@@ -1,0 +1,55 @@
+# ADR-XX7  
+保存契約と環境変数の統一  
+（Google Sheets / Logs / Conversation History）
+
+## 状態
+
+採用
+
+---
+
+## 背景
+
+栄一ツールでは、LINE Webhook → AI処理 → Google Sheets 保存 という流れで
+ログおよび会話履歴を保存している。
+
+今回、`conversation_history` 追加と並行して
+Google Sheets 保存まわりで以下の不具合が発生した。
+
+- `Requested entity was not found`
+- logs は一見成功に見えるが、実際には正しく保存されない
+- conversation_history の保存失敗
+- シート列と保存データの並び不一致
+- rowData のキー名不一致により、一部項目だけ空で保存される
+
+調査の結果、主因は Google Sheets API そのものではなく、
+以下の **契約不一致** にあった。
+
+1. 環境変数の混在
+2. Repository が期待する保存キー名と、呼び出し元が渡すキー名の不一致
+3. 成功ログの出力位置が早すぎることによる偽成功
+4. シート列順と values 配列順の契約未固定
+
+この問題は将来の logs / conversation_history / usage / members / products
+などの保存処理にも再発しうるため、
+設計判断として固定する。
+
+---
+
+## 決定
+
+### 1. 環境変数は 1目的1変数 に統一する
+
+Google Sheets 保存に関する正式環境変数は以下とする。
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `SPREADSHEET_ID`
+
+短縮名や旧名とのフォールバック参照は原則禁止とする。
+
+例：
+
+禁止
+```js
+process.env.SHEET_ID || process.env.SPREADSHEET_ID
+process.env.SA_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON
