@@ -176,18 +176,18 @@ const { google } = require("googleapis");
 async function adr007b1AppendTest(event) {
   try {
     if (
-      !process.env.SPREADSHEET_ID ||
-      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
-      !process.env.GOOGLE_PRIVATE_KEY
+      !process.env.XX_SHEET_ID  ||
+      !process.env.XX_SA_EMAIL  ||
+      !process.env.XX_SA_KEY
     ) {
       log("ADR007B1 skip: env missing");
       return;
     }
 
     const auth = new google.auth.JWT(
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      process.env.XX_SA_EMAIL,
       null,
-      process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      process.env.XX_SA_KEY.replace(/\\n/g, "\n"),
       ["https://www.googleapis.com/auth/spreadsheets"]
     );
 
