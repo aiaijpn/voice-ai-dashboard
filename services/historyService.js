@@ -63,8 +63,9 @@ async function saveConversation(input = {}) {
       );
       return validation;
     }
-
-    const result = await appendConversationRow(normalized);
+    
+    // ↓ ここを一旦停止
+    //const result = await appendConversationRow(normalized);
 
     if (!result.success) {
       logError("historyService.saveConversation append failed:", result.message, {
