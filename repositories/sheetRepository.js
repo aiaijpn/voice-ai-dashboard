@@ -20,11 +20,11 @@ async function appendVoiceRow(rowData = {}) {
       rowData.timestamp || Date.now(),
       rowData.botId || "",
       rowData.userId || "",
-      rowData.userMessage || "",
-      rowData.aiReply || "",
+      rowData.userMessage || rowData.user_text || "",
+      rowData.aiReply || rowData.reply_text || "",
       rowData.category || "",
-      rowData.urgency || "",
-      rowData.operatorMemo || "",
+      rowData.urgency || rowData.urgency_score || "",
+      rowData.operatorMemo || rowData.summary || "",
     ];
 
     console.log("DEBUG appendVoiceRow values =", values);
