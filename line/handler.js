@@ -2,7 +2,7 @@
 
 const { log, error: logError } = require("../utils/logger");
 const axios = require("axios");
-const { processMessage } = require("../services/messageService");
+const { processMessage } = require("../services/messageService/index");
 
 log("📦 handler.js loaded:", new Date().toISOString());
 
