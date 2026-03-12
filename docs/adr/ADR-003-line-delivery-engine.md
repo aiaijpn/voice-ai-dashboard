@@ -1,112 +1,97 @@
 # ADR-003
 LINE送信エンジン統一（Delivery Engine）
 
-## 日付
-2026-03-12
+## 背景
 
----
+栄一ツールではLINE Messaging APIを使用して返信を行っている。
 
-# 背景
+初期実装では、`line/handler.js` 内で直接 LINE API を呼び出していた。
 
-現在の栄一ツールは以下の構造でLINE返信を行っている。
-LINE Webhook
-↓
-handler
-↓
-messageService
-↓
-LINE reply
 
-しかし今後、以下の機能追加を予定している。
+axios.post("https://api.line.me/v2/bot/message/reply
+", ...)
+
+
+この状態では今後予定している機能
 
 - LIFF ミニアプリ
 - AI定期配信（Scheduler）
-- 高機能広告
+- 広告配信
 - セグメント配信
 
-これらはすべて **LINEへメッセージ送信** を行う。
-
-もし送信処理がそれぞれのモジュールに分散すると、以下の問題が発生する。
-
-- 送信コードの重複
-- バグ増加
-- 仕様変更時の修正範囲拡大
-- 送信ログ管理の複雑化
-
-そのため、LINE送信処理を **共通エンジンへ統一** する。
-
----
-
-# 決定
-
-
-LINEへの送信処理はすべて
-modules/lineSender.js
-
-を経由して実行する。
-
-各サービスは **送信対象と送信内容を決定する責務のみ持つ。**
-
-LINE Messaging API の直接呼び出しは禁止する。
-
----
-
-# 目的
-
-送信処理を **Delivery Layer** として独立させる。
+などで **LINE送信処理が複数箇所に分散する** 問題がある。
 
 これにより
 
-- 送信処理の一元化
-- バグ削減
-- 機能追加の容易化
-- ログ統一
-- 将来の配信拡張
+- 重複コード
+- 修正範囲の拡大
+- バグ増加
 
-を実現する。
+が発生する。
 
 ---
 
-# 構造
+## 決定
 
-## Before
-Webhook
-↓
-messageService
-↓
-LINE返信
+LINE Messaging API 呼び出しは  
+**modules/lineSender.js に統一する。**
 
-将来構造（分散）
-Webhook
-↓
-messageService
-↓
-LINE送信
+すべてのLINE送信は
 
-LIFF
-↓
-API
-↓
-LINE送信
 
-Scheduler
-↓
-定期配信
-↓
-LINE送信
+lineSender.sendReply()
+lineSender.sendPush()
+lineSender.sendBroadcast()
 
-送信ロジックが分散してしまう。
+
+を経由する。
+
+直接 LINE API を呼ばない。
 
 ---
 
-## After（統一構造）
+## 変更前
+
+
+LINE Webhook
+↓
+line/handler.js
+↓
+axios.post(LINE API)
+
+
+---
+
+## 変更後
+
+
+LINE Webhook
+↓
+line/handler.js
+↓
+modules/lineSender.js
+↓
+LINE Messaging API
+
+
+---
+
+## 将来構造
+
+
 Webhook
 ↓
-messageService
+handler
+↓
+service
 ↓
 lineSender
 ↓
-LINE
+LINE API
+
+
+また今後の機能も同じ送信エンジンを使用する。
+
 
 LIFF
 ↓
@@ -125,71 +110,46 @@ lineSender
 LINE
 
 
-**LINE送信はすべて lineSender を通る。**
-
 ---
 
-# レイヤ構造
-
-栄一ツールの構造は以下の3層になる。
-
-
-Input Layer
-↓
-Processing Layer
-↓
-Delivery Layer
-
-
-### Input Layer
-
-- LINE Webhook
-- LIFF
-- Scheduler
-
-### Processing Layer
-
-- messageService
-- AI処理
-- 広告挿入
-- セグメント判定
-
-### Delivery Layer
-
-- lineSender
-
----
-
-# 追加モジュール
+## 新規モジュール
 
 
 modules/lineSender.js
 
 
-役割
+責務
 
-- LINE Messaging API 呼び出し
+- LINE API 呼び出し
 - reply送信
 - push送信
 - broadcast送信
-- 送信ログ統一
 - エラーハンドリング
+- 送信ログ
 
 ---
 
-# lineSender API
+## lineSender API
 
-最小構成
+### sendReply
 
 
 sendReply(replyToken, messages)
 
+
+### sendPush
+
+
 sendPush(userId, messages)
+
+
+### sendBroadcast
+
 
 sendBroadcast(messages)
 
 
-messages は LINE Messaging API 形式の配列とする。
+messages は LINE Messaging API 形式。
 
 例
 
@@ -204,172 +164,87 @@ messages は LINE Messaging API 形式の配列とする。
 
 ---
 
-# 設計原則
-
-## lineSender に入れるもの
-
-- LINE SDK 呼び出し
-- メッセージ送信
-- APIエラー処理
-- 送信ログ
-
 ## lineSender に入れないもの
 
+以下は **Service 層の責務**
+
 - AI応答生成
-- 広告判断
+- 広告挿入
 - セグメント判定
-- 配信スケジューリング
-- ペルソナ判断
+- スケジューラ
+- ペルソナ制御
 
-これらは **Processing Layer の責務** とする。
-
----
-
-# 返り値契約
-
-返り値は ADR-001 に準拠する。
-
-成功
-
-
-{
-success: true,
-message: "LINE message sent",
-data: {
-method: "reply"
-}
-}
-
-
-失敗
-
-
-{
-success: false,
-message: "LINE send failed",
-data: {
-error: "error message"
-}
-}
-
+lineSender は **送信のみ担当する。**
 
 ---
 
-# 注意事項
+## 実装
 
-## replyToken制約
-
-reply送信は **Webhookイベントのみ** 使用可能。
-
-LIFFやSchedulerでは使用できない。
-
----
-
-## push送信
-
-push送信は **userId が必須**。
-
-そのため userId 保存戦略が必要。
-
----
-
-## broadcast
-
-broadcast は将来拡張とする。
-
-初期段階では未使用でもよい。
-
----
-
-# メリット
-
-## ① LINE送信ロジックが1箇所
-
-コード重複防止  
-バグ削減
-
----
-
-## ② 新機能が容易
-
-以下の機能が同一エンジンで利用できる
-
-- LIFF
-- AI定期配信
-- 広告配信
-- セグメント配信
-
----
-
-## ③ 拡張性
-
-将来
-
-- メール
-- SMS
-- Web Push
-
-などの送信チャネルを追加しやすい。
-
----
-
-# 実装影響範囲
-
-追加
+### 新規
 
 
 modules/lineSender.js
 
 
-修正
+### 修正
 
 
-services/messageService.js
+line/handler.js
+
+
+変更内容
+
+
+axios.post("https://api.line.me/v2/bot/message/reply
+")
+
+
+を削除し
+
+
+lineSender.sendReply()
+
+
+へ置換。
+
+---
+
+## 期待効果
+
+- LINE送信ロジックの統一
+- バグ削減
+- 修正箇所の限定
+- 将来機能追加の容易化
+
+---
+
+## 関連ADR
+
+
+ADR-001 Service返り値契約統一
+ADR-002 messageService分割
+ADR-002B messageService内部モジュール化
 
 
 ---
 
-# 実装ステップ
+## 将来ADR
 
-Step1  
-lineSender 作成
 
-Step2  
-messageService の reply送信を lineSender 経由へ変更
+ADR-004 LINE送信機能拡張
+ADR-005 Scheduler配信
+ADR-006 Controller / Service / Repository 分離
 
-Step3  
-push送信対応
-
-Step4  
-Scheduler配信へ接続
-
-Step5  
-LIFF配信へ接続
 
 ---
 
-# 将来ADR
+## ステータス
 
-ADR-004  
-LIFF 入口統一  
 
-ADR-005  
-定期配信モジュール  
+Implemented
 
-ADR-006  
-Controller / Service / Repository 分離
-技術コメント（短く）
 
-このADRは
-栄一ツールの構造安定化に効く重要ADRです。
+実装日
 
-今まで
 
-LINE返信 = messageService
-
-だったものが
-
-LINE返信 = lineSender
-
-に変わるので、
-今後のLIFF / Scheduler / 広告が全部楽になります。
+2026-03-12
