@@ -206,7 +206,7 @@ async function adr007b1AppendTest(event) {
     ]];
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.SPREADSHEET_ID,
+      spreadsheetId: process.env.XX_SHEET_ID,
       range: "conversation_history",
       valueInputOption: "RAW",
       requestBody: { values: row },
