@@ -5,6 +5,8 @@ const axios = require("axios");
 const { processMessage } = require("../services/messageService/index");
 const lineSender = require("../modules/lineSender");
 
+const { appendRowToSheet } = require("../sheet/saver");
+
 log("📦 handler.js loaded:", new Date().toISOString());
 
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
@@ -171,18 +173,51 @@ module.exports = { handleEvent };
 
 
 // ===== ADR007B1 実験用 =====
+
+
+async function adr007b1AppendTest(event) {
+  try {
+
+    const row = [
+      Date.now(),
+      "test_bot",
+      event?.source?.userId || "unknown_user",
+      "LINE webhook first hit",
+      "ADR007B1 test append",
+      "test memo",
+      false,
+      "line_webhook_test",
+      false
+    ];
+
+    await appendRowToSheet(
+      process.env.SPREADSHEET_ID,
+      "conversation_history",
+      row
+    );
+
+    log("ADR007B1 append success");
+
+  } catch (err) {
+    log("ADR007B1 append error", err.message);
+  }
+}
+
+
+/*
 const { google } = require("googleapis");
 
 async function adr007b1AppendTest(event) {
   try {
 
+    
     log("ADR007B1 env debug", {
      hasSheetId: !!process.env.XX_SHEET_ID,
     hasSaEmail: !!process.env.XX_SA_EMAIL,
      hasSaKey: !!process.env.XX_SA_KEY,
       sheetIdLength: process.env.XX_SHEET_ID ? process.env.XX_SHEET_ID.length : 0,
       saKeyLength: process.env.XX_SA_KEY ? process.env.XX_SA_KEY.length : 0,
-   });
+    });
 
     if (
       !process.env.XX_SHEET_ID  ||
@@ -207,8 +242,9 @@ async function adr007b1AppendTest(event) {
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-
-    const row = [[
+    
+   
+     const row = [[
       Date.now(),
       "test_bot",
       event?.source?.userId || "unknown_user",
@@ -221,7 +257,7 @@ async function adr007b1AppendTest(event) {
     ]];
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.XX_SHEET_ID,
+      spreadsheetId: process.env.SPREADSHEET_ID,
       range: "conversation_history",
       valueInputOption: "RAW",
       requestBody: { values: row },
@@ -233,3 +269,4 @@ async function adr007b1AppendTest(event) {
     log("ADR007B1 append error", err.message);
   }
 }
+  */
