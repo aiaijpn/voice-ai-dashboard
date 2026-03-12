@@ -4,26 +4,45 @@ const { google } = require("googleapis");
 const { log, error: logError } = require("../utils/logger");
 const { success, fail } = require("../utils/serviceResponse");
 
+const GOOGLE_SERVICE_ACCOUNT_JSON =
+  process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "";
 const GOOGLE_SERVICE_ACCOUNT_EMAIL =
-  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
+  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "";
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY || "";
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const CONVERSATION_SHEET_NAME =
   process.env.CONVERSATION_SHEET_NAME || "conversation_history";
 
 function buildAuth() {
-  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY) {
+  try {
+    if (GOOGLE_SERVICE_ACCOUNT_JSON) {
+      const credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+
+      return new google.auth.JWT(
+        credentials.client_email,
+        null,
+        credentials.private_key,
+        ["https://www.googleapis.com/auth/spreadsheets"]
+      );
+    }
+
+    if (GOOGLE_SERVICE_ACCOUNT_EMAIL && GOOGLE_PRIVATE_KEY) {
+      return new google.auth.JWT(
+        GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        null,
+        GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+        ["https://www.googleapis.com/auth/spreadsheets"]
+      );
+    }
+
     throw new Error(
       "conversationRepository.buildAuth: Google service account env is missing"
     );
+  } catch (error) {
+    throw new Error(
+      `conversationRepository.buildAuth failed: ${error.message || error}`
+    );
   }
-
-  return new google.auth.JWT(
-    GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    null,
-    GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/spreadsheets"]
-  );
 }
 
 function buildSheetsClient(auth) {
