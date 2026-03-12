@@ -53,3 +53,234 @@ Google Sheets 保存に関する正式環境変数は以下とする。
 ```js
 process.env.SHEET_ID || process.env.SPREADSHEET_ID
 process.env.SA_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+
+採用
+
+process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+process.env.SPREADSHEET_ID
+2. Repository 層の保存契約を固定する
+
+logs 保存時の正式 rowData 契約は以下とする。
+
+{
+  timestamp,
+  botId,
+  userId,
+  userMessage,
+  aiReply,
+  category,
+  urgency,
+  operatorMemo
+}
+
+conversation_history 保存時の正式 rowData 契約は以下とする。
+
+{
+  timestamp,
+  botId,
+  userId,
+  userMessage,
+  aiReply,
+  operatorMemo,
+  manualSend,
+  sourceType,
+  unresolvedQ
+}
+
+Repository 層はこの契約を前提に values 配列を組み立てる。
+
+3. シート列順と values 順を一致させる
+logs シート
+
+ヘッダ順：
+
+timestamp,bot_id,user_id,user_message,ai_reply,category,urgency,operator_memo
+
+values 順：
+
+[
+  rowData.timestamp,
+  rowData.botId,
+  rowData.userId,
+  rowData.userMessage,
+  rowData.aiReply,
+  rowData.category,
+  rowData.urgency,
+  rowData.operatorMemo
+]
+conversation_history シート
+
+ヘッダ順：
+
+timestamp,bot_id,user_id,user_message,ai_reply,operator_memo,manual_send,source_type,unresolved_q
+
+values 順：
+
+[
+  rowData.timestamp,
+  rowData.botId,
+  rowData.userId,
+  rowData.userMessage,
+  rowData.aiReply,
+  rowData.operatorMemo,
+  rowData.manualSend,
+  rowData.sourceType,
+  rowData.unresolvedQ
+]
+4. 成功ログは result.success 確認後のみ出す
+
+禁止：
+
+await appendVoiceRow(...);
+log("VoiceLog saved");
+
+採用：
+
+const result = await appendVoiceRow(...);
+
+if (!result.success) {
+  logError("appendVoiceRow failed:", result.message);
+  return result;
+}
+
+log("VoiceLog saved");
+
+同様に saveConversation も success 判定後のみ成功ログを出す。
+
+5. デバッグログは Repository の入力直後と Sheets API 呼び出し直前に限定する
+
+保存トラブル時の標準デバッグポイントは以下とする。
+
+Repository入力確認
+console.log("DEBUG appendVoiceRow rowData =", rowData);
+values確認
+console.log("DEBUG appendVoiceRow values =", values);
+Sheets API 直前確認
+log("DEBUG appendRowToSheet args:", {
+  spreadsheetId,
+  sheetName,
+  valueCount: values.length,
+});
+
+本番安定後は不要な DEBUG ログを削除する。
+
+理由
+
+この判断により、以下を防止できる。
+
+環境変数混在による保存先分裂
+
+rowData キー名不一致による空保存
+
+シート列と値順不一致による列崩れ
+
+失敗時に成功ログだけ残る偽成功
+
+新機能追加時の保存系再発バグ
+
+今回の障害は「Sheetsの不具合」ではなく、
+保存契約の曖昧さ が引き起こしたものである。
+したがって、実装修正ではなく ADR として固定する価値がある。
+
+影響範囲
+
+このADRは以下に影響する。
+
+sheet/saver.js
+
+repositories/sheetRepository.js
+
+repositories/conversationRepository.js
+
+services/historyService.js
+
+logs シート
+
+conversation_history シート
+
+今後追加される UsageLog / members / products 等の保存処理
+
+運用ルール
+
+新しい保存処理を追加する前に、先にシートヘッダを固定する
+
+次に Repository 契約を固定する
+
+最後に Service / 呼び出し元を接続する
+
+保存系の環境変数は増やさない
+
+キー名変更は必ず ADR または明示メモを伴う
+
+代替案
+代替案1
+
+新旧環境変数のフォールバックを維持する
+
+却下理由：
+
+一見互換性が高いが、実際には参照先混在を生む
+
+不具合時の切り分けが難しくなる
+
+代替案2
+
+Repository 側で snake_case / camelCase を常時両対応する
+
+却下理由：
+
+一時的な復旧には有効
+
+ただし正式契約が曖昧になる
+
+長期的には upstream の整形責務が崩れる
+
+今回の教訓
+
+今回の問題の本質は以下である。
+
+API接続以前に契約を固定すべき
+
+保存処理は入力契約がすべて
+
+成功ログは「成功後」にしか出してはならない
+
+一時対応で直っても、契約未固定なら再発する
+
+今後の方針
+
+短期：
+
+logs 保存の安定維持
+
+conversation_history は段階的再導入
+
+DEBUGログ整理
+
+中期：
+
+rowData の正式キー名を呼び出し元まで統一
+
+保存系 Repository の共通化検討
+
+UsageLog / members / products に同ルール適用
+
+長期：
+
+Sheets 保存を SQL / 永続DB に移行する場合も、
+本ADRの「保存契約固定」原則は継承する
+
+結論
+
+Google Sheets 保存の安定運用のため、
+栄一ツールでは
+
+環境変数の統一
+
+保存契約の固定
+
+シート列順と values 順の一致
+
+success 判定後のみ成功ログ出力
+
+を正式ルールとして採用する。
