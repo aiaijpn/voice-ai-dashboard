@@ -190,11 +190,11 @@ async function adr007b1AppendTest(event) {
       false
     ];
 
-    await appendRowToSheet(
-      process.env.SPREADSHEET_ID,
-      "conversation_history",
-      row
-    );
+    await appendRowToSheet({
+      spreadsheetId: process.env.SPREADSHEET_ID,
+      sheetName: "conversation_history",
+      values: row
+    });
 
     log("ADR007B1 append success");
 
