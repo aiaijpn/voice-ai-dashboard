@@ -52,3 +52,49 @@ services/
 ├─ historyService.js
 ├─ adService.js
 └─ responseBuilder.js
+
+
+## 実装結果 (ADR-002B)
+
+messageService は以下の構造へ分割された。
+
+services/messageService/
+
+index.js  
+AI会話処理のオーケストレーション
+
+promptBuilder.js  
+systemPrompt生成  
+Operatorプロフィール適用
+
+openaiClient.js  
+OpenAI Responses API呼び出し
+
+responseParser.js  
+OpenAIレスポンス解析  
+reply_text / summary / category / urgency_score抽出
+
+logSavers.js  
+Usageログ保存  
+VoiceLog保存
+
+### 設計意図
+
+index.js を司令塔として  
+AI処理の責務をモジュール化した。
+
+これにより
+
+・可読性向上  
+・テスト容易性  
+・機能追加時の安全性  
+
+を確保する。
+
+### 旧構造
+
+services/messageService.js
+
+### 新構造
+
+services/messageService/index.js
