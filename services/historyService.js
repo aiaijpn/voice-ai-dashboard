@@ -63,7 +63,22 @@ async function saveConversation(input = {}) {
       );
       return validation;
     }
-    
+
+    return success("conversation history disabled", {
+      botId: normalized.botId,
+      userId: normalized.userId,
+      sourceType: normalized.sourceType,
+    });
+     } catch (error) {
+       logError(
+        "historyService.saveConversation error:",
+       error.message || error
+    );
+    return fail("failed to save conversation", error.message || error);
+  }
+
+
+
     // ↓ ここを一旦停止
     //const result = await appendConversationRow(normalized);
 
