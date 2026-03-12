@@ -3,6 +3,7 @@
 const { log, error: logError } = require("../utils/logger");
 const axios = require("axios");
 const { processMessage } = require("../services/messageService/index");
+const lineSender = require("../modules/lineSender");
 
 log("📦 handler.js loaded:", new Date().toISOString());
 
@@ -126,20 +127,14 @@ const handleEvent = async (event, ctx = {}) => {
     // ===== LINE返信 =====
     log(`📤 [${rid}] sending reply`);
 
-    await axios.post(
-      "https://api.line.me/v2/bot/message/reply",
-      {
-        replyToken: event.replyToken,
-        messages: [{ type: "text", text: replyText }],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${CHANNEL_ACCESS_TOKEN}`,
-        },
-        timeout: 15000,
-      }
-    );
+    const sendResult = await lineSender.sendReply(event.replyToken, [
+      [{ type: "text", text: replyText },
+    ]);
+
+    if (!sendResult?.success) {
+      logError(`❌ [${rid}] LINE send failed:`, sendResult?.message || "unknown error");
+      return;
+    }
 
     log(`🎉 [${rid}] LINE reply success`);
 
