@@ -3,7 +3,8 @@
 const { appendRowToSheet } = require("../sheet/saver");
 const { success, fail } = require("../utils/serviceResponse");
 
-const SHEET_ID = process.env.SHEET_ID || process.env.VOICE_AI_SHEET_ID;
+//const SHEET_ID = process.env.SHEET_ID || process.env.VOICE_AI_SHEET_ID;
+const SHEET_ID = process.env.SHEET_ID;
 const SHEET_NAME = "conversation_history";
 
 async function appendConversationRow(rowData = {}) {
