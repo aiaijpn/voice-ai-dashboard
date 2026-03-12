@@ -1,13 +1,14 @@
 # システム構造
 
 LINE
-↓
-Webhook
-↓
-line/handler.js
-↓
-service
-↓
-AI処理
-↓
-Google Sheets保存
+ ↓
+handler
+ ↓
+messageService/index.js
+ ↓
+ ├ promptBuilder
+ ├ openaiClient
+ ├ responseParser
+ └ logSavers
+ ↓
+OpenAI
