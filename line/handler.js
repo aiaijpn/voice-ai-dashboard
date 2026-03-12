@@ -175,6 +175,15 @@ const { google } = require("googleapis");
 
 async function adr007b1AppendTest(event) {
   try {
+
+    log("ADR007B1 env debug", {
+     hasSheetId: !!process.env.XX_SHEET_ID,
+    hasSaEmail: !!process.env.XX_SA_EMAIL,
+     hasSaKey: !!process.env.XX_SA_KEY,
+      sheetIdLength: process.env.XX_SHEET_ID ? process.env.XX_SHEET_ID.length : 0,
+      saKeyLength: process.env.XX_SA_KEY ? process.env.XX_SA_KEY.length : 0,
+   });
+
     if (
       !process.env.XX_SHEET_ID  ||
       !process.env.XX_SA_EMAIL  ||
