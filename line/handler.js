@@ -54,6 +54,9 @@ const handleEvent = async (event, ctx = {}) => {
       return;
     }
 
+    await adr007b1AppendTest(event);
+
+
     const userText = event.message.text;
     log(`📝 [${rid}] userText=`, userText);
 
