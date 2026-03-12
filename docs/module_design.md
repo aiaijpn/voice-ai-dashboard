@@ -166,3 +166,30 @@ utils/logger.js
 2 serviceはビジネスロジックのみ
 3 repositoryはデータアクセスのみ
 4 infraは外部サービス接続のみ
+
+
+## messageService モジュール
+
+AI会話処理のコア。
+
+構成
+
+services/messageService/
+
+index.js  
+全体制御
+
+promptBuilder.js  
+AI systemPrompt生成  
+Operatorプロフィール反映
+
+openaiClient.js  
+OpenAI API通信
+
+responseParser.js  
+AIレスポンス解析
+
+logSavers.js  
+Usageログ保存  
+Voiceログ保存
+
