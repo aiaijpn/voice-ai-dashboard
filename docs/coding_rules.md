@@ -27,6 +27,31 @@
 
 ---
 
+
+## Service分割ルール
+
+1ファイル200行以上になった場合  
+モジュール分割を検討する。
+
+原則
+
+index.js
+  orchestration
+
+module
+  単一責務
+
+例
+
+services/messageService
+
+index.js  
+promptBuilder.js  
+openaiClient.js  
+responseParser.js  
+logSavers.js
+
+
 # Service返り値契約
 
 Serviceは必ず以下の形式で返す。
