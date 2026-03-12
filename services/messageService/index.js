@@ -3,6 +3,7 @@
 const { log, error: logError } = require("../../utils/logger");
 const { insertAd } = require("../../ads/adService");
 const { success, fail } = require("../../utils/serviceResponse");
+const { saveConversation } = require("../historyService");
 
 const { buildSystemPrompt } = require("./promptBuilder");
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
@@ -58,6 +59,27 @@ async function processMessage(context) {
 
     let finalReply = replyText;
     finalReply = await insertAd(finalReply);
+
+    const historyResult = await saveConversation({
+      botId: bot_id,
+      userId,
+      userMessage: text,
+      aiReply: finalReply,
+      sourceType: "user_message",
+    });
+
+    if (!historyResult.success) {
+      logError(
+        `❌ [${rid}] saveConversation failed:`,
+        historyResult.message
+      );
+    } else {
+      log(`✅ [${rid}] saveConversation ok`, {
+        botId: bot_id,
+        userId,
+        sourceType: "user_message",
+      });
+    }
 
     return success(
       {

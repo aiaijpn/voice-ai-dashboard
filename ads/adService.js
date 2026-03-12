@@ -34,7 +34,7 @@ async function decorateAdWithAI(adTitle) {
 AI会話の末尾に添える短い案内文を作ってください。
 
 条件
-・2行
+・1行
 ・やや豊かだが控えめ
 ・広告名を含める
 ・押し売りしない
