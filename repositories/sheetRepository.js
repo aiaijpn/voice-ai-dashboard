@@ -8,6 +8,8 @@ const LOG_SHEET_NAME = "logs";
 
 async function appendVoiceRow(rowData = {}) {
   try {
+    console.log("DEBUG appendVoiceRow rowData =", rowData);
+
     if (!SPREADSHEET_ID) {
       return fail(
         "sheetRepository.appendVoiceRow: SPREADSHEET_ID is required"
@@ -25,11 +27,15 @@ async function appendVoiceRow(rowData = {}) {
       rowData.operatorMemo || "",
     ];
 
+    console.log("DEBUG appendVoiceRow values =", values);
+
     const result = await appendRowToSheet({
       spreadsheetId: SPREADSHEET_ID,
       sheetName: LOG_SHEET_NAME,
       values,
     });
+
+    console.log("DEBUG appendVoiceRow result =", result);
 
     if (!result.success) {
       return fail(`sheetRepository.appendVoiceRow: ${result.message}`);
@@ -41,6 +47,8 @@ async function appendVoiceRow(rowData = {}) {
       botId: rowData.botId || "",
     });
   } catch (error) {
+    console.error("DEBUG appendVoiceRow catch error =", error);
+
     return fail(`sheetRepository.appendVoiceRow: ${error.message}`);
   }
 }
