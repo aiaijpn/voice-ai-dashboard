@@ -6,47 +6,36 @@ const { success, fail } = require("../utils/serviceResponse");
 
 const GOOGLE_SERVICE_ACCOUNT_JSON =
   process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "";
-const GOOGLE_SERVICE_ACCOUNT_EMAIL =
-  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "";
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY || "";
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || "";
 const CONVERSATION_SHEET_NAME =
   process.env.CONVERSATION_SHEET_NAME || "conversation_history";
 
 function buildAuth() {
-  try {
-    if (GOOGLE_SERVICE_ACCOUNT_JSON) {
-      const credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-
-      return new google.auth.JWT(
-        credentials.client_email,
-        null,
-        credentials.private_key,
-        ["https://www.googleapis.com/auth/spreadsheets"]
-      );
-    }
-
-    if (GOOGLE_SERVICE_ACCOUNT_EMAIL && GOOGLE_PRIVATE_KEY) {
-      return new google.auth.JWT(
-        GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        null,
-        GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-        ["https://www.googleapis.com/auth/spreadsheets"]
-      );
-    }
-
-    throw new Error(
-      "conversationRepository.buildAuth: Google service account env is missing"
-    );
-  } catch (error) {
-    throw new Error(
-      `conversationRepository.buildAuth failed: ${error.message || error}`
-    );
+  if (!GOOGLE_SERVICE_ACCOUNT_JSON) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is missing");
   }
-}
 
-function buildSheetsClient(auth) {
-  return google.sheets({ version: "v4", auth });
+  let credentials;
+  try {
+    credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  } catch (e) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON parse failed");
+  }
+
+  if (!credentials.client_email) {
+    throw new Error("client_email is missing in GOOGLE_SERVICE_ACCOUNT_JSON");
+  }
+
+  if (!credentials.private_key) {
+    throw new Error("private_key is missing in GOOGLE_SERVICE_ACCOUNT_JSON");
+  }
+
+  return new google.auth.JWT(
+    credentials.client_email,
+    null,
+    credentials.private_key,
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  );
 }
 
 function normalizeRecord(record = {}) {
@@ -100,9 +89,6 @@ function buildRow(record) {
 async function appendConversationRow(record) {
   try {
     if (!SPREADSHEET_ID) {
-      logError(
-        "conversationRepository.appendConversationRow: SPREADSHEET_ID is missing"
-      );
       return fail("SPREADSHEET_ID is missing");
     }
 
@@ -110,16 +96,11 @@ async function appendConversationRow(record) {
     const validation = validateRecord(normalized);
 
     if (!validation.success) {
-      logError(
-        "conversationRepository.appendConversationRow validation failed:",
-        validation.message
-      );
       return validation;
     }
 
     const auth = buildAuth();
-    const sheets = buildSheetsClient(auth);
-    const row = buildRow(normalized);
+    const sheets = google.sheets({ version: "v4", auth });
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
@@ -127,7 +108,7 @@ async function appendConversationRow(record) {
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
-        values: [row],
+        values: [buildRow(normalized)],
       },
     });
 
@@ -135,12 +116,10 @@ async function appendConversationRow(record) {
       sheetName: CONVERSATION_SHEET_NAME,
       botId: normalized.botId,
       userId: normalized.userId,
-      sourceType: normalized.sourceType,
       timestamp: normalized.timestamp,
     });
 
     return success("conversation row appended", {
-      sheetName: CONVERSATION_SHEET_NAME,
       timestamp: normalized.timestamp,
     });
   } catch (error) {
