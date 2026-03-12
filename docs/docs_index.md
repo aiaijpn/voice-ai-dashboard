@@ -107,3 +107,26 @@ source_alignment.md
 
 ドキュメント更新時は
 この index も更新する。
+
+---
+
+# ADR一覧
+
+このプロジェクトでは、重要な設計判断を  
+ADR（Architecture Decision Record）として記録する。
+
+保存場所
+
+docs/adr/
+
+一覧
+
+ADR-001  
+Service返り値契約統一  
+
+ADR-002  
+messageService 分割  
+
+ADR-002B  
+messageService 内部モジュール化
+
