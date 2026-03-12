@@ -2,9 +2,10 @@
 
 const { log, error: logError } = require("../utils/logger");
 const { success, fail } = require("../utils/serviceResponse");
-const {
-  appendConversationRow,
-} = require("../repositories/conversationRepository");
+// 一時停止中のため未使用
+// const {
+//   appendConversationRow,
+// } = require("../repositories/conversationRepository");
 
 function normalizeSaveInput(input = {}) {
   return {
@@ -64,42 +65,8 @@ async function saveConversation(input = {}) {
       return validation;
     }
 
+    // conversation_history 保存は一旦停止
     return success("conversation history disabled", {
-      botId: normalized.botId,
-      userId: normalized.userId,
-      sourceType: normalized.sourceType,
-    });
-     } catch (error) {
-       logError(
-        "historyService.saveConversation error:",
-       error.message || error
-    );
-    return fail("failed to save conversation", error.message || error);
-  
-
-
-
-    // ↓ ここを一旦停止
-    //const result = await appendConversationRow(normalized);
-
-    if (!result.success) {
-      logError("historyService.saveConversation append failed:", result.message, {
-        botId: normalized.botId,
-        userId: normalized.userId,
-        sourceType: normalized.sourceType,
-      });
-      return result;
-    }
-
-    log("historyService.saveConversation success", {
-      botId: normalized.botId,
-      userId: normalized.userId,
-      sourceType: normalized.sourceType,
-      timestamp: normalized.timestamp,
-    });
-
-    return success("conversation saved", {
-      timestamp: normalized.timestamp,
       botId: normalized.botId,
       userId: normalized.userId,
       sourceType: normalized.sourceType,
