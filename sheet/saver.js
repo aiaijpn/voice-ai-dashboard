@@ -62,7 +62,7 @@ async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: safeSpreadsheetId,
-      range: `${safeSheetName}!A:Z`,
+      range: `${sheetName}!A1:Z`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [values],
