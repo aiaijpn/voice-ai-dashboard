@@ -191,6 +191,12 @@ async function adr007b1AppendTest(event) {
       ["https://www.googleapis.com/auth/spreadsheets"]
     );
 
+
+    const authResult = await auth.authorize();
+    log("ADR007B1 auth success", {
+      accessTokenExists: !!authResult.access_token,
+    });
+
     const sheets = google.sheets({ version: "v4", auth });
 
     const row = [[
