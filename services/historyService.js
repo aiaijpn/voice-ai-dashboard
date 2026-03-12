@@ -2,10 +2,9 @@
 
 const { log, error: logError } = require("../utils/logger");
 const { success, fail } = require("../utils/serviceResponse");
-// 一時停止中のため未使用
-// const {
-//   appendConversationRow,
-// } = require("../repositories/conversationRepository");
+const {
+  appendConversationRow,
+} = require("../repositories/conversationRepository");
 
 function normalizeSaveInput(input = {}) {
   return {
@@ -40,46 +39,44 @@ function validateSaveInput(input) {
     return fail("historyService.validateSaveInput: userId is required");
   }
 
-  if (!input.userMessage) {
-    return fail("historyService.validateSaveInput: userMessage is required");
-  }
-
-  return success("validation ok", null);
+  return success("history input valid", null);
 }
 
 async function saveConversation(input = {}) {
   try {
     const normalized = normalizeSaveInput(input);
-    const validation = validateSaveInput(normalized);
 
-    if (!validation.success) {
-      logError(
-        "historyService.saveConversation validation failed:",
-        validation.message,
-        {
-          botId: normalized.botId,
-          userId: normalized.userId,
-          sourceType: normalized.sourceType,
-        }
-      );
-      return validation;
+    const valid = validateSaveInput(normalized);
+    if (!valid.success) {
+      return valid;
     }
 
-    // conversation_history 保存は一旦停止
-    return success("conversation history disabled", {
+    const result = await appendConversationRow(normalized);
+
+    if (!result.success) {
+      logError("historyService.saveConversation failed:", result.message);
+      return result;
+    }
+
+    log("Conversation history saved:", {
+      botId: normalized.botId,
+      userId: normalized.userId,
+      sourceType: normalized.sourceType,
+    });
+
+    return success("conversation history saved", {
       botId: normalized.botId,
       userId: normalized.userId,
       sourceType: normalized.sourceType,
     });
   } catch (error) {
-    logError(
-      "historyService.saveConversation error:",
-      error.message || error
-    );
-    return fail("failed to save conversation", error.message || error);
+    logError("historyService.saveConversation error:", error.message);
+    return fail(`historyService.saveConversation: ${error.message}`);
   }
 }
 
 module.exports = {
   saveConversation,
+  normalizeSaveInput,
+  validateSaveInput,
 };

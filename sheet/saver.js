@@ -1,110 +1,88 @@
 ﻿"use strict";
 
-const { log, error } = require("../utils/logger");
 const { google } = require("googleapis");
+const { log, error: logError } = require("../utils/logger");
 
-// 共通：Sheets クライアント生成（毎回同じ）
-function getSheetsClient() {
-  const spreadsheetId = process.env.SPREADSHEET_ID;
-  const credsRaw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+function getServiceAccountJson() {
+  const raw = process.env.SA_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-  if (!spreadsheetId) throw new Error("SPREADSHEET_ID is missing");
-  if (!credsRaw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is missing");
+  if (!raw) {
+    throw new Error("sheet/saver.getServiceAccountJson: SA_JSON is required");
+  }
 
-  let credentials;
   try {
-    credentials = JSON.parse(credsRaw);
-  } catch (e) {
-    error("❌ GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
-    throw e;
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `sheet/saver.getServiceAccountJson: invalid JSON: ${error.message}`
+    );
   }
+}
 
-  // Render の env に貼ると private_key の改行が \\n になることがあるので補正
-  if (credentials.private_key) {
-    credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
-  }
+function createSheetsClient() {
+  const serviceAccount = getServiceAccountJson();
 
   const auth = new google.auth.GoogleAuth({
-    credentials,
+    credentials: serviceAccount,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
-  const sheets = google.sheets({ version: "v4", auth });
-
-  return { sheets, spreadsheetId };
+  return google.sheets({
+    version: "v4",
+    auth,
+  });
 }
 
-// 既存：logs シートへ保存（A:F）
-async function appendRow(row) {
-  log("📗 saver.js appendRow called");
+async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
+  try {
+    if (!spreadsheetId) {
+      throw new Error("appendRowToSheet: spreadsheetId is required");
+    }
 
-  const { sheets, spreadsheetId } = getSheetsClient();
+    if (!sheetName) {
+      throw new Error("appendRowToSheet: sheetName is required");
+    }
 
-  log("📗 appending row to logs!A:F", {
-    timestamp: row.timestamp,
-    user_text: row.user_text,
-  });
+    if (!Array.isArray(values)) {
+      throw new Error("appendRowToSheet: values must be an array");
+    }
 
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: "logs!A:F",
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: {
-      values: [
-        [
-          row.timestamp || "",
-          row.user_text || "",
-          row.summary || "",
-          row.category ?? "",
-          row.urgency_score ?? "",
-          row.reply_text || "",
-        ],
-      ],
-    },
-  });
+    const sheets = createSheetsClient();
 
-  return true;
-}
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${sheetName}!A:Z`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [values],
+      },
+    });
 
-// 追加：UsageLog シートへ保存（A:J）
-async function appendUsageRow(u) {
-  log("📊 saver.js appendUsageRow called");
+    log("Sheet append success:", {
+      spreadsheetId,
+      sheetName,
+      valueCount: values.length,
+    });
 
-  const { sheets, spreadsheetId } = getSheetsClient();
+    return {
+      success: true,
+      message: "Sheet append success",
+      data: {
+        spreadsheetId,
+        sheetName,
+      },
+    };
+  } catch (error) {
+    logError("appendRowToSheet error:", error.message);
 
-  const values = [
-    [
-      u.ts || "",
-      u.bot_id || "",
-      u.model || "",
-      u.input_tokens ?? "",
-      u.output_tokens ?? "",
-      u.total_tokens ?? "",
-      u.cost_usd ?? "",
-      u.cost_jpy ?? "",
-      u.rid || "",
-      u.resp_id || "",
-    ],
-  ];
-
-  log("📊 appending row to UsageLog!A:J", values[0]);
-
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: "UsageLog!A:J",
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: { values },
-  });
-
-  log("✅ UsageLog append success");
-  return true;
+    return {
+      success: false,
+      message: `appendRowToSheet: ${error.message}`,
+      data: null,
+    };
+  }
 }
 
 module.exports = {
-  appendRow,
-  appendUsageRow,
+  appendRowToSheet,
 };
-
-

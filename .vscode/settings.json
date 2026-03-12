@@ -1,9 +1,7 @@
 {
     "files.readonlyInclude": {
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\line\\historyStore.js": true,
-        "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\repositories\\sheetRepository.js": true,
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\node_modules\\**": true,
-        "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\sheet\\saver.js": true,
         "c:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\utils\\logger.js": true
     }
 }
