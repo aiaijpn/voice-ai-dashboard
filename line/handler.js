@@ -164,3 +164,54 @@ const handleEvent = async (event, ctx = {}) => {
 };
 
 module.exports = { handleEvent };
+
+
+
+// ===== ADR007B1 実験用 =====
+const { google } = require("googleapis");
+
+async function adr007b1AppendTest(event) {
+  try {
+    if (
+      !process.env.SPREADSHEET_ID ||
+      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
+      !process.env.GOOGLE_PRIVATE_KEY
+    ) {
+      log("ADR007B1 skip: env missing");
+      return;
+    }
+
+    const auth = new google.auth.JWT(
+      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      null,
+      process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      ["https://www.googleapis.com/auth/spreadsheets"]
+    );
+
+    const sheets = google.sheets({ version: "v4", auth });
+
+    const row = [[
+      Date.now(),
+      "test_bot",
+      event?.source?.userId || "unknown_user",
+      "LINE webhook first hit",
+      "ADR007B1 test append",
+      "test memo",
+      false,
+      "line_webhook_test",
+      false
+    ]];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.SPREADSHEET_ID,
+      range: "conversation_history",
+      valueInputOption: "RAW",
+      requestBody: { values: row },
+    });
+
+    log("ADR007B1 append success");
+
+  } catch (err) {
+    log("ADR007B1 append error", err.message);
+  }
+}
