@@ -3,13 +3,15 @@
 const { appendRowToSheet } = require("../sheet/saver");
 const { success, fail } = require("../utils/serviceResponse");
 
-const SHEET_ID = process.env.SHEET_ID || process.env.VOICE_AI_SHEET_ID;
+const SPREADSHEET_ID = String(process.env.SPREADSHEET_ID || "").trim();
 const LOG_SHEET_NAME = "logs";
 
 async function appendVoiceRow(rowData = {}) {
   try {
-    if (!SHEET_ID) {
-      return fail("sheetRepository.appendVoiceRow: SHEET_ID is required");
+    if (!SPREADSHEET_ID) {
+      return fail(
+        "sheetRepository.appendVoiceRow: SPREADSHEET_ID is required"
+      );
     }
 
     const values = [
@@ -24,7 +26,7 @@ async function appendVoiceRow(rowData = {}) {
     ];
 
     const result = await appendRowToSheet({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: SPREADSHEET_ID,
       sheetName: LOG_SHEET_NAME,
       values,
     });

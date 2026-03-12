@@ -4,10 +4,12 @@ const { google } = require("googleapis");
 const { log, error: logError } = require("../utils/logger");
 
 function getServiceAccountJson() {
-  const raw = process.env.SA_JSON || process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
   if (!raw) {
-    throw new Error("sheet/saver.getServiceAccountJson: SA_JSON is required");
+    throw new Error(
+      "sheet/saver.getServiceAccountJson: GOOGLE_SERVICE_ACCOUNT_JSON is required"
+    );
   }
 
   try {
@@ -35,11 +37,14 @@ function createSheetsClient() {
 
 async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
   try {
-    if (!spreadsheetId) {
+    const safeSpreadsheetId = String(spreadsheetId || "").trim();
+    const safeSheetName = String(sheetName || "").trim();
+
+    if (!safeSpreadsheetId) {
       throw new Error("appendRowToSheet: spreadsheetId is required");
     }
 
-    if (!sheetName) {
+    if (!safeSheetName) {
       throw new Error("appendRowToSheet: sheetName is required");
     }
 
@@ -47,11 +52,17 @@ async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
       throw new Error("appendRowToSheet: values must be an array");
     }
 
+    log("DEBUG appendRowToSheet args:", {
+      spreadsheetId: safeSpreadsheetId,
+      sheetName: safeSheetName,
+      valueCount: values.length,
+    });
+
     const sheets = createSheetsClient();
 
     await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `${sheetName}!A:Z`,
+      spreadsheetId: safeSpreadsheetId,
+      range: `${safeSheetName}!A:Z`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [values],
@@ -59,8 +70,8 @@ async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
     });
 
     log("Sheet append success:", {
-      spreadsheetId,
-      sheetName,
+      spreadsheetId: safeSpreadsheetId,
+      sheetName: safeSheetName,
       valueCount: values.length,
     });
 
@@ -68,8 +79,8 @@ async function appendRowToSheet({ spreadsheetId, sheetName, values }) {
       success: true,
       message: "Sheet append success",
       data: {
-        spreadsheetId,
-        sheetName,
+        spreadsheetId: safeSpreadsheetId,
+        sheetName: safeSheetName,
       },
     };
   } catch (error) {
