@@ -44,7 +44,7 @@ const { insertAd } = require("../../ads/adService");
 const { success, fail } = require("../../utils/serviceResponse");
 
 /**
- * ADR-008
+ * ADR-008 / ADR-010
  * 会話履歴保存 service
  */
 const { saveConversationHistory } = require("../historyService");
@@ -152,6 +152,11 @@ async function processMessage(context) {
       log
     );
 
+    log(`✅ [${rid}] AI reply generated`, {
+      botId: bot_id,
+      userId,
+    });
+
     /**
      * 5
      * voiceログ保存
@@ -177,26 +182,60 @@ async function processMessage(context) {
      * 7
      * 会話履歴保存
      *
-     * ADR-008
+     * user_message
+     * ai_reply
+     * を別イベントで保存する
      */
-    const historyResult = await saveConversationHistory({
+
+    log(`📝 [${rid}] user_message history save requested`, {
+      botId: bot_id,
+      userId,
+      sourceType: "user_message",
+    });
+
+    const userHistoryResult = await saveConversationHistory({
       botId: bot_id,
       userId,
       userMessage: text,
-      aiReply: finalReply,
-      sourceType: "message",
+      sourceType: "user_message",
     });
 
-    /**
-     * 保存結果ログ
-     */
-    if (!historyResult.success) {
-      logError(`❌ [${rid}] saveConversationHistory failed:`, historyResult.message);
+    if (!userHistoryResult.success) {
+      logError(
+        `❌ [${rid}] user_message history save failed:`,
+        userHistoryResult.message
+      );
     } else {
-      log(`✅ [${rid}] saveConversationHistory ok`, {
+      log(`✅ [${rid}] user_message history saved`, {
         botId: bot_id,
         userId,
-        sourceType: "message",
+        sourceType: "user_message",
+      });
+    }
+
+    log(`📝 [${rid}] ai_reply history save requested`, {
+      botId: bot_id,
+      userId,
+      sourceType: "ai_reply",
+    });
+
+    const aiHistoryResult = await saveConversationHistory({
+      botId: bot_id,
+      userId,
+      aiReply: finalReply,
+      sourceType: "ai_reply",
+    });
+
+    if (!aiHistoryResult.success) {
+      logError(
+        `❌ [${rid}] ai_reply history save failed:`,
+        aiHistoryResult.message
+      );
+    } else {
+      log(`✅ [${rid}] ai_reply history saved`, {
+        botId: bot_id,
+        userId,
+        sourceType: "ai_reply",
       });
     }
 
