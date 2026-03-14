@@ -1,7 +1,5 @@
 "use strict";
 
-"use strict";
-
 /**
  * Conversation History 保存用 Service
  *
@@ -9,7 +7,7 @@
  * - 入力データの正規化
  * - 必須項目の検証
  * - repository 呼び出し
- * - 上位層（messageService など）が使いやすい返り値に統一する
+ * - 上位層（messageService / adminMessageService など）が使いやすい返り値に統一する
  */
 
 const conversationRepository = require("../repositories/conversationRepository");
@@ -23,15 +21,20 @@ function normalizeSaveInput(input = {}) {
     botId: String(input.botId || "").trim(),
     userId: String(input.userId || "").trim(),
     timestamp: input.timestamp || Date.now(),
+
     userMessage: String(input.userMessage || ""),
     aiReply: String(input.aiReply || ""),
+
     operatorMemo:
       input.operatorMemo === null || input.operatorMemo === undefined
         ? ""
         : String(input.operatorMemo),
+
     manualSend:
       typeof input.manualSend === "boolean" ? input.manualSend : false,
-    sourceType: String(input.sourceType || "message"),
+
+    sourceType: String(input.sourceType || "user_message").trim(),
+
     unresolvedQ:
       typeof input.unresolvedQ === "boolean" ? input.unresolvedQ : false,
   };
@@ -47,6 +50,45 @@ function validateSaveInput(input = {}) {
 
   if (!input.userId) {
     return fail("historyService.validateSaveInput: userId is required");
+  }
+
+  const allowedSourceTypes = [
+    "user_message",
+    "ai_reply",
+    "admin_message",
+    "system_event",
+  ];
+
+  if (!allowedSourceTypes.includes(input.sourceType)) {
+    return fail(
+      `historyService.validateSaveInput: invalid sourceType: ${input.sourceType}`
+    );
+  }
+
+  if (input.sourceType === "user_message" && !input.userMessage) {
+    return fail(
+      "historyService.validateSaveInput: userMessage is required for user_message"
+    );
+  }
+
+  if (input.sourceType === "ai_reply" && !input.aiReply) {
+    return fail(
+      "historyService.validateSaveInput: aiReply is required for ai_reply"
+    );
+  }
+
+  if (input.sourceType === "admin_message") {
+    if (!input.aiReply) {
+      return fail(
+        "historyService.validateSaveInput: aiReply is required for admin_message"
+      );
+    }
+
+    if (input.manualSend !== true) {
+      return fail(
+        "historyService.validateSaveInput: manualSend must be true for admin_message"
+      );
+    }
   }
 
   return success(

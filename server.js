@@ -7,6 +7,7 @@ const express = require("express");
 const axios = require("axios");
 
 const operatorProfileRoutes = require("./routes/operatorProfile");
+const { saveAdminMessageHistory } = require("./services/adminMessageService");
 
 const app = express();
 
@@ -33,8 +34,6 @@ for (const key of requiredEnv) {
 }
 
 const { handleEvent } = require("./line/handler");
-
-//const app = express();
 
 // ★ 口調（テイスト）をメモリ保持（実験機：最速）
 globalThis.OPERATOR_AI_TONE = globalThis.OPERATOR_AI_TONE || "polite";
@@ -108,39 +107,77 @@ app.get("/operator", basicAuth, (req, res) => {
 
   <hr/>
 
+  <h3>個別送信（ADR-009 対応）</h3>
+  <p style="color:#666;font-size:14px;">
+    userId を指定して送信し、送信成功時のみ conversation_history に admin_message として保存します
+  </p>
+  <form method="POST" action="/operator/send">
+    <div style="margin-bottom:8px;">
+      <input
+        type="text"
+        name="botId"
+        style="width:100%; max-width:720px;"
+        placeholder="botId 例: example_bot"
+      />
+    </div>
+    <div style="margin-bottom:8px;">
+      <input
+        type="text"
+        name="userId"
+        style="width:100%; max-width:720px;"
+        placeholder="userId 例: Uxxxxxxxxxxxxxxxx"
+      />
+    </div>
+    <textarea
+      name="message"
+      rows="6"
+      style="width:100%; max-width:720px;"
+      placeholder="送信メッセージ"
+    ></textarea>
+    <div style="margin-top:8px;">
+      <button type="submit">個別送信</button>
+    </div>
+  </form>
+
+  <hr/>
+
   <h3>Broadcast送信（全員へ）</h3>
+  <p style="color:#666;font-size:14px;">
+    broadcast API は userId を返さないため、現在は conversation_history 保存対象外です
+  </p>
   <form method="POST" action="/operator/broadcast">
     <textarea name="message" rows="6" style="width:100%; max-width:720px;" placeholder="送信メッセージ"></textarea>
     <div style="margin-top:8px;">
       <button type="submit">送信</button>
     </div>
   </form>
-<hr/>
-
-<h3>Operatorプロフィール（M1）</h3>
-<p style="color:#666;font-size:14px;">
-AIが参照する人格文章（長文OK）
-</p>
-
-<textarea id="opProfileText"
-rows="10"
-style="width:100%;max-width:720px;font-size:16px;"
-placeholder="例：話し方、価値観、売り方、禁止事項など"></textarea>
-
-<br><br>
-
-<button type="button" onclick="saveOperatorProfile()">
-プロフィール保存
-</button>
-
-<p id="opProfileStatus" style="color:#666;font-size:12px;"></p>
-
 
   <hr/>
-  <p style="color:#666; font-size:12px;">※実験機：ログ保存なし／再起動で口調が初期化される可能性あり</p>
+
+  <h3>Operatorプロフィール（M1）</h3>
+  <p style="color:#666;font-size:14px;">
+    AIが参照する人格文章（長文OK）
+  </p>
+
+  <textarea id="opProfileText"
+  rows="10"
+  style="width:100%;max-width:720px;font-size:16px;"
+  placeholder="例：話し方、価値観、売り方、禁止事項など"></textarea>
+
+  <br><br>
+
+  <button type="button" onclick="saveOperatorProfile()">
+    プロフィール保存
+  </button>
+
+  <p id="opProfileStatus" style="color:#666;font-size:12px;"></p>
+
+  <hr/>
+  <p style="color:#666; font-size:12px;">
+    ※実験機：broadcast は履歴保存なし／個別送信のみ ADR-009 対応
+  </p>
 
 <script>
-
 async function loadOperatorProfile(){
   try{
     const r = await fetch("/api/operator/profile");
@@ -161,7 +198,6 @@ async function loadOperatorProfile(){
 }
 
 async function saveOperatorProfile(){
-
   const text =
     document.getElementById("opProfileText").value;
 
@@ -169,7 +205,6 @@ async function saveOperatorProfile(){
   "保存中...";
 
   try{
-
     const r = await fetch("/api/operator/profile",{
       method:"POST",
       headers:{
@@ -180,23 +215,19 @@ async function saveOperatorProfile(){
       })
     });
 
-    const d = await r.json();
+    await r.json();
 
     document.getElementById("opProfileStatus").innerText =
       "保存OK";
 
   }catch(e){
-
     document.getElementById("opProfileStatus").innerText =
       "保存失敗";
-
   }
 }
 
 window.onload = loadOperatorProfile;
-
 </script>
-
 
   </body>
 </html>`);
@@ -210,6 +241,87 @@ app.post("/operator/tone", basicAuth, (req, res) => {
   return res.redirect("/operator");
 });
 
+// =============================
+// ADR-009 個別送信
+// 送信成功時のみ conversation_history 保存
+// =============================
+app.post("/operator/send", basicAuth, async (req, res) => {
+  const botId = String(req.body?.botId || "").trim();
+  const userId = String(req.body?.userId || "").trim();
+  const message = String(req.body?.message || "").trim();
+
+  if (!botId) return res.status(400).send("botId is required");
+  if (!userId) return res.status(400).send("userId is required");
+  if (!message) return res.status(400).send("message is required");
+
+  const token = process.env.CHANNEL_ACCESS_TOKEN;
+  if (!token) return res.status(500).send("CHANNEL_ACCESS_TOKEN missing");
+
+  try {
+    log("========================================");
+    log("📨 OPERATOR direct send requested");
+    log("⏱️  time:", new Date().toISOString());
+    log("🤖 botId:", botId);
+    log("👤 userId:", userId);
+    log("📝 message length:", message.length);
+
+    await axios.post(
+      "https://api.line.me/v2/bot/message/push",
+      {
+        to: userId,
+        messages: [{ type: "text", text: message }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 15000,
+      }
+    );
+
+    const historyResult = await saveAdminMessageHistory({
+      botId,
+      userId,
+      messageText: message,
+      operatorMemo: "operator panel send",
+      timestamp: Date.now(),
+    });
+
+    if (!historyResult.success) {
+      logError("❌ OPERATOR direct send history save failed", {
+        botId,
+        userId,
+        message: historyResult.message,
+        data: historyResult.data || null,
+      });
+
+      return res
+        .status(500)
+        .send(`message sent but history save failed: ${historyResult.message}`);
+    }
+
+    log("✅ OPERATOR direct send success");
+    log("✅ OPERATOR direct send history saved");
+
+    return res.redirect("/operator");
+  } catch (err) {
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+
+    logError("❌ OPERATOR direct send failed:", status, data || err?.message || err);
+
+    return res
+      .status(500)
+      .send(`direct send failed: ${status || ""} ${JSON.stringify(data || {})}`);
+  }
+});
+
+// =============================
+// Broadcast送信（全員へ）
+// ※ LINE broadcast API は userId を返さないため
+//    ADR-009 の per-user 履歴保存対象にはしない
+// =============================
 app.post("/operator/broadcast", basicAuth, async (req, res) => {
   const message = String(req.body?.message || "").trim();
   if (!message) return res.status(400).send("message is required");
@@ -236,8 +348,9 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
     );
 
     log("✅ OPERATOR broadcast success");
+    log("ℹ️  OPERATOR broadcast history skip: LINE broadcast API has no per-user ids");
+
     return res.redirect("/operator");
-    
   } catch (err) {
     const status = err?.response?.status;
     const data = err?.response?.data;
@@ -325,4 +438,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   log(`🟢 Server running on port ${PORT}`);
 });
-
