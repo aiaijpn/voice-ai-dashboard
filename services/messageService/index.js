@@ -5,12 +5,13 @@
  *
  * このファイルは messageService の「司令塔」です。
  *
- * ADR012E 最終整理版
+ * ADR014 対応版
  * 2026-03-15
  *
  * 目的
  * - 処理フローのオーケストレーション
  * - 各モジュールの呼び出し
+ * - 保存データとAI入力コンテキストの責務分離
  *
  * このファイルでやらないこと
  * - OpenAI API 呼び出し実装
@@ -70,27 +71,31 @@ log("🔧 ENV CHECK (service/index)");
 log(" - OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "OK" : "MISSING");
 log(" - OPENAI_MODEL:", process.env.OPENAI_MODEL || "gpt-4o-mini");
 
-
 /**
  * messageService メイン処理
  *
  * handler から呼ばれる
  */
 async function processMessage(context) {
-
   /**
    * context安全展開
+   *
+   * ADR014:
+   * text       = 保存用の生発言
+   * aiInputText = AI入力専用テキスト
    */
   const {
     rid = "no_rid",
     bot_id = "voice-ai-dashboard",
     userId = "",
     text = "",
+    aiInputText = "",
     tone = "polite",
   } = context || {};
 
-  try {
+  const effectiveAiInputText = aiInputText || text;
 
+  try {
     /**
      * 1
      * systemPrompt 構築
@@ -100,7 +105,6 @@ async function processMessage(context) {
       rid,
       log,
     });
-
 
     /**
      * 2
@@ -121,14 +125,11 @@ async function processMessage(context) {
     });
 
     if (!historyResult.success) {
-
       logError(
         `❌ [${rid}] conversation history fetch failed:`,
         historyResult.message
       );
-
     } else {
-
       historyItems = Array.isArray(historyResult.data?.items)
         ? historyResult.data.items
         : [];
@@ -138,25 +139,28 @@ async function processMessage(context) {
         userId,
         historyCount: historyItems.length,
       });
-
     }
-
 
     /**
      * 3
      * OpenAI messages 構築
+     *
+     * ADR014:
+     * OpenAIへ渡すのは aiInputText
+     * 保存用 text はここでは使わない
      */
     const messages = buildOpenAIMessages({
       systemPrompt,
       historyItems,
-      text,
+      text: effectiveAiInputText,
     });
 
     log(`🧠 [${rid}] OpenAI messages built`, {
       messageCount: messages.length,
       historyCount: historyItems.length,
+      userTextLength: String(text || "").length,
+      aiInputTextLength: String(effectiveAiInputText || "").length,
     });
-
 
     /**
      * 4
@@ -164,12 +168,11 @@ async function processMessage(context) {
      */
     const response = await callOpenAI({
       systemPrompt,
-      text,
+      text: effectiveAiInputText,
       messages,
       rid,
       log,
     });
-
 
     /**
      * 5
@@ -184,18 +187,16 @@ async function processMessage(context) {
       logError,
     });
 
-
     /**
      * 6
      * AIレスポンス解析
      */
     const parsedResult = parseOpenAIResponse(
       response,
-      text,
+      effectiveAiInputText,
       rid,
       log
     );
-
 
     /**
      * 7
@@ -208,10 +209,12 @@ async function processMessage(context) {
     const parsed = classified.parsed;
     const replyText = parsedResult.replyText;
 
-
     /**
      * 8
      * voiceログ保存
+     *
+     * ADR014:
+     * ログ保存もユーザー生発言 text を使う
      */
     await saveVoiceLog({
       parsed,
@@ -220,7 +223,6 @@ async function processMessage(context) {
       log,
       logError,
     });
-
 
     /**
      * 9
@@ -232,12 +234,14 @@ async function processMessage(context) {
 
     finalReply = buildReplyText(finalReply);
 
-
     /**
      * 10
      * 会話履歴保存
+     *
+     * ADR014:
+     * conversation_history には生発言のみ保存
+     * AI入力コンテキストは保存しない
      */
-
     await saveConversationHistory({
       botId: bot_id,
       userId,
@@ -252,7 +256,6 @@ async function processMessage(context) {
       sourceType: "ai_reply",
     });
 
-
     /**
      * 最終レスポンス
      */
@@ -266,9 +269,7 @@ async function processMessage(context) {
       }),
       "processMessage ok"
     );
-
   } catch (e) {
-
     logError(`❌ [${rid}] processMessage failed:`, e?.message || e);
 
     return fail(e?.message || "processMessage failed", {
@@ -277,11 +278,8 @@ async function processMessage(context) {
       bot_id,
       rid,
     });
-
   }
-
 }
-
 
 /**
  * export
