@@ -5,14 +5,34 @@
  *
  * このファイルは messageService の「司令塔」です。
  *
- * 役割:
- * - ユーザメッセージを受け取り
- * - 会話履歴を取得する
- * - AIへ問い合わせ
- * - 応答を生成
- * - 各ログ保存
- * - 会話履歴保存
- * - 最終返信を返す
+ * ADR012E 最終整理版
+ * 2026-03-15
+ *
+ * 目的
+ * - 処理フローのオーケストレーション
+ * - 各モジュールの呼び出し
+ *
+ * このファイルでやらないこと
+ * - OpenAI API 呼び出し実装
+ * - JSON解析
+ * - AI分類処理
+ * - Google Sheets API 呼び出し
+ * - 会話履歴保存の内部処理
+ *
+ * それらはすべて専用モジュールへ委譲する
+ *
+ * 処理フロー
+ *
+ * 1 systemPrompt 構築
+ * 2 会話履歴取得
+ * 3 OpenAI messages 構築
+ * 4 OpenAI 呼び出し
+ * 5 AIレスポンス解析
+ * 6 AI分類
+ * 7 voiceログ保存
+ * 8 広告挿入
+ * 9 会話履歴保存
+ * 10 最終返信
  */
 
 const { log, error: logError } = require("../../utils/logger");
@@ -26,25 +46,41 @@ const {
 
 const {
   buildSystemPrompt,
-  mapHistoryItemToOpenAIMessages,
-  buildHistoryMessages,
   buildOpenAIMessages,
 } = require("./promptBuilder");
+
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
+
 const { parseOpenAIResponse } = require("./responseParser");
+
 const { classifyMessage } = require("./classifyMessage");
+
 const { saveUsage, saveVoiceLog } = require("./logSavers");
+
 const {
   buildReplyText,
   buildProcessMessageSuccessData,
 } = require("./buildReply");
 
+/**
+ * 起動ログ
+ */
 log("📦 messageService/index.js loaded:", new Date().toISOString());
 log("🔧 ENV CHECK (service/index)");
 log(" - OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "OK" : "MISSING");
 log(" - OPENAI_MODEL:", process.env.OPENAI_MODEL || "gpt-4o-mini");
 
+
+/**
+ * messageService メイン処理
+ *
+ * handler から呼ばれる
+ */
 async function processMessage(context) {
+
+  /**
+   * context安全展開
+   */
   const {
     rid = "no_rid",
     bot_id = "voice-ai-dashboard",
@@ -54,12 +90,22 @@ async function processMessage(context) {
   } = context || {};
 
   try {
+
+    /**
+     * 1
+     * systemPrompt 構築
+     */
     const systemPrompt = await buildSystemPrompt({
       tone,
       rid,
       log,
     });
 
+
+    /**
+     * 2
+     * 会話履歴取得
+     */
     let historyItems = [];
 
     log(`📚 [${rid}] conversation history fetch requested`, {
@@ -75,11 +121,14 @@ async function processMessage(context) {
     });
 
     if (!historyResult.success) {
+
       logError(
         `❌ [${rid}] conversation history fetch failed:`,
         historyResult.message
       );
+
     } else {
+
       historyItems = Array.isArray(historyResult.data?.items)
         ? historyResult.data.items
         : [];
@@ -89,8 +138,14 @@ async function processMessage(context) {
         userId,
         historyCount: historyItems.length,
       });
+
     }
 
+
+    /**
+     * 3
+     * OpenAI messages 構築
+     */
     const messages = buildOpenAIMessages({
       systemPrompt,
       historyItems,
@@ -98,12 +153,15 @@ async function processMessage(context) {
     });
 
     log(`🧠 [${rid}] OpenAI messages built`, {
-      botId: bot_id,
-      userId,
       messageCount: messages.length,
       historyCount: historyItems.length,
     });
 
+
+    /**
+     * 4
+     * OpenAI 呼び出し
+     */
     const response = await callOpenAI({
       systemPrompt,
       text,
@@ -112,6 +170,11 @@ async function processMessage(context) {
       log,
     });
 
+
+    /**
+     * 5
+     * usageログ保存
+     */
     await saveUsage({
       response,
       bot_id,
@@ -121,22 +184,35 @@ async function processMessage(context) {
       logError,
     });
 
-    const parsedResult = parseOpenAIResponse(response, text, rid, log);
 
-    const classifiedResult = classifyMessage({
+    /**
+     * 6
+     * AIレスポンス解析
+     */
+    const parsedResult = parseOpenAIResponse(
+      response,
+      text,
+      rid,
+      log
+    );
+
+
+    /**
+     * 7
+     * AI分類
+     */
+    const classified = classifyMessage({
       parsed: parsedResult.parsed,
     });
 
-    const parsed = classifiedResult.parsed;
+    const parsed = classified.parsed;
     const replyText = parsedResult.replyText;
 
-    log(`✅ [${rid}] AI reply generated`, {
-      botId: bot_id,
-      userId,
-      category: classifiedResult.category,
-      urgency_score: classifiedResult.urgency_score,
-    });
 
+    /**
+     * 8
+     * voiceログ保存
+     */
     await saveVoiceLog({
       parsed,
       text,
@@ -145,62 +221,41 @@ async function processMessage(context) {
       logError,
     });
 
+
+    /**
+     * 9
+     * 広告挿入
+     */
     let finalReply = buildReplyText(replyText);
+
     finalReply = await insertAd(finalReply);
+
     finalReply = buildReplyText(finalReply);
 
-    log(`📝 [${rid}] user_message history save requested`, {
-      botId: bot_id,
-      userId,
-      sourceType: "user_message",
-    });
 
-    const userHistoryResult = await saveConversationHistory({
+    /**
+     * 10
+     * 会話履歴保存
+     */
+
+    await saveConversationHistory({
       botId: bot_id,
       userId,
       userMessage: text,
       sourceType: "user_message",
     });
 
-    if (!userHistoryResult.success) {
-      logError(
-        `❌ [${rid}] user_message history save failed:`,
-        userHistoryResult.message
-      );
-    } else {
-      log(`✅ [${rid}] user_message history saved`, {
-        botId: bot_id,
-        userId,
-        sourceType: "user_message",
-      });
-    }
-
-    log(`📝 [${rid}] ai_reply history save requested`, {
-      botId: bot_id,
-      userId,
-      sourceType: "ai_reply",
-    });
-
-    const aiHistoryResult = await saveConversationHistory({
+    await saveConversationHistory({
       botId: bot_id,
       userId,
       aiReply: finalReply,
       sourceType: "ai_reply",
     });
 
-    if (!aiHistoryResult.success) {
-      logError(
-        `❌ [${rid}] ai_reply history save failed:`,
-        aiHistoryResult.message
-      );
-    } else {
-      log(`✅ [${rid}] ai_reply history saved`, {
-        botId: bot_id,
-        userId,
-        sourceType: "ai_reply",
-      });
-    }
 
+    /**
+     * 最終レスポンス
+     */
     return success(
       buildProcessMessageSuccessData({
         finalReply,
@@ -211,7 +266,9 @@ async function processMessage(context) {
       }),
       "processMessage ok"
     );
+
   } catch (e) {
+
     logError(`❌ [${rid}] processMessage failed:`, e?.message || e);
 
     return fail(e?.message || "processMessage failed", {
@@ -220,12 +277,17 @@ async function processMessage(context) {
       bot_id,
       rid,
     });
+
   }
+
 }
 
+
+/**
+ * export
+ *
+ * messageService の公開API
+ */
 module.exports = {
   processMessage,
-  mapHistoryItemToOpenAIMessages,
-  buildHistoryMessages,
-  buildOpenAIMessages,
 };
