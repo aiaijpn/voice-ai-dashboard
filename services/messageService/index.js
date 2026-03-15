@@ -62,6 +62,10 @@ const { buildSystemPrompt } = require("./promptBuilder");
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
 const { parseOpenAIResponse } = require("./responseParser");
 const { saveUsage, saveVoiceLog } = require("./logSavers");
+const {
+  buildReplyText,
+  buildProcessMessageSuccessData,
+} = require("./buildReply");
 
 /**
  * 起動ログ
@@ -344,8 +348,9 @@ async function processMessage(context) {
      * 8
      * 広告挿入
      */
-    let finalReply = replyText;
+    let finalReply = buildReplyText(replyText);
     finalReply = await insertAd(finalReply);
+    finalReply = buildReplyText(finalReply);
 
     /**
      * 9
@@ -413,15 +418,13 @@ async function processMessage(context) {
      * 最終レスポンス
      */
     return success(
-      {
-        replyText: finalReply,
-        summary: parsed?.summary || "",
-        category: parsed?.category ?? null,
-        urgency_score: parsed?.urgency_score ?? null,
+      buildProcessMessageSuccessData({
+        finalReply,
+        parsed,
         userId,
         bot_id,
         rid,
-      },
+      }),
       "processMessage ok"
     );
   } catch (e) {
