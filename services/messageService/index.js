@@ -31,13 +31,13 @@
  * このファイルの責務:
  * - 処理フローのオーケストレーション
  * - 各モジュール呼び出し
- * - OpenAI messages 配列の組み立て
  *
  * このファイルでやらないこと:
  * - OpenAI API の直接実装
  * - Google Sheets API 呼び出し
  * - 会話履歴保存の内部処理
  * - 会話履歴取得の内部処理
+ * - OpenAI messages 配列変換の詳細
  *
  * それらはそれぞれ別モジュールへ委譲します。
  */
@@ -58,7 +58,12 @@ const {
 /**
  * messageService 内部分割モジュール
  */
-const { buildSystemPrompt } = require("./promptBuilder");
+const {
+  buildSystemPrompt,
+  mapHistoryItemToOpenAIMessages,
+  buildHistoryMessages,
+  buildOpenAIMessages,
+} = require("./promptBuilder");
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
 const { parseOpenAIResponse } = require("./responseParser");
 const { saveUsage, saveVoiceLog } = require("./logSavers");
@@ -74,106 +79,6 @@ log("📦 messageService/index.js loaded:", new Date().toISOString());
 log("🔧 ENV CHECK (service/index)");
 log(" - OPENAI_API_KEY:", process.env.OPENAI_API_KEY ? "OK" : "MISSING");
 log(" - OPENAI_MODEL:", process.env.OPENAI_MODEL || "gpt-4o-mini");
-
-/**
- * repository/service から返ってきた履歴1件を
- * OpenAI messages 形式へ変換する
- *
- * ルール:
- * - user_message → user
- * - ai_reply → assistant
- * - admin_message → 除外
- * - 空文字は除外
- *
- * @param {Object} item
- * @returns {Object|null}
- */
-function mapHistoryItemToOpenAIMessages(item = {}) {
-  const sourceType = String(item.sourceType || "").trim();
-
-  if (sourceType === "user_message") {
-    const content = String(item.userMessage || "").trim();
-    if (!content) {
-      return null;
-    }
-
-    return {
-      role: "user",
-      content,
-    };
-  }
-
-  if (sourceType === "ai_reply") {
-    const content = String(item.aiReply || "").trim();
-    if (!content) {
-      return null;
-    }
-
-    return {
-      role: "assistant",
-      content,
-    };
-  }
-
-  /**
-   * ADR-011 方針:
-   * admin_message は今回は OpenAI messages に入れない
-   */
-  return null;
-}
-
-/**
- * 会話履歴配列を OpenAI messages 配列へ変換する
- *
- * @param {Array} items
- * @returns {Array}
- */
-function buildHistoryMessages(items = []) {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  return items.map(mapHistoryItemToOpenAIMessages).filter(Boolean);
-}
-
-/**
- * OpenAI へ渡す messages を構築する
- *
- * 順番:
- * 1. system
- * 2. history (古い→新しい)
- * 3. current user
- *
- * @param {Object} input
- * @param {string} input.systemPrompt
- * @param {Array} input.historyItems
- * @param {string} input.text
- * @returns {Array}
- */
-function buildOpenAIMessages(input = {}) {
-  const systemPrompt = String(input.systemPrompt || "");
-  const text = String(input.text || "");
-  const historyItems = Array.isArray(input.historyItems)
-    ? input.historyItems
-    : [];
-
-  const messages = [];
-
-  messages.push({
-    role: "system",
-    content: systemPrompt,
-  });
-
-  const historyMessages = buildHistoryMessages(historyItems);
-  messages.push(...historyMessages);
-
-  messages.push({
-    role: "user",
-    content: text,
-  });
-
-  return messages;
-}
 
 /**
  * messageService のメイン処理
@@ -208,11 +113,6 @@ async function processMessage(context) {
     /**
      * 1
      * System Prompt 構築
-     *
-     * tone
-     * request id
-     * log
-     * を元にAIの基本プロンプトを生成
      */
     const systemPrompt = await buildSystemPrompt({
       tone,
