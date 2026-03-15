@@ -220,9 +220,8 @@ async function processMessage(context) {
      * 2
      * 会話履歴取得
      *
-     * ADR-011:
      * - botId + userId で取得
-     * - 直近6イベント
+     * - 取得件数は 10
      * - admin_message は後段で除外
      * - 空履歴でも続行
      */
@@ -231,13 +230,13 @@ async function processMessage(context) {
     log(`📚 [${rid}] conversation history fetch requested`, {
       botId: bot_id,
       userId,
-      limit: 6,
+      limit: 10,
     });
 
     const historyResult = await getConversationHistory({
       botId: bot_id,
       userId,
-      limit: 6,
+      limit: 10,
     });
 
     if (!historyResult.success) {
