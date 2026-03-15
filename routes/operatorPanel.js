@@ -25,6 +25,13 @@ router.get("/", (req, res) => {
 <body style="font-family: system-ui; padding: 16px;">
   <h2>Operator Panel（実験機）</h2>
 
+  <div style="margin:12px 0; padding:12px; max-width:720px; background:#f6f8fa; border:1px solid #d0d7de; border-radius:8px;">
+    <div style="font-weight:700; margin-bottom:6px;">ADR-013C 反映済み</div>
+    <div style="font-size:14px; color:#444;">
+      operatorPanel route 分離済み。この画面は <b>routes/operatorPanel.js</b> から配信中です。
+    </div>
+  </div>
+
   <h3>AI口調（テイスト）</h3>
   <form method="POST" action="/operator/tone">
     <select name="tone">
