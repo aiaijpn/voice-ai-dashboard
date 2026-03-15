@@ -3,24 +3,18 @@
 /**
  * line/handler.js
  *
- * LINE Webhook の入口。
+ * LINE Webhook の入口
  *
- * 役割
+ * ADR-015
+ * 会話履歴は historyService に統一
+ * handler では履歴管理を行わない
+ *
+ * handler の責務
  * - LINEイベント受信
- * - ユーザー発言取得
- * - 会話履歴ロード
- * - AI入力テキスト構築
+ * - ユーザー入力取得
  * - messageService 呼び出し
  * - LINE返信
- *
- * ADR014
- * 保存データとAI入力コンテキストを分離
- *
- * 保存用
- *   userText
- *
- * AI入力用
- *   textForAI
+ * - 既読処理
  */
 
 const { log, error: logError } = require("../utils/logger");
@@ -40,69 +34,6 @@ log("🔧 ENV CHECK (handler)");
 log(" - CHANNEL_ACCESS_TOKEN:", CHANNEL_ACCESS_TOKEN ? "OK" : "MISSING");
 
 /**
- * 会話履歴ストア
- *
- * historyStore は後から実装される可能性があるため
- * 存在すれば使用する設計にしている
- */
-let historyStore = null;
-
-try {
-  historyStore = require("./historyStore");
-  log("🧠 historyStore: OK (./historyStore)");
-} catch (e) {
-  log("🧠 historyStore: NOT FOUND -> history disabled");
-}
-
-/**
- * 履歴最大数
- */
-const HISTORY_MAX = Number(process.env.HISTORY_MAX || 10);
-
-/**
- * AI入力用テキスト生成
- *
- * 目的
- * OpenAIへ渡すプロンプトに
- * 直近会話を含める
- *
- * 重要
- * このデータは
- * 「保存してはいけない」
- *
- * ADR014
- * AI入力専用
- */
-function buildTextWithHistory(userText, history = []) {
-
-  if (!history || history.length === 0) {
-    return userText;
-  }
-
-  const lines = history
-    .slice(-HISTORY_MAX)
-    .map((m) => {
-
-      const role = m.role === "assistant" ? "AI" : "User";
-
-      const content = String(m.content || "")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      return `${role}: ${content}`;
-
-    })
-    .join("\n");
-
-  return `【直近の会話】
-${lines}
-
-【今回】
-User: ${userText}`;
-}
-
-
-/**
  * LINEイベント処理
  */
 const handleEvent = async (event, ctx = {}) => {
@@ -119,7 +50,7 @@ const handleEvent = async (event, ctx = {}) => {
     /**
      * テキストメッセージ以外は処理しない
      */
-    if (event.type !== "message" || event.message.type !== "text") {
+    if (event.type !== "message" || event.message?.type !== "text") {
 
       log(`⚠️ [${rid}] Not text message`);
       return;
@@ -145,72 +76,10 @@ const handleEvent = async (event, ctx = {}) => {
     const userId = event.source?.userId || "";
 
     /**
-     * 履歴キー
-     */
-    const historyKey = `${bot_id}:${userId || "no_userId"}`;
-
-    /**
-     * 会話履歴ロード
-     */
-    let history = [];
-
-    if (historyStore?.getHistory) {
-
-      try {
-
-        history = await historyStore.getHistory(historyKey);
-
-        log(`🧠 [${rid}] history loaded len=${history.length}`);
-
-      } catch (e) {
-
-        log(`history load error`, e.message);
-
-      }
-
-    }
-
-    /**
-     * ユーザー発言履歴保存
-     */
-    if (historyStore?.appendMessage) {
-
-      try {
-
-        await historyStore.appendMessage(historyKey, {
-          role: "user",
-          content: userText,
-        });
-
-        history = await historyStore.getHistory(historyKey);
-
-      } catch (e) {
-
-        log(`history append error`, e.message);
-
-      }
-
-    }
-
-    /**
-     * AI入力テキスト生成
-     *
-     * 保存データとは完全に分離する
-     */
-    const textForAI = buildTextWithHistory(userText, history);
-
-    log(`🧠 [${rid}] textForAI prepared`);
-
-    /**
      * messageService 呼び出し
      *
-     * ADR014
-     *
-     * text
-     *   保存用ユーザー発言
-     *
-     * aiInputText
-     *   AI入力用履歴付きテキスト
+     * ADR-015
+     * 履歴処理は service 層で実行
      */
     const result = await processMessage({
 
@@ -219,7 +88,7 @@ const handleEvent = async (event, ctx = {}) => {
       userId,
 
       text: userText,
-      aiInputText: textForAI,
+      aiInputText: userText,
 
       tone,
 
@@ -243,26 +112,6 @@ const handleEvent = async (event, ctx = {}) => {
 
     log(`🧩 [${rid}] service result message=`, result.message);
     log(`🧩 [${rid}] service replyText=`, replyText);
-
-    /**
-     * AI発言履歴保存
-     */
-    if (historyStore?.appendMessage) {
-
-      try {
-
-        await historyStore.appendMessage(historyKey, {
-          role: "assistant",
-          content: replyText,
-        });
-
-      } catch (e) {
-
-        log(`history append error`, e.message);
-
-      }
-
-    }
 
     /**
      * LINE返信
