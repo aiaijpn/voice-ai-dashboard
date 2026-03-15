@@ -249,3 +249,12 @@ Summary
 最初の対象は services/messageService/index.js と server.js とする
 
 これにより、栄一ツールの開発速度と安全性を両立させる。
+
+
+ADR012A〜E で段階実装した
+
+messageService/index.js を司令塔化した
+
+buildReply / promptBuilder / responseParser / classifyMessage / logSavers に責務分離した
+
+handleConversation.js は将来拡張ポイントとして保留
