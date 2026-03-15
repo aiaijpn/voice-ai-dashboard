@@ -251,14 +251,10 @@ Summary
 これにより、栄一ツールの開発速度と安全性を両立させる。
 
 
+ADR012A〜E で段階実装した
 
+messageService/index.js を司令塔化した
 
-ADR一覧に ADR-012 を追加。
+buildReply / promptBuilder / responseParser / classifyMessage / logSavers に責務分離した
 
-追記内容の要点
-
-ADR-012 ファイル分割ルール（200行ルール）
-
-状態: Accepted
-
-日付: 2026-03-15
+handleConversation.js は将来拡張ポイントとして保留
