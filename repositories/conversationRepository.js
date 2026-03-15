@@ -1,26 +1,29 @@
 "use strict";
 
 /**
- * Conversation History 保存用 Repository
+ * Conversation History Repository
  *
  * 役割:
- * - 会話履歴1件を「Google Sheets に保存できる1行配列」に変換する
- * - sheet/saver へ保存処理を委譲する
+ * - 会話履歴1件を Google Sheets に保存する
+ * - conversation_history から botId + userId 条件で履歴取得する
  *
  * このファイルの責務:
  * - 会話履歴データを Sheets 用の列順に並べる
  * - 保存先シート名を固定する
- * - saver の成功/失敗を serviceResponse 契約で返す
+ * - Google Sheets から履歴を取得する
+ * - saver / Sheets API の成功失敗を serviceResponse 契約で返す
  *
  * このファイルでやらないこと:
  * - 入力値の業務判断
  * - 必須項目の本格検証
  * - userMessage / aiReply の生成
  * - unresolvedQ の判定
+ * - OpenAI messages 形式への変換
  *
  * それらは service 層の責務。
  */
 
+const { google } = require("googleapis");
 const { appendRowToSheet } = require("../sheet/saver");
 const { success, fail } = require("../utils/serviceResponse");
 
@@ -52,45 +55,100 @@ const CONVERSATION_SHEET_NAME = "conversation_history";
  * 8. source_type
  * 9. unresolved_q
  *
- * 重要:
- * - この列順を崩すと、保存は成功しても意味が壊れる
- * - ADR-008 の中核はこの列順固定にある
- *
  * @param {Object} input
  * @returns {Array}
  */
 function buildConversationRow(input = {}) {
   return [
-    // 1. 保存時刻
     input.timestamp || "",
-
-    // 2. bot識別子
     input.botId || "",
-
-    // 3. LINEユーザID
     input.userId || "",
-
-    // 4. ユーザ発言
     input.userMessage || "",
-
-    // 5. AI応答
     input.aiReply || "",
-
-    // 6. 管理者メモ
     input.operatorMemo || "",
-
-    // 7. 手動送信フラグ
-    // boolean 以外は false に寄せる
     typeof input.manualSend === "boolean" ? input.manualSend : false,
-
-    // 8. ソース種別
-    // 未指定時は通常メッセージとして扱う
-    input.sourceType || "message",
-
-    // 9. 未解決質問フラグ
-    // boolean 以外は false に寄せる
+    input.sourceType || "user_message",
     typeof input.unresolvedQ === "boolean" ? input.unresolvedQ : false,
   ];
+}
+
+/**
+ * Google Sheets 読み取り用 client を作る
+ *
+ * @returns {import("googleapis").sheets_v4.Sheets}
+ */
+function createSheetsClient() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (!raw) {
+    throw new Error(
+      "conversationRepository.createSheetsClient: GOOGLE_SERVICE_ACCOUNT_JSON is required"
+    );
+  }
+
+  let credentials;
+  try {
+    credentials = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `conversationRepository.createSheetsClient: invalid GOOGLE_SERVICE_ACCOUNT_JSON: ${error.message}`
+    );
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+
+  return google.sheets({
+    version: "v4",
+    auth,
+  });
+}
+
+/**
+ * Sheets の1行配列を repository 用オブジェクトへ変換する
+ *
+ * 列順:
+ * 0: timestamp
+ * 1: bot_id
+ * 2: user_id
+ * 3: user_message
+ * 4: ai_reply
+ * 5: operator_memo
+ * 6: manual_send
+ * 7: source_type
+ * 8: unresolved_q
+ *
+ * @param {Array} row
+ * @returns {Object}
+ */
+function mapRowToConversation(row = []) {
+  return {
+    timestamp: row[0] || "",
+    botId: row[1] || "",
+    userId: row[2] || "",
+    userMessage: row[3] || "",
+    aiReply: row[4] || "",
+    operatorMemo: row[5] || "",
+    manualSend: parseSheetBoolean(row[6]),
+    sourceType: row[7] || "",
+    unresolvedQ: parseSheetBoolean(row[8]),
+  };
+}
+
+/**
+ * Sheets の値は文字列化されることがあるため、
+ * boolean として安全に読む。
+ *
+ * @param {any} value
+ * @returns {boolean}
+ */
+function parseSheetBoolean(value) {
+  if (value === true || value === "true" || value === "TRUE") {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -98,50 +156,23 @@ function buildConversationRow(input = {}) {
  *
  * @param {Object} input
  * @returns {Promise<{success:boolean,message:string,data:any}>}
- *
- * 契約:
- * - 成功時: success(...)
- * - 失敗時: fail(...)
- *
- * 重要:
- * - saver 側は失敗時 throw する契約
- * - したがって、この repository で try/catch し、
- *   上位が扱いやすい fail(...) に変換する
  */
 async function appendConversationRow(input = {}) {
   try {
-    /**
-     * 保存先 spreadsheetId は必須。
-     * なければ外部保存不能なのでここで fail にする。
-     */
     if (!SPREADSHEET_ID) {
       return fail(
         "conversationRepository.appendConversationRow: SPREADSHEET_ID is required"
       );
     }
 
-    /**
-     * 会話履歴オブジェクトを
-     * Sheets 用の1行配列に変換する。
-     */
     const values = buildConversationRow(input);
 
-    /**
-     * 実際の Google Sheets append は
-     * 外部I/O責務である sheet/saver に委譲する。
-     */
     const result = await appendRowToSheet({
       spreadsheetId: SPREADSHEET_ID,
       sheetName: CONVERSATION_SHEET_NAME,
       values,
     });
 
-    /**
-     * success(data, message) 契約に合わせて返却する。
-     *
-     * data には、後でデバッグしやすいよう
-     * シート名 / 保存配列 / saver結果を含める。
-     */
     return success(
       {
         sheetName: CONVERSATION_SHEET_NAME,
@@ -151,15 +182,94 @@ async function appendConversationRow(input = {}) {
       "conversationRepository.appendConversationRow: row appended"
     );
   } catch (error) {
-    /**
-     * saver は失敗時に throw するため、
-     * repository では fail(...) に包み直して返す。
-     *
-     * これにより service 層は
-     * success / fail 契約だけ見ればよくなる。
-     */
     return fail(
       `conversationRepository.appendConversationRow: ${error.message}`
+    );
+  }
+}
+
+/**
+ * conversation_history から
+ * botId + userId 条件で直近履歴を取得する
+ *
+ * 取得方針:
+ * - Sheets 全体を読み込む
+ * - ヘッダ行を除外する
+ * - botId + userId で絞る
+ * - 新しい順で limit 件に絞る
+ * - 返却時は OpenAI に渡しやすいよう古い→新しい順に並べる
+ *
+ * @param {Object} input
+ * @param {string} input.botId
+ * @param {string} input.userId
+ * @param {number} [input.limit=6]
+ * @returns {Promise<{success:boolean,message:string,data:any}>}
+ */
+async function getConversationHistory(input = {}) {
+  try {
+    if (!SPREADSHEET_ID) {
+      return fail(
+        "conversationRepository.getConversationHistory: SPREADSHEET_ID is required"
+      );
+    }
+
+    const botId = String(input.botId || "").trim();
+    const userId = String(input.userId || "").trim();
+    const limit = Number(input.limit || 6);
+
+    if (!botId) {
+      return fail(
+        "conversationRepository.getConversationHistory: botId is required"
+      );
+    }
+
+    if (!userId) {
+      return fail(
+        "conversationRepository.getConversationHistory: userId is required"
+      );
+    }
+
+    const sheets = createSheetsClient();
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${CONVERSATION_SHEET_NAME}!A:I`,
+    });
+
+    const rows = Array.isArray(response.data.values) ? response.data.values : [];
+
+    if (rows.length === 0) {
+      return success(
+        {
+          sheetName: CONVERSATION_SHEET_NAME,
+          items: [],
+          total: 0,
+        },
+        "conversationRepository.getConversationHistory: no rows"
+      );
+    }
+
+    // 1行目はヘッダ前提
+    const bodyRows = rows.slice(1);
+
+    const matched = bodyRows
+      .map(mapRowToConversation)
+      .filter((item) => item.botId === botId && item.userId === userId);
+
+    const latestLimited = matched.slice(-limit);
+    const items = latestLimited;
+
+    return success(
+      {
+        sheetName: CONVERSATION_SHEET_NAME,
+        items,
+        total: items.length,
+      },
+      "conversationRepository.getConversationHistory: history fetched"
+    );
+  } catch (error) {
+    return fail(
+      `conversationRepository.getConversationHistory: ${error.message}`
     );
   }
 }
@@ -167,5 +277,7 @@ async function appendConversationRow(input = {}) {
 module.exports = {
   CONVERSATION_SHEET_NAME,
   buildConversationRow,
+  mapRowToConversation,
   appendConversationRow,
+  getConversationHistory,
 };

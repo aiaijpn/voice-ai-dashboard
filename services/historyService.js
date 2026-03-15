@@ -1,11 +1,13 @@
 "use strict";
 
 /**
- * Conversation History 保存用 Service
+ * Conversation History Service
  *
  * 役割:
- * - 入力データの正規化
- * - 必須項目の検証
+ * - 保存入力データの正規化
+ * - 保存必須項目の検証
+ * - 取得入力データの正規化
+ * - 取得必須項目の検証
  * - repository 呼び出し
  * - 上位層（messageService / adminMessageService など）が使いやすい返り値に統一する
  */
@@ -100,13 +102,60 @@ function validateSaveInput(input = {}) {
 }
 
 /**
- * repository 呼び出し関数を取得する
+ * 取得入力を正規化する
+ */
+function normalizeGetInput(input = {}) {
+  const rawLimit = Number(input.limit);
+
+  return {
+    botId: String(input.botId || "").trim(),
+    userId: String(input.userId || "").trim(),
+    limit: Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 6,
+  };
+}
+
+/**
+ * 取得入力の必須項目を検証する
+ */
+function validateGetInput(input = {}) {
+  if (!input.botId) {
+    return fail("historyService.validateGetInput: botId is required");
+  }
+
+  if (!input.userId) {
+    return fail("historyService.validateGetInput: userId is required");
+  }
+
+  if (!Number.isInteger(input.limit) || input.limit <= 0) {
+    return fail("historyService.validateGetInput: limit must be positive integer");
+  }
+
+  return success(
+    {
+      validated: true,
+    },
+    "historyService.validateGetInput: ok"
+  );
+}
+
+/**
+ * repository の保存関数を取得する
  *
  * 目的:
  * - 単体テスト時にモック差し替えしやすくする
  */
 function getAppendConversationRow() {
   return conversationRepository.appendConversationRow;
+}
+
+/**
+ * repository の取得関数を取得する
+ *
+ * 目的:
+ * - 単体テスト時にモック差し替えしやすくする
+ */
+function getGetConversationHistory() {
+  return conversationRepository.getConversationHistory;
 }
 
 /**
@@ -145,9 +194,51 @@ async function saveConversationHistory(input = {}) {
   }
 }
 
+/**
+ * 会話履歴を取得する service 本体
+ */
+async function getConversationHistory(input = {}) {
+  try {
+    const normalized = normalizeGetInput(input);
+
+    const validation = validateGetInput(normalized);
+    if (!validation.success) {
+      return validation;
+    }
+
+    const getConversationHistoryRepository = getGetConversationHistory();
+    const result = await getConversationHistoryRepository(normalized);
+
+    if (!result.success) {
+      return fail(
+        result.message ||
+          "historyService.getConversationHistory: repository failed",
+        result.data || null
+      );
+    }
+
+    return success(
+      {
+        fetched: true,
+        normalized,
+        items:
+          result.data && Array.isArray(result.data.items) ? result.data.items : [],
+        repositoryResult: result.data || null,
+      },
+      "historyService.getConversationHistory: fetched"
+    );
+  } catch (error) {
+    return fail(`historyService.getConversationHistory: ${error.message}`);
+  }
+}
+
 module.exports = {
   normalizeSaveInput,
   validateSaveInput,
+  normalizeGetInput,
+  validateGetInput,
   getAppendConversationRow,
+  getGetConversationHistory,
   saveConversationHistory,
+  getConversationHistory,
 };
