@@ -9,10 +9,12 @@ const operatorProfileRoutes = require("./routes/operatorProfile");
 const { saveAdminMessageHistory } = require("./services/adminMessageService");
 const { saveConversationHistory } = require("./services/historyService");
 const basicAuth = require("./middleware/basicAuth");
+const healthRoutes = require("./routes/health");
 
 const app = express();
 
 app.use("/api/operator", operatorProfileRoutes);
+app.use("/", healthRoutes);
 
 // 入口ログ（起動確認）
 log("🚀 SERVER BOOT: server.js is running");
@@ -43,18 +45,6 @@ globalThis.OPERATOR_AI_TONE = globalThis.OPERATOR_AI_TONE || "polite";
 app.use(express.json({ limit: "2mb" }));
 // HTMLフォーム（operator panel）
 app.use(express.urlencoded({ extended: false }));
-
-// =============================
-// ヘルスチェック
-// =============================
-app.get("/", (req, res) => {
-  log("✅ GET / healthcheck");
-  res.status(200).send("ok");
-});
-
-app.get("/healthz", (req, res) => {
-  res.status(200).json({ ok: true, time: new Date().toISOString() });
-});
 
 // =============================
 // Operator Panel（超簡易）
@@ -450,13 +440,6 @@ app.post("/webhook", async (req, res) => {
     );
     logError(`⏱️  [${rid}] error total ms=${Date.now() - start}`);
   }
-});
-
-// ===============================
-// Health Check（Renderスリープ対策）
-// ===============================
-app.get("/health", (req, res) => {
-  res.status(200).send("ok");
 });
 
 // ポート
