@@ -8,6 +8,7 @@ const axios = require("axios");
 
 const operatorProfileRoutes = require("./routes/operatorProfile");
 const { saveAdminMessageHistory } = require("./services/adminMessageService");
+const { saveConversationHistory } = require("./services/historyService");
 
 const app = express();
 
@@ -243,7 +244,10 @@ app.post("/operator/tone", basicAuth, (req, res) => {
 
 // =============================
 // ADR-009 個別送信
-// 送信成功時のみ conversation_history 保存
+// C案:
+// - admin_message は従来どおり保存
+// - さらに ai_reply としても保存
+//   → 次回AI会話時に assistant 発話として参照させる
 // =============================
 app.post("/operator/send", basicAuth, async (req, res) => {
   const botId = String(req.body?.botId || "").trim();
@@ -288,7 +292,8 @@ app.post("/operator/send", basicAuth, async (req, res) => {
       statusText: lineResponse.statusText,
     });
 
-    const historyResult = await saveAdminMessageHistory({
+    // 1. admin_message として保存
+    const adminHistoryResult = await saveAdminMessageHistory({
       botId,
       userId,
       messageText: message,
@@ -296,19 +301,48 @@ app.post("/operator/send", basicAuth, async (req, res) => {
       timestamp: Date.now(),
     });
 
-    if (!historyResult.success) {
-      logError("❌ OPERATOR direct send history save failed", {
+    if (!adminHistoryResult.success) {
+      logError("❌ OPERATOR admin_message history save failed", {
         botId,
         userId,
-        message: historyResult.message,
-        data: historyResult.data || null,
+        message: adminHistoryResult.message,
+        data: adminHistoryResult.data || null,
       });
 
       return res
         .status(500)
-        .send(`message sent but history save failed: ${historyResult.message}`);
+        .send(`message sent but admin_message history save failed: ${adminHistoryResult.message}`);
     }
 
+    log("✅ OPERATOR admin_message history saved");
+
+    // 2. ai_reply としても保存
+    const aiReplyHistoryResult = await saveConversationHistory({
+      botId,
+      userId,
+      timestamp: Date.now(),
+      userMessage: "",
+      aiReply: message,
+      operatorMemo: "operator panel send (assistant mirror)",
+      manualSend: false,
+      sourceType: "ai_reply",
+      unresolvedQ: false,
+    });
+
+    if (!aiReplyHistoryResult.success) {
+      logError("❌ OPERATOR ai_reply mirror save failed", {
+        botId,
+        userId,
+        message: aiReplyHistoryResult.message,
+        data: aiReplyHistoryResult.data || null,
+      });
+
+      return res
+        .status(500)
+        .send(`message sent and admin history saved but ai_reply mirror save failed: ${aiReplyHistoryResult.message}`);
+    }
+
+    log("✅ OPERATOR ai_reply mirror history saved");
     log("✅ OPERATOR direct send success");
     log("✅ OPERATOR direct send history saved");
 
