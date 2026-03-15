@@ -9,7 +9,16 @@ const toneGuideMap = {
   gentle: "やさしく安心感。相手の気持ちを尊重しつつ短く。",
 };
 
-async function buildSystemPrompt({ tone = "polite", rid = "no_rid", log }) {
+/**
+ * system prompt を構築する
+ *
+ * @param {Object} input
+ * @param {string} input.tone
+ * @param {string} input.rid
+ * @param {Function} input.log
+ * @returns {Promise<string>}
+ */
+async function buildSystemPrompt({ tone = "polite", rid = "no_rid", log = console.log }) {
   const toneGuide = toneGuideMap[String(tone)] || toneGuideMap.polite;
 
   let systemPrompt = `
@@ -91,8 +100,8 @@ function mapHistoryItemToOpenAIMessages(item = {}) {
   }
 
   /**
-   * ADR-011 方針:
-   * admin_message は今回は OpenAI messages に入れない
+   * ADR-011 / ADR-015 方針:
+   * admin_message は OpenAI messages に入れない
    */
   return null;
 }
@@ -122,32 +131,86 @@ function buildHistoryMessages(items = []) {
  * @param {Object} input
  * @param {string} input.systemPrompt
  * @param {Array} input.historyItems
- * @param {string} input.text
+ * @param {string} input.userText
  * @returns {Array}
  */
 function buildOpenAIMessages(input = {}) {
-  const systemPrompt = String(input.systemPrompt || "");
-  const text = String(input.text || "");
+  const systemPrompt = String(input.systemPrompt || "").trim();
+  const userText = String(input.userText || "").trim();
   const historyItems = Array.isArray(input.historyItems)
     ? input.historyItems
     : [];
 
   const messages = [];
 
-  messages.push({
-    role: "system",
-    content: systemPrompt,
-  });
+  if (systemPrompt) {
+    messages.push({
+      role: "system",
+      content: systemPrompt,
+    });
+  }
 
   const historyMessages = buildHistoryMessages(historyItems);
   messages.push(...historyMessages);
 
-  messages.push({
-    role: "user",
-    content: text,
-  });
+  if (userText) {
+    messages.push({
+      role: "user",
+      content: userText,
+    });
+  }
 
   return messages;
+}
+
+/**
+ * ADR-016:
+ * AI入力構築責務を promptBuilder に集約する
+ *
+ * 役割:
+ * 1. systemPrompt生成
+ * 2. 履歴統合
+ * 3. OpenAI messages生成
+ * 4. AI入力ログ出力
+ *
+ * @param {Object} input
+ * @param {string} input.rid
+ * @param {string} input.tone
+ * @param {Array} input.historyItems
+ * @param {string} input.userText
+ * @param {Function} input.log
+ * @returns {Promise<{systemPrompt: string, messages: Array}>}
+ */
+async function buildPromptContext(input = {}) {
+  const rid = String(input.rid || "no_rid");
+  const tone = String(input.tone || "polite");
+  const historyItems = Array.isArray(input.historyItems) ? input.historyItems : [];
+  const userText = String(input.userText || "");
+  const log = typeof input.log === "function" ? input.log : console.log;
+
+  const systemPrompt = await buildSystemPrompt({
+    rid,
+    tone,
+    log,
+  });
+
+  const messages = buildOpenAIMessages({
+    systemPrompt,
+    historyItems,
+    userText,
+  });
+
+  log(`🧩 [${rid}] OpenAI messages built`);
+  log(`🧩 [${rid}] historyCount=${historyItems.length}`);
+  log(`🧩 [${rid}] messageCount=${messages.length}`);
+  log(
+    `🧩 [${rid}] lastUserText=${userText.slice(0, 80).replace(/\n/g, "\\n")}`
+  );
+
+  return {
+    systemPrompt,
+    messages,
+  };
 }
 
 module.exports = {
@@ -155,4 +218,5 @@ module.exports = {
   mapHistoryItemToOpenAIMessages,
   buildHistoryMessages,
   buildOpenAIMessages,
+  buildPromptContext,
 };

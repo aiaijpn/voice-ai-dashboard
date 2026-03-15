@@ -5,13 +5,14 @@
  *
  * このファイルは messageService の「司令塔」です。
  *
- * ADR014 対応版
+ * ADR016 対応版
  * 2026-03-15
  *
  * 目的
  * - 処理フローのオーケストレーション
  * - 各モジュールの呼び出し
- * - 保存データとAI入力コンテキストの責務分離
+ * - AI入力構築責務を promptBuilder に委譲
+ * - 保存データとAI入力コンテキストの責務分離を維持
  *
  * このファイルでやらないこと
  * - OpenAI API 呼び出し実装
@@ -19,21 +20,22 @@
  * - AI分類処理
  * - Google Sheets API 呼び出し
  * - 会話履歴保存の内部処理
+ * - systemPrompt生成
+ * - OpenAI messages生成
  *
  * それらはすべて専用モジュールへ委譲する
  *
  * 処理フロー
  *
- * 1 systemPrompt 構築
- * 2 会話履歴取得
- * 3 OpenAI messages 構築
- * 4 OpenAI 呼び出し
- * 5 AIレスポンス解析
- * 6 AI分類
- * 7 voiceログ保存
- * 8 広告挿入
- * 9 会話履歴保存
- * 10 最終返信
+ * 1 会話履歴取得
+ * 2 promptBuilder で AI入力構築
+ * 3 OpenAI 呼び出し
+ * 4 AIレスポンス解析
+ * 5 AI分類
+ * 6 voiceログ保存
+ * 7 広告挿入
+ * 8 会話履歴保存
+ * 9 最終返信
  */
 
 const { log, error: logError } = require("../../utils/logger");
@@ -45,10 +47,7 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
-const {
-  buildSystemPrompt,
-  buildOpenAIMessages,
-} = require("./promptBuilder");
+const { buildPromptContext } = require("./promptBuilder");
 
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
 
@@ -81,8 +80,11 @@ async function processMessage(context) {
    * context安全展開
    *
    * ADR014:
-   * text       = 保存用の生発言
+   * text        = 保存用の生発言
    * aiInputText = AI入力専用テキスト
+   *
+   * ADR016:
+   * AI入力構築は promptBuilder に委譲
    */
   const {
     rid = "no_rid",
@@ -98,16 +100,6 @@ async function processMessage(context) {
   try {
     /**
      * 1
-     * systemPrompt 構築
-     */
-    const systemPrompt = await buildSystemPrompt({
-      tone,
-      rid,
-      log,
-    });
-
-    /**
-     * 2
      * 会話履歴取得
      */
     let historyItems = [];
@@ -142,28 +134,34 @@ async function processMessage(context) {
     }
 
     /**
-     * 3
-     * OpenAI messages 構築
+     * 2
+     * promptBuilder で AI入力構築
      *
-     * ADR014:
-     * OpenAIへ渡すのは aiInputText
-     * 保存用 text はここでは使わない
+     * ADR016:
+     * systemPrompt生成
+     * messages生成
+     * AI入力ログ出力
+     * を promptBuilder に集約
      */
-    const messages = buildOpenAIMessages({
-      systemPrompt,
+    const promptContext = await buildPromptContext({
+      rid,
+      tone,
       historyItems,
-      text: effectiveAiInputText,
+      userText: effectiveAiInputText,
+      log,
     });
 
-    log(`🧠 [${rid}] OpenAI messages built`, {
-      messageCount: messages.length,
+    const { systemPrompt, messages } = promptContext;
+
+    log(`🧠 [${rid}] prompt context ready`, {
       historyCount: historyItems.length,
+      messageCount: messages.length,
       userTextLength: String(text || "").length,
       aiInputTextLength: String(effectiveAiInputText || "").length,
     });
 
     /**
-     * 4
+     * 3
      * OpenAI 呼び出し
      */
     const response = await callOpenAI({
@@ -175,7 +173,7 @@ async function processMessage(context) {
     });
 
     /**
-     * 5
+     * 4
      * usageログ保存
      */
     await saveUsage({
@@ -188,7 +186,7 @@ async function processMessage(context) {
     });
 
     /**
-     * 6
+     * 5
      * AIレスポンス解析
      */
     const parsedResult = parseOpenAIResponse(
@@ -199,7 +197,7 @@ async function processMessage(context) {
     );
 
     /**
-     * 7
+     * 6
      * AI分類
      */
     const classified = classifyMessage({
@@ -210,11 +208,11 @@ async function processMessage(context) {
     const replyText = parsedResult.replyText;
 
     /**
-     * 8
+     * 7
      * voiceログ保存
      *
      * ADR014:
-     * ログ保存もユーザー生発言 text を使う
+     * ログ保存はユーザー生発言 text を使う
      */
     await saveVoiceLog({
       parsed,
@@ -225,7 +223,7 @@ async function processMessage(context) {
     });
 
     /**
-     * 9
+     * 8
      * 広告挿入
      */
     let finalReply = buildReplyText(replyText);
@@ -235,7 +233,7 @@ async function processMessage(context) {
     finalReply = buildReplyText(finalReply);
 
     /**
-     * 10
+     * 9
      * 会話履歴保存
      *
      * ADR014:
