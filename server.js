@@ -1,5 +1,4 @@
-﻿// server.js
-"use strict";
+﻿"use strict";
 
 const { log, error: logError } = require("./utils/logger");
 
@@ -9,6 +8,7 @@ const axios = require("axios");
 const operatorProfileRoutes = require("./routes/operatorProfile");
 const { saveAdminMessageHistory } = require("./services/adminMessageService");
 const { saveConversationHistory } = require("./services/historyService");
+const basicAuth = require("./middleware/basicAuth");
 
 const app = express();
 
@@ -43,28 +43,6 @@ globalThis.OPERATOR_AI_TONE = globalThis.OPERATOR_AI_TONE || "polite";
 app.use(express.json({ limit: "2mb" }));
 // HTMLフォーム（operator panel）
 app.use(express.urlencoded({ extended: false }));
-
-// =============================
-// Basic認証（超簡易）
-// =============================
-function basicAuth(req, res, next) {
-  const user = process.env.BASIC_USER || "";
-  const pass = process.env.BASIC_PASS || "";
-
-  const auth = req.headers.authorization || "";
-  if (!auth.startsWith("Basic ")) {
-    res.setHeader("WWW-Authenticate", 'Basic realm="Operator Panel"');
-    return res.status(401).send("Authentication required");
-  }
-
-  const b64 = auth.slice("Basic ".length);
-  const [u, p] = Buffer.from(b64, "base64").toString("utf8").split(":");
-
-  if (u === user && p === pass) return next();
-
-  res.setHeader("WWW-Authenticate", 'Basic realm="Operator Panel"');
-  return res.status(401).send("Invalid credentials");
-}
 
 // =============================
 // ヘルスチェック
@@ -292,7 +270,6 @@ app.post("/operator/send", basicAuth, async (req, res) => {
       statusText: lineResponse.statusText,
     });
 
-    // 1. admin_message として保存
     const adminHistoryResult = await saveAdminMessageHistory({
       botId,
       userId,
@@ -316,7 +293,6 @@ app.post("/operator/send", basicAuth, async (req, res) => {
 
     log("✅ OPERATOR admin_message history saved");
 
-    // 2. ai_reply としても保存
     const aiReplyHistoryResult = await saveConversationHistory({
       botId,
       userId,
@@ -435,7 +411,6 @@ app.post("/webhook", async (req, res) => {
     const events = req.body?.events || [];
     log(`📨 [${rid}] events length=${events.length}`);
 
-    // LINEへの応答はタイムアウトが怖いので、先に200返す（超重要）
     res.status(200).send("OK");
 
     if (!events.length) {
@@ -445,7 +420,6 @@ app.post("/webhook", async (req, res) => {
 
     const tone = globalThis.OPERATOR_AI_TONE || "polite";
 
-    // イベント処理（並列）
     const results = await Promise.allSettled(
       events.map(async (ev, idx) => {
         log(
@@ -456,7 +430,6 @@ app.post("/webhook", async (req, res) => {
       })
     );
 
-    // 結果集計ログ
     const okCount = results.filter((r) => r.status === "fulfilled").length;
     const ng = results
       .map((r, i) => ({ r, i }))
