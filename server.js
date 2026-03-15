@@ -264,8 +264,9 @@ app.post("/operator/send", basicAuth, async (req, res) => {
     log("🤖 botId:", botId);
     log("👤 userId:", userId);
     log("📝 message length:", message.length);
+    log("🔑 OPERATOR send token prefix:", String(token).slice(0, 10));
 
-    await axios.post(
+    const lineResponse = await axios.post(
       "https://api.line.me/v2/bot/message/push",
       {
         to: userId,
@@ -279,6 +280,13 @@ app.post("/operator/send", basicAuth, async (req, res) => {
         timeout: 15000,
       }
     );
+
+    log("✅ OPERATOR LINE push success", {
+      botId,
+      userId,
+      status: lineResponse.status,
+      statusText: lineResponse.statusText,
+    });
 
     const historyResult = await saveAdminMessageHistory({
       botId,
@@ -309,7 +317,11 @@ app.post("/operator/send", basicAuth, async (req, res) => {
     const status = err?.response?.status;
     const data = err?.response?.data;
 
-    logError("❌ OPERATOR direct send failed:", status, data || err?.message || err);
+    logError(
+      "❌ OPERATOR direct send failed:",
+      status,
+      data || err?.message || err
+    );
 
     return res
       .status(500)
@@ -334,8 +346,9 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
     log("📣 OPERATOR broadcast requested");
     log("⏱️  time:", new Date().toISOString());
     log("📝 message length:", message.length);
+    log("🔑 OPERATOR broadcast token prefix:", String(token).slice(0, 10));
 
-    await axios.post(
+    const lineResponse = await axios.post(
       "https://api.line.me/v2/bot/message/broadcast",
       { messages: [{ type: "text", text: message }] },
       {
@@ -347,8 +360,14 @@ app.post("/operator/broadcast", basicAuth, async (req, res) => {
       }
     );
 
-    log("✅ OPERATOR broadcast success");
-    log("ℹ️  OPERATOR broadcast history skip: LINE broadcast API has no per-user ids");
+    log("✅ OPERATOR broadcast LINE success", {
+      status: lineResponse.status,
+      statusText: lineResponse.statusText,
+    });
+
+    log(
+      "ℹ️  OPERATOR broadcast history skip: LINE broadcast API has no per-user ids"
+    );
 
     return res.redirect("/operator");
   } catch (err) {
