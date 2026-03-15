@@ -249,3 +249,16 @@ Summary
 最初の対象は services/messageService/index.js と server.js とする
 
 これにより、栄一ツールの開発速度と安全性を両立させる。
+
+
+
+
+ADR一覧に ADR-012 を追加。
+
+追記内容の要点
+
+ADR-012 ファイル分割ルール（200行ルール）
+
+状態: Accepted
+
+日付: 2026-03-15
