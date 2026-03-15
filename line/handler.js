@@ -58,7 +58,6 @@ const handleEvent = async (event, ctx = {}) => {
 
     await adr007b1AppendTest(event);
 
-
     const userText = event.message.text;
     log(`📝 [${rid}] userText=`, userText);
 
@@ -97,13 +96,17 @@ const handleEvent = async (event, ctx = {}) => {
     }
 
     const textForAI = buildTextWithHistory(userText, history);
+    log(`🧠 [${rid}] textForAI prepared`);
 
     // ===== AI処理 =====
+    // ADR-014:
+    // 保存データ汚染を防ぐため、processMessage には userText を渡す
+    // textForAI は AI入力専用データとして保持のみ
     const result = await processMessage({
       rid,
       bot_id,
       userId,
-      text: textForAI,
+      text: userText,
       tone,
     });
 
@@ -170,14 +173,10 @@ const handleEvent = async (event, ctx = {}) => {
 
 module.exports = { handleEvent };
 
-
-
 // ===== ADR007B1 実験用 =====
-
 
 async function adr007b1AppendTest(event) {
   try {
-
     const row = [
       Date.now(),
       "test_bot",
@@ -187,41 +186,37 @@ async function adr007b1AppendTest(event) {
       "test memo",
       false,
       "line_webhook_test",
-      false
+      false,
     ];
 
     await appendRowToSheet({
       spreadsheetId: process.env.SPREADSHEET_ID,
       sheetName: "conversation_history",
-      values: row
+      values: row,
     });
 
     log("ADR007B1 append success");
-
   } catch (err) {
     log("ADR007B1 append error", err.message);
   }
 }
-
 
 /*
 const { google } = require("googleapis");
 
 async function adr007b1AppendTest(event) {
   try {
-
-    
     log("ADR007B1 env debug", {
-     hasSheetId: !!process.env.XX_SHEET_ID,
-    hasSaEmail: !!process.env.XX_SA_EMAIL,
-     hasSaKey: !!process.env.XX_SA_KEY,
+      hasSheetId: !!process.env.XX_SHEET_ID,
+      hasSaEmail: !!process.env.XX_SA_EMAIL,
+      hasSaKey: !!process.env.XX_SA_KEY,
       sheetIdLength: process.env.XX_SHEET_ID ? process.env.XX_SHEET_ID.length : 0,
       saKeyLength: process.env.XX_SA_KEY ? process.env.XX_SA_KEY.length : 0,
     });
 
     if (
-      !process.env.XX_SHEET_ID  ||
-      !process.env.XX_SA_EMAIL  ||
+      !process.env.XX_SHEET_ID ||
+      !process.env.XX_SA_EMAIL ||
       !process.env.XX_SA_KEY
     ) {
       log("ADR007B1 skip: env missing");
@@ -235,16 +230,14 @@ async function adr007b1AppendTest(event) {
       ["https://www.googleapis.com/auth/spreadsheets"]
     );
 
-
     const authResult = await auth.authorize();
     log("ADR007B1 auth success", {
       accessTokenExists: !!authResult.access_token,
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-    
-   
-     const row = [[
+
+    const row = [[
       Date.now(),
       "test_bot",
       event?.source?.userId || "unknown_user",
@@ -264,9 +257,8 @@ async function adr007b1AppendTest(event) {
     });
 
     log("ADR007B1 append success");
-
   } catch (err) {
     log("ADR007B1 append error", err.message);
   }
 }
-  */
+*/
