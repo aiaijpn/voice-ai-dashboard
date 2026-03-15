@@ -4,8 +4,7 @@ const express = require("express");
 const axios = require("axios");
 
 const { log, error: logError } = require("../utils/logger");
-const { saveAdminMessageHistory } = require("../services/adminMessageService");
-const { saveConversationHistory } = require("../services/historyService");
+const { sendOperatorMessage } = require("../services/operatorSendService");
 
 const router = express.Router();
 
@@ -181,122 +180,20 @@ router.post("/tone", (req, res) => {
 });
 
 // =============================
-// ADR-009 個別送信
-// C案:
-// - admin_message は従来どおり保存
-// - さらに ai_reply としても保存
-//   → 次回AI会話時に assistant 発話として参照させる
+// ADR-013D 個別送信 service 化
 // =============================
 router.post("/send", async (req, res) => {
-  const botId = String(req.body?.botId || "").trim();
-  const userId = String(req.body?.userId || "").trim();
-  const message = String(req.body?.message || "").trim();
+  const result = await sendOperatorMessage({
+    botId: req.body?.botId,
+    userId: req.body?.userId,
+    message: req.body?.message,
+  });
 
-  if (!botId) return res.status(400).send("botId is required");
-  if (!userId) return res.status(400).send("userId is required");
-  if (!message) return res.status(400).send("message is required");
-
-  const token = process.env.CHANNEL_ACCESS_TOKEN;
-  if (!token) return res.status(500).send("CHANNEL_ACCESS_TOKEN missing");
-
-  try {
-    log("========================================");
-    log("📨 OPERATOR direct send requested");
-    log("⏱️  time:", new Date().toISOString());
-    log("🤖 botId:", botId);
-    log("👤 userId:", userId);
-    log("📝 message length:", message.length);
-    log("🔑 OPERATOR send token prefix:", String(token).slice(0, 10));
-
-    const lineResponse = await axios.post(
-      "https://api.line.me/v2/bot/message/push",
-      {
-        to: userId,
-        messages: [{ type: "text", text: message }],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-      }
-    );
-
-    log("✅ OPERATOR LINE push success", {
-      botId,
-      userId,
-      status: lineResponse.status,
-      statusText: lineResponse.statusText,
-    });
-
-    const adminHistoryResult = await saveAdminMessageHistory({
-      botId,
-      userId,
-      messageText: message,
-      operatorMemo: "operator panel send",
-      timestamp: Date.now(),
-    });
-
-    if (!adminHistoryResult.success) {
-      logError("❌ OPERATOR admin_message history save failed", {
-        botId,
-        userId,
-        message: adminHistoryResult.message,
-        data: adminHistoryResult.data || null,
-      });
-
-      return res
-        .status(500)
-        .send(`message sent but admin_message history save failed: ${adminHistoryResult.message}`);
-    }
-
-    log("✅ OPERATOR admin_message history saved");
-
-    const aiReplyHistoryResult = await saveConversationHistory({
-      botId,
-      userId,
-      timestamp: Date.now(),
-      userMessage: "",
-      aiReply: message,
-      operatorMemo: "operator panel send (assistant mirror)",
-      manualSend: false,
-      sourceType: "ai_reply",
-      unresolvedQ: false,
-    });
-
-    if (!aiReplyHistoryResult.success) {
-      logError("❌ OPERATOR ai_reply mirror save failed", {
-        botId,
-        userId,
-        message: aiReplyHistoryResult.message,
-        data: aiReplyHistoryResult.data || null,
-      });
-
-      return res
-        .status(500)
-        .send(`message sent and admin history saved but ai_reply mirror save failed: ${aiReplyHistoryResult.message}`);
-    }
-
-    log("✅ OPERATOR ai_reply mirror history saved");
-    log("✅ OPERATOR direct send success");
-    log("✅ OPERATOR direct send history saved");
-
-    return res.redirect("/operator");
-  } catch (err) {
-    const status = err?.response?.status;
-    const data = err?.response?.data;
-
-    logError(
-      "❌ OPERATOR direct send failed:",
-      status,
-      data || err?.message || err
-    );
-
-    return res
-      .status(500)
-      .send(`direct send failed: ${status || ""} ${JSON.stringify(data || {})}`);
+  if (!result.success) {
+    return res.status(500).send(result.message);
   }
+
+  return res.redirect("/operator");
 });
 
 // =============================
