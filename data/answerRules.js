@@ -136,6 +136,67 @@ const answerRules = [
     priority: 80,
     is_active: true,
   },
+
+    // ===============================
+    // 協賛企業：全体件数
+    // ===============================
+  {
+      id: "rule_company_count",
+      trigger_keywords: [
+        "何社",
+        "全部で何社",
+        "協賛数",
+        "何件",
+        "企業数",
+    ],
+    question_example: "全部で何社ある？",
+    preferred_answer:
+        "現在、複数の分野の協賛企業が参加しています。詳しくは一覧でもご案内できます。",
+    linked_company_id: null,
+    priority: 50,
+    is_active: true,
+  },
+
+    // ===============================
+    // 協賛企業：職種・ジャンル
+    // ===============================
+  {
+    id: "rule_company_categories",
+    trigger_keywords: [
+        "どんな職種",
+        "業種",
+        "何の会社",
+        "どんなジャンル",
+        "どんな企業",
+     ],
+    question_example: "どんな職種がある？",
+    preferred_answer:
+        "法律、相続、スーツ、美容医療、ワインバー、文化系など、幅広い分野の企業が参加しています。",
+    linked_company_id: null,
+    priority: 50,
+    is_active: true,
+  },
+
+    // ===============================
+    // 協賛企業：参加方法（重要）
+    // ===============================
+  {
+    id: "rule_company_join",
+    trigger_keywords: [
+        "参加方法",
+        "どうやって参加",
+        "協賛したい",
+        "掲載したい",
+        "企業として参加",
+    ],
+    question_example: "協賛企業として参加したい",
+    preferred_answer:
+        "協賛企業としての参加をご希望の場合はご案内できます。どのような業種か教えていただけますか？",
+    linked_company_id: "takamura_ai",
+    priority: 80,
+    is_active: true,
+  }
+
 ];
 
 module.exports = {
