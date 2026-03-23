@@ -4,13 +4,13 @@
  * textMatch
  *
  * 役割:
- * - ユーザー入力と企業タグの簡易一致判定
- * - V3では「軽い前処理 + includes」のみ
+ * - ユーザー入力とキーワードの簡易一致判定
+ * - company / answerRules 両方で使う共通ロジック
  *
  * 方針:
  * - 複雑化しない
  * - あいまい検索しない
- * - まずは最小一致で動かす
+ * - 軽い前処理 + includes のみ
  */
 
 /**
@@ -26,33 +26,45 @@ function normalizeText(text = "") {
 }
 
 /**
- * ユーザー発言が tags のどれかを含むか判定
+ * 汎用キーワード一致判定
  *
  * @param {string} userMessage
- * @param {string[]} tags
+ * @param {string[]} keywords
  * @returns {boolean}
  */
-function matchesCompanyTags(userMessage = "", tags = []) {
+function matchesKeywords(userMessage = "", keywords = []) {
   const normalizedMessage = normalizeText(userMessage);
 
   if (!normalizedMessage) {
     return false;
   }
 
-  if (!Array.isArray(tags) || tags.length === 0) {
+  if (!Array.isArray(keywords) || keywords.length === 0) {
     return false;
   }
 
-  return tags.some((tag) => {
-    const normalizedTag = normalizeText(tag);
-    if (!normalizedTag) {
+  return keywords.some((keyword) => {
+    const normalizedKeyword = normalizeText(keyword);
+    if (!normalizedKeyword) {
       return false;
     }
-    return normalizedMessage.includes(normalizedTag);
+    return normalizedMessage.includes(normalizedKeyword);
   });
+}
+
+/**
+ * 企業タグ一致判定（後方互換）
+ *
+ * @param {string} userMessage
+ * @param {string[]} tags
+ * @returns {boolean}
+ */
+function matchesCompanyTags(userMessage = "", tags = []) {
+  return matchesKeywords(userMessage, tags);
 }
 
 module.exports = {
   normalizeText,
+  matchesKeywords,
   matchesCompanyTags,
 };
