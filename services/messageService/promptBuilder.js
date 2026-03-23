@@ -10,22 +10,83 @@ const toneGuideMap = {
 };
 
 /**
+ * 企業候補ヒント文を作る
+ *
+ * 方針:
+ * - 候補が無ければ空文字
+ * - V3では最大2件まで
+ * - AIには「必要時のみ自然に触れる」とだけ伝える
+ * - URLはここでは渡さない（会話本文が不自然に長くなるのを防ぐ）
+ *
+ * @param {Array} companyCandidates
+ * @returns {string}
+ */
+function buildCompanyHint(companyCandidates = []) {
+  if (!Array.isArray(companyCandidates) || companyCandidates.length === 0) {
+    return "";
+  }
+
+  const lines = companyCandidates
+    .slice(0, 2)
+    .map((company, index) => {
+      const displayName = String(company?.display_name || "").trim();
+      const category = String(company?.category || "").trim();
+      const shortPitch = String(company?.short_pitch || "").trim();
+
+      return `${index + 1}. ${displayName} / ${category} / ${shortPitch}`;
+    })
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return "";
+  }
+
+  return `
+[関連候補企業]
+以下は参考候補です。
+会話内容に自然に合う場合のみ、押し売りせず軽く触れてください。
+企業紹介を主目的にせず、会話の自然さを優先してください。
+無関係なら触れないでください。
+
+${lines.join("\n")}
+`.trim();
+}
+
+/**
  * system prompt を構築する
  *
  * @param {Object} input
  * @param {string} input.tone
  * @param {string} input.rid
  * @param {Function} input.log
+ * @param {Array} input.companyCandidates
  * @returns {Promise<string>}
  */
-async function buildSystemPrompt({ tone = "polite", rid = "no_rid", log = console.log }) {
+async function buildSystemPrompt({
+  tone = "polite",
+  rid = "no_rid",
+  log = console.log,
+  companyCandidates = [],
+}) {
   const toneGuide = toneGuideMap[String(tone)] || toneGuideMap.polite;
+  const companyHint = buildCompanyHint(companyCandidates);
 
   let systemPrompt = `
 出力は必ず指定JSONスキーマに一致させること（余計なキー禁止）。
 reply_text は次の口調ルールに従う: ${toneGuide}
 summary/category/urgency_score は回答の影響を受けず内容理解に基づいて返す。
+reply_text は短めで、相手が返しやすい自然な文にする。
+質問は多くても1つまでに抑える。
+AI感を出しすぎない。
 `.trim();
+
+  if (companyHint) {
+    systemPrompt = `
+${systemPrompt}
+
+${companyHint}
+`.trim();
+  }
 
   const op = await getProfile();
   const operatorProfile = String(op?.profile_text || "")
@@ -37,6 +98,15 @@ summary/category/urgency_score は回答の影響を受けず内容理解に基�
 
   log(`🧩 [${rid}] operatorProfile len=${operatorProfile.length}`);
   log(`🧩 [${rid}] operatorProfile head=${operatorProfile.slice(0, 80)}`);
+  log(`🧩 [${rid}] companyCandidates count=${companyCandidates.length}`);
+
+  if (companyHint) {
+    log(
+      `🧩 [${rid}] companyHint head=${companyHint
+        .slice(0, 120)
+        .replace(/\n/g, "\\n")}`
+    );
+  }
 
   if (operatorProfile) {
     systemPrompt = `
@@ -179,6 +249,7 @@ function buildOpenAIMessages(input = {}) {
  * @param {Array} input.historyItems
  * @param {string} input.userText
  * @param {Function} input.log
+ * @param {Array} input.companyCandidates
  * @returns {Promise<{systemPrompt: string, messages: Array}>}
  */
 async function buildPromptContext(input = {}) {
@@ -187,11 +258,15 @@ async function buildPromptContext(input = {}) {
   const historyItems = Array.isArray(input.historyItems) ? input.historyItems : [];
   const userText = String(input.userText || "");
   const log = typeof input.log === "function" ? input.log : console.log;
+  const companyCandidates = Array.isArray(input.companyCandidates)
+    ? input.companyCandidates
+    : [];
 
   const systemPrompt = await buildSystemPrompt({
     rid,
     tone,
     log,
+    companyCandidates,
   });
 
   const messages = buildOpenAIMessages({
@@ -203,6 +278,7 @@ async function buildPromptContext(input = {}) {
   log(`🧩 [${rid}] OpenAI messages built`);
   log(`🧩 [${rid}] historyCount=${historyItems.length}`);
   log(`🧩 [${rid}] messageCount=${messages.length}`);
+  log(`🧩 [${rid}] companyCandidatesCount=${companyCandidates.length}`);
   log(
     `🧩 [${rid}] lastUserText=${userText.slice(0, 80).replace(/\n/g, "\\n")}`
   );
@@ -214,6 +290,7 @@ async function buildPromptContext(input = {}) {
 }
 
 module.exports = {
+  buildCompanyHint,
   buildSystemPrompt,
   mapHistoryItemToOpenAIMessages,
   buildHistoryMessages,

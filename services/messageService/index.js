@@ -28,7 +28,7 @@
  * 処理フロー
  *
  * 1 会話履歴取得
- * 2 promptBuilder で AI入力構築
+ * 2 buildAiContext で AI入力構築
  * 3 OpenAI 呼び出し
  * 4 AIレスポンス解析
  * 5 AI分類
@@ -47,7 +47,7 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
-const { buildPromptContext } = require("./promptBuilder");
+const { buildAiContext } = require("./buildAiContext");
 
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
 
@@ -135,15 +135,13 @@ async function processMessage(context) {
 
     /**
      * 2
-     * promptBuilder で AI入力構築
+     * buildAiContext で AI入力構築
      *
-     * ADR016:
-     * systemPrompt生成
-     * messages生成
-     * AI入力ログ出力
-     * を promptBuilder に集約
+     * V3:
+     * - 関連企業候補抽出
+     * - promptBuilder へ companyCandidates 連携
      */
-    const promptContext = await buildPromptContext({
+    const promptContext = await buildAiContext({
       rid,
       tone,
       historyItems,
@@ -151,13 +149,16 @@ async function processMessage(context) {
       log,
     });
 
-    const { systemPrompt, messages } = promptContext;
+    const { systemPrompt, messages, companyCandidates } = promptContext;
 
     log(`🧠 [${rid}] prompt context ready`, {
       historyCount: historyItems.length,
       messageCount: messages.length,
       userTextLength: String(text || "").length,
       aiInputTextLength: String(effectiveAiInputText || "").length,
+      companyCandidatesCount: Array.isArray(companyCandidates)
+        ? companyCandidates.length
+        : 0,
     });
 
     /**
@@ -228,7 +229,7 @@ async function processMessage(context) {
      */
     let finalReply = buildReplyText(replyText);
 
-    finalReply = await insertAd(finalReply);
+    //finalReply = await insertAd(finalReply);
 
     finalReply = buildReplyText(finalReply);
 
