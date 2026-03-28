@@ -121,13 +121,20 @@ async function processMessage(context) {
      * ★ 未回答をストック（ここが収益導線）
      */
     try {
-      await saveQuestionStock({
-        userId,
+      const questionStockInput = {
+        user_id: userId,
         bot_id,
         question: text,
-        normalizedQuestion: normalizeText(text),
-        companyId: topCompany?.id || "",
-      });
+        normalized_question: normalizeText(text),
+        company_id: topCompany?.id || "",
+        user_question: text,
+      };
+
+      log(`🧪 [${rid}] questionStock input`, questionStockInput);
+
+      const questionStockResult = await saveQuestionStock(questionStockInput);
+
+      log(`🧪 [${rid}] questionStock result`, questionStockResult);
     } catch (e) {
       logError(`⚠️ [${rid}] questionStock error:`, e?.message || e);
     }
