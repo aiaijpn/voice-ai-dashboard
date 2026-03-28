@@ -33,12 +33,17 @@ function createSheetsClient() {
   const fs = require("fs");
   const path = require("path");
 
-  const filePath = String(process.env.GOOGLE_SERVICE_ACCOUNT_FILE || "").trim();
   const rawJson = String(process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "").trim();
+  const filePath = String(process.env.GOOGLE_SERVICE_ACCOUNT_FILE || "").trim();
 
   let credentials = null;
 
-  if (filePath) {
+  // ① 実機 / 本番: JSON優先
+  if (rawJson) {
+    credentials = JSON.parse(rawJson);
+  }
+  // ② ローカル: ファイル
+  else if (filePath) {
     const resolvedPath = path.resolve(process.cwd(), filePath);
 
     if (!fs.existsSync(resolvedPath)) {
@@ -46,9 +51,9 @@ function createSheetsClient() {
     }
 
     credentials = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
-  } else if (rawJson) {
-    credentials = JSON.parse(rawJson);
-  } else {
+  }
+  // ③ どちらも無い
+  else {
     throw new Error("Google service account credentials are missing");
   }
 
