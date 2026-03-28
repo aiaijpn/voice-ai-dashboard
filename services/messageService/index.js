@@ -1,14 +1,5 @@
 "use strict";
 
-/**
- * messageService / index
- *
- * V3.1 対応版
- *
- * 追加:
- * - answerRuleHandler による即返し分岐
- */
-
 const { log, error: logError } = require("../../utils/logger");
 const { insertAd } = require("../../ads/adService");
 const { success, fail } = require("../../utils/serviceResponse");
@@ -19,7 +10,7 @@ const {
 } = require("../historyService");
 
 const { buildAiContext } = require("./buildAiContext");
-const { handleAnswerRule } = require("./answerRuleHandler"); // ★ 追加
+const { handleAnswerRule } = require("./answerRuleHandler");
 
 const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
 const { parseOpenAIResponse } = require("./responseParser");
@@ -32,8 +23,17 @@ const {
 } = require("./buildReply");
 
 /**
- * 起動ログ
+ * ★ V3.2
  */
+const { findCompaniesForAi } = require("../companyService");
+const { findCompanyWikiAnswer } = require("../companyWikiService");
+
+/**
+ * ★ 追加（未回答収集）
+ */
+const { saveQuestionStock } = require("../questionStockService");
+const { normalizeText } = require("../../utils/textMatch");
+
 log("📦 messageService/index.js loaded:", new Date().toISOString());
 
 async function processMessage(context) {
@@ -67,8 +67,7 @@ async function processMessage(context) {
     }
 
     /**
-     * ★ V3.1 ここが追加ポイント
-     * 回答優先ルールを先にチェック
+     * V3.1: answerRule
      */
     const ruleResult = await handleAnswerRule({
       rid,
@@ -82,6 +81,55 @@ async function processMessage(context) {
 
     if (ruleResult.handled) {
       return ruleResult.response;
+    }
+
+    /**
+     * ★ V3.2: companyWiki検索
+     */
+    let topCompany = null;
+
+    try {
+      const companyCandidates = findCompaniesForAi(text);
+      topCompany = companyCandidates[0];
+
+      if (topCompany) {
+        const wikiResult = await findCompanyWikiAnswer({
+          companyId: topCompany.id,
+          userQuestion: text,
+        });
+
+        if (wikiResult.found && wikiResult.item?.answer_text) {
+          const reply = buildReplyText(wikiResult.item.answer_text);
+
+          return success(
+            buildProcessMessageSuccessData({
+              finalReply: reply,
+              parsed: {},
+              userId,
+              bot_id,
+              rid,
+            }),
+            "companyWiki hit"
+          );
+        }
+      }
+    } catch (e) {
+      logError(`⚠️ [${rid}] companyWiki error:`, e?.message || e);
+    }
+
+    /**
+     * ★ 未回答をストック（ここが収益導線）
+     */
+    try {
+      await saveQuestionStock({
+        userId,
+        bot_id,
+        question: text,
+        normalizedQuestion: normalizeText(text),
+        companyId: topCompany?.id || "",
+      });
+    } catch (e) {
+      logError(`⚠️ [${rid}] questionStock error:`, e?.message || e);
     }
 
     /**

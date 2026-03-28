@@ -38,43 +38,92 @@ const { google } = require("googleapis");
 const { log, error: logError } = require("../utils/logger");
 
 /**
- * 環境変数から Service Account JSON を取得する
+ * Service Account 認証情報を取得する
  *
- * Render / 本番では
- * GOOGLE_SERVICE_ACCOUNT_JSON に
- * 「1行JSON文字列」で入れる前提にする
+ * 対応環境:
+ * - 本番（Renderなど）: GOOGLE_SERVICE_ACCOUNT_JSON を使用
+ * - ローカル: GOOGLE_SERVICE_ACCOUNT_FILE を使用
  *
- * 例:
+ * 優先順位:
+ * 1. GOOGLE_SERVICE_ACCOUNT_JSON（1行JSON文字列）
+ * 2. GOOGLE_SERVICE_ACCOUNT_FILE（JSONファイルパス）
+ *
+ * 例（JSON）:
  * {
- *   "type":"service_account",
- *   "project_id":"...",
+ *   "type": "service_account",
+ *   "project_id": "...",
  *   ...
  * }
  *
- * 契約:
- * - 未設定なら throw
- * - JSON不正でも throw
+ * 例（.env ローカル）:
+ * GOOGLE_SERVICE_ACCOUNT_FILE=./service-account.json
  *
- * 重要:
- * - ここでは「認証情報を取得するだけ」
- * - API接続確認まではしない
+ * 契約:
+ * - 両方未設定なら throw
+ * - JSON不正でも throw
+ * - ファイルが存在しない場合も throw
+ *
+ * 注意:
+ * - private_key に含まれる "\\n" は改行に変換する
+ *
+ * この関数の責務:
+ * - 認証情報の取得と正規化のみ
+ * - API接続確認は行わない
  */
 function getServiceAccountJson() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const fs = require("fs");
+  const path = require("path");
 
-  if (!raw) {
-    throw new Error(
-      "sheet/saver.getServiceAccountJson: GOOGLE_SERVICE_ACCOUNT_JSON is required"
-    );
+  const rawJson = String(process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "").trim();
+  const filePath = String(process.env.GOOGLE_SERVICE_ACCOUNT_FILE || "").trim();
+
+  // ① 本番（JSON）
+  if (rawJson) {
+    try {
+      const parsed = JSON.parse(rawJson);
+
+      if (parsed.private_key) {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+      }
+
+      return parsed;
+    } catch (error) {
+      throw new Error(
+        `sheet/saver.getServiceAccountJson: invalid JSON: ${error.message}`
+      );
+    }
   }
 
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(
-      `sheet/saver.getServiceAccountJson: invalid JSON: ${error.message}`
-    );
+  // ② ローカル（FILE）
+  if (filePath) {
+    const resolvedPath = path.resolve(process.cwd(), filePath);
+
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(
+        `sheet/saver.getServiceAccountJson: service account file not found: ${resolvedPath}`
+      );
+    }
+
+    const raw = fs.readFileSync(resolvedPath, "utf8");
+
+    try {
+      const parsed = JSON.parse(raw);
+
+      if (parsed.private_key) {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+      }
+
+      return parsed;
+    } catch (error) {
+      throw new Error(
+        `sheet/saver.getServiceAccountJson: invalid JSON (file): ${error.message}`
+      );
+    }
   }
+
+  throw new Error(
+    "sheet/saver.getServiceAccountJson: GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE is required"
+  );
 }
 
 /**

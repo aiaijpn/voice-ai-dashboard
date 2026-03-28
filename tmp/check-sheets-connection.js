@@ -10,6 +10,8 @@
  * 保存処理までは行わない。
  */
 
+require("dotenv").config();
+
 const { checkSheetsConnection } = require("../sheet/saver");
 
 async function main() {
