@@ -1,7 +1,6 @@
 "use strict";
 
 const { log, error: logError } = require("../../utils/logger");
-const { insertAd } = require("../../ads/adService");
 const { success, fail } = require("../../utils/serviceResponse");
 
 const {
@@ -9,13 +8,7 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
-const { buildAiContext } = require("./buildAiContext");
 const { handleAnswerRule } = require("./answerRuleHandler");
-
-const { callOpenAI, OPENAI_MODEL } = require("./openaiClient");
-const { parseOpenAIResponse } = require("./responseParser");
-const { classifyMessage } = require("./classifyMessage");
-const { saveUsage, saveVoiceLog } = require("./logSavers");
 
 const {
   buildReplyText,
@@ -29,10 +22,16 @@ const { findCompaniesForAi } = require("../companyService");
 const { findCompanyWikiAnswer } = require("../companyWikiService");
 
 /**
- * ★ 追加（未回答収集）
+ * ★ 未回答収集
  */
 const { saveQuestionStock } = require("../questionStockService");
 const { normalizeText } = require("../../utils/textMatch");
+
+/**
+ * ★ 固定フォールバック
+ */
+const WIKI_NOT_FOUND_REPLY =
+  "そのご質問についての情報は現在登録されておりません。\nお時間いただきますが、お調べいたします。";
 
 log("📦 messageService/index.js loaded:", new Date().toISOString());
 
@@ -42,15 +41,11 @@ async function processMessage(context) {
     bot_id = "voice-ai-dashboard",
     userId = "",
     text = "",
-    aiInputText = "",
-    tone = "polite",
   } = context || {};
-
-  const effectiveAiInputText = aiInputText || text;
 
   try {
     /**
-     * 1. 会話履歴取得
+     * 1. 会話履歴（今は使わないが維持）
      */
     let historyItems = [];
 
@@ -67,14 +62,14 @@ async function processMessage(context) {
     }
 
     /**
-     * V3.1: answerRule
+     * 2. answerRule
      */
     const ruleResult = await handleAnswerRule({
       rid,
       bot_id,
       userId,
       text,
-      aiInputText,
+      aiInputText: text,
       log,
       logError,
     });
@@ -84,7 +79,7 @@ async function processMessage(context) {
     }
 
     /**
-     * ★ V3.2: companyWiki検索
+     * 3. companyWiki検索
      */
     let topCompany = null;
 
@@ -118,7 +113,7 @@ async function processMessage(context) {
     }
 
     /**
-     * ★ 未回答をストック（ここが収益導線）
+     * 4. 未回答ストック（必ず実行）
      */
     try {
       const questionStockInput = {
@@ -140,81 +135,12 @@ async function processMessage(context) {
     }
 
     /**
-     * 2. AI入力構築
+     * 5. 固定フォールバック返信
      */
-    const promptContext = await buildAiContext({
-      rid,
-      tone,
-      historyItems,
-      userText: effectiveAiInputText,
-      log,
-    });
-
-    const { systemPrompt, messages } = promptContext;
+    const finalReply = buildReplyText(WIKI_NOT_FOUND_REPLY);
 
     /**
-     * 3. OpenAI呼び出し
-     */
-    const response = await callOpenAI({
-      systemPrompt,
-      text: effectiveAiInputText,
-      messages,
-      rid,
-      log,
-    });
-
-    /**
-     * 4. usage保存
-     */
-    await saveUsage({
-      response,
-      bot_id,
-      rid,
-      openaiModel: OPENAI_MODEL,
-      log,
-      logError,
-    });
-
-    /**
-     * 5. 解析
-     */
-    const parsedResult = parseOpenAIResponse(
-      response,
-      effectiveAiInputText,
-      rid,
-      log
-    );
-
-    /**
-     * 6. 分類
-     */
-    const classified = classifyMessage({
-      parsed: parsedResult.parsed,
-    });
-
-    const parsed = classified.parsed;
-    const replyText = parsedResult.replyText;
-
-    /**
-     * 7. voiceログ
-     */
-    await saveVoiceLog({
-      parsed,
-      text,
-      rid,
-      log,
-      logError,
-    });
-
-    /**
-     * 8. 返信生成
-     */
-    let finalReply = buildReplyText(replyText);
-    //finalReply = await insertAd(finalReply);
-    finalReply = buildReplyText(finalReply);
-
-    /**
-     * 9. 履歴保存
+     * 6. 履歴保存
      */
     await saveConversationHistory({
       botId: bot_id,
@@ -236,12 +162,12 @@ async function processMessage(context) {
     return success(
       buildProcessMessageSuccessData({
         finalReply,
-        parsed,
+        parsed: {},
         userId,
         bot_id,
         rid,
       }),
-      "processMessage ok"
+      "fallback reply"
     );
   } catch (e) {
     logError(`❌ [${rid}] processMessage failed:`, e?.message || e);
