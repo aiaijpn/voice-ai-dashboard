@@ -44,7 +44,7 @@ const CONVERSATION_SHEET_NAME = "conversation_history";
  * 会話履歴オブジェクトを
  * Google Sheets に append するための「1行配列」に変換する。
  *
- * 列順は ADR-008 に固定:
+ * 列順は V3.4 で以下に固定:
  * 1. timestamp
  * 2. bot_id
  * 3. user_id
@@ -54,6 +54,7 @@ const CONVERSATION_SHEET_NAME = "conversation_history";
  * 7. manual_send
  * 8. source_type
  * 9. unresolved_q
+ * 10. company_id
  *
  * @param {Object} input
  * @returns {Array}
@@ -69,6 +70,7 @@ function buildConversationRow(input = {}) {
     typeof input.manualSend === "boolean" ? input.manualSend : false,
     input.sourceType || "user_message",
     typeof input.unresolvedQ === "boolean" ? input.unresolvedQ : false,
+    input.companyId || "",
   ];
 }
 
@@ -119,6 +121,7 @@ function createSheetsClient() {
  * 6: manual_send
  * 7: source_type
  * 8: unresolved_q
+ * 9: company_id
  *
  * @param {Array} row
  * @returns {Object}
@@ -134,6 +137,7 @@ function mapRowToConversation(row = []) {
     manualSend: parseSheetBoolean(row[6]),
     sourceType: row[7] || "",
     unresolvedQ: parseSheetBoolean(row[8]),
+    companyId: row[9] || "",
   };
 }
 
@@ -233,7 +237,7 @@ async function getConversationHistory(input = {}) {
 
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${CONVERSATION_SHEET_NAME}!A:I`,
+      range: `${CONVERSATION_SHEET_NAME}!A:J`,
     });
 
     const rows = Array.isArray(response.data.values) ? response.data.values : [];

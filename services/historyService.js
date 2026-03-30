@@ -39,6 +39,8 @@ function normalizeSaveInput(input = {}) {
 
     unresolvedQ:
       typeof input.unresolvedQ === "boolean" ? input.unresolvedQ : false,
+
+    companyId: String(input.companyId || "").trim(),
   };
 }
 
@@ -159,6 +161,78 @@ function getGetConversationHistory() {
 }
 
 /**
+ * 履歴配列から最新の companyId を返す
+ *
+ * 方針:
+ * - 新しい順に見つけたいので後ろから走査する
+ * - 空文字は無視する
+ * - 見つからなければ null
+ *
+ * @param {Array} items
+ * @returns {string|null}
+ */
+function findLatestCompanyId(items = []) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const companyId = String(items[i]?.companyId || "").trim();
+    if (companyId) {
+      return companyId;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * botId + userId の履歴から
+ * 最新の companyId を取得する
+ *
+ * @param {Object} input
+ * @param {string} input.botId
+ * @param {string} input.userId
+ * @param {number} [input.limit=10]
+ * @returns {Promise<{success:boolean,message:string,data:any}>}
+ */
+async function getLatestCompanyIdFromHistory(input = {}) {
+  try {
+    const historyResult = await getConversationHistory({
+      botId: input.botId,
+      userId: input.userId,
+      limit: input.limit || 10,
+    });
+
+    if (!historyResult.success) {
+      return fail(
+        historyResult.message ||
+          "historyService.getLatestCompanyIdFromHistory: history fetch failed",
+        historyResult.data || null
+      );
+    }
+
+    const items = Array.isArray(historyResult.data?.items)
+      ? historyResult.data.items
+      : [];
+
+    const companyId = findLatestCompanyId(items);
+
+    return success(
+      {
+        companyId,
+        itemsCount: items.length,
+      },
+      "historyService.getLatestCompanyIdFromHistory: fetched"
+    );
+  } catch (error) {
+    return fail(
+      `historyService.getLatestCompanyIdFromHistory: ${error.message}`
+    );
+  }
+}
+
+/**
  * 会話履歴を保存する service 本体
  */
 async function saveConversationHistory(input = {}) {
@@ -239,6 +313,8 @@ module.exports = {
   validateGetInput,
   getAppendConversationRow,
   getGetConversationHistory,
+  findLatestCompanyId,
+  getLatestCompanyIdFromHistory,
   saveConversationHistory,
   getConversationHistory,
 };

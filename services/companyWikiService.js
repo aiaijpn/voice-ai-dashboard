@@ -8,9 +8,10 @@
  * - company_id + normalized_question で wiki回答を探す
  *
  * 方針:
- * - V3.2 最小実装
+ * - V3.2 / V3.4 最小実装
  * - まずは完全一致のみ
  * - あいまい検索はしない
+ * - normalized_question が空なら question_pattern を代替利用する
  */
 
 const { google } = require("googleapis");
@@ -99,6 +100,25 @@ function mapRowToWikiItem(row = []) {
 }
 
 /**
+ * Sheets上の比較用質問キーを作る
+ *
+ * 優先順位:
+ * 1. normalized_question
+ * 2. question_pattern
+ *
+ * @param {Object} item
+ * @returns {string}
+ */
+function getWikiMatchQuestion(item = {}) {
+  const normalizedQuestion = normalizeText(item.normalized_question);
+  if (normalizedQuestion) {
+    return normalizedQuestion;
+  }
+
+  return normalizeText(item.question_pattern);
+}
+
+/**
  * company_wiki 全件取得
  *
  * @returns {Promise<Array>}
@@ -133,6 +153,7 @@ async function getAllCompanyWikiItems() {
  * - status === "active"
  * - company_id 一致
  * - normalized_question 完全一致
+ * - ただし normalized_question が空なら question_pattern を代替利用
  *
  * @param {Object} params
  * @param {string} params.companyId
@@ -153,10 +174,12 @@ async function findCompanyWikiAnswer({ companyId = "", userQuestion = "" }) {
   const items = await getAllCompanyWikiItems();
 
   const matched = items.find((item) => {
+    const wikiMatchQuestion = getWikiMatchQuestion(item);
+
     return (
       item.status === "active" &&
       item.company_id === safeCompanyId &&
-      normalizeText(item.normalized_question) === normalizedQuestion
+      wikiMatchQuestion === normalizedQuestion
     );
   });
 
@@ -176,6 +199,7 @@ async function findCompanyWikiAnswer({ companyId = "", userQuestion = "" }) {
 module.exports = {
   COMPANY_WIKI_SHEET_NAME,
   mapRowToWikiItem,
+  getWikiMatchQuestion,
   getAllCompanyWikiItems,
   findCompanyWikiAnswer,
 };

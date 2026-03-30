@@ -74,6 +74,37 @@ const companyMaster = [
   // ===============================
   // オーダースーツの金井
   // ===============================
+
+{
+  id: "kanai_suit",
+  type: "company",
+  name: "オーダースーツの金井",
+  display_name: "オーダースーツの金井",
+
+  // ★追加
+  aliases: [
+    "金井",
+    "オーダースーツ金井",
+    "スーツ金井"
+  ],
+
+  category: "スーツ",
+  tags: ["スーツ", "オーダー", "装い", "身だしなみ"],
+
+  short_pitch: "装いへの気配り、いかがですか。",
+  description: "オーダースーツのご相談に対応。",
+  url: "https://example.com/kanai-suit",
+
+  is_active: true,
+  show_in_list: true,
+  show_in_ai: true,
+  plan_rank: 2,
+  priority: 20,
+  sort_order: 30,
+},
+
+
+  /*
   {
     id: "kanai_suit",
     type: "company",
@@ -91,6 +122,10 @@ const companyMaster = [
     priority: 20,
     sort_order: 30,
   },
+  */
+
+
+
 
   // ===============================
   // 西川ヘレン美容医療院
