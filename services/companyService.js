@@ -1,91 +1,70 @@
 "use strict";
 
-/**
- * companyService
- *
- * 役割:
- * - companyMaster を参照して企業情報を返す
- * - 一覧表示用の企業配列を返す
- * - AI会話用の候補企業を返す
- * - ID指定で企業を返す
- *
- * 方針:
- * - データの唯一ソースは data/companyMaster.js
- * - 検索ロジックはこの service に集約する
- * - V3では単純一致 + 単純ソートに徹する
- */
-
-const { companyMaster } = require("../data/companyMaster");
+const { getAllCompaniesFromSheet } = require("./companySheetService");
 const { matchesCompanyTags } = require("../utils/textMatch");
 
 /**
- * 協賛一覧ページ向け
- *
- * - show_in_list=true を返す
- * - sort_order 昇順
- *
- * @returns {Array}
+ * TRUE判定
  */
-function getCompaniesForList() {
-  return companyMaster
-    .filter((item) => item.show_in_list)
-    .sort((a, b) => {
-      return (a.sort_order || 0) - (b.sort_order || 0);
-    });
+function isTrue(value) {
+  const v = String(value || "").toLowerCase();
+  return v === "true" || v === "1";
 }
 
 /**
- * ID指定で企業1件取得
+ * 協賛一覧
  *
- * @param {string} id
- * @returns {Object|undefined}
+ * show_in_html が値ありなら表示
  */
-function getCompanyById(id = "") {
+async function getCompaniesForList() {
+  const companyMaster = await getAllCompaniesFromSheet();
+
+  return companyMaster
+    .filter((item) => item.show_in_html !== "")
+    .sort((a, b) => Number(a.show_in_html || 0) - Number(b.show_in_html || 0));
+}
+
+/**
+ * ID取得
+ */
+async function getCompanyById(id = "") {
+  const companyMaster = await getAllCompaniesFromSheet();
   const targetId = String(id || "").trim();
 
-  if (!targetId) {
-    return undefined;
-  }
+  if (!targetId) return undefined;
 
-  return companyMaster.find((item) => item.id === targetId);
+  return companyMaster.find((item) => item.company_id === targetId);
 }
 
 /**
- * AI会話向け候補企業取得
- *
- * 条件:
- * - type === "company"
- * - is_active === true
- * - show_in_ai === true
- * - userMessage と tags が一致
- *
- * 並び順:
- * 1. priority 降順
- * 2. sort_order 昇順
- *
- * @param {string} userMessage
- * @returns {Array}
+ * AI候補
  */
-function findCompaniesForAi(userMessage = "") {
+async function findCompaniesForAi(userMessage = "") {
+  const companyMaster = await getAllCompaniesFromSheet();
+  const safeUserMessage = String(userMessage || "").trim();
+
   return companyMaster
     .filter((item) => {
-      return (
-        item.type === "company" &&
-        item.is_active === true &&
-        item.show_in_ai === true &&
-        matchesCompanyTags(userMessage, item.tags)
-      );
-    })
-    .sort((a, b) => {
-      const priorityA = Number(a.priority || 0);
-      const priorityB = Number(b.priority || 0);
-
-      if (priorityA !== priorityB) {
-        return priorityB - priorityA;
+      if (!isTrue(item.show_in_ai)) {
+        return false;
       }
 
-      return Number(a.sort_order || 0) - Number(b.sort_order || 0);
-    });
+      const name = String(item.name || "");
+      const shortName = String(item.short_name || "");
+      const tags = String(item.tags || "");
+
+      const tagList = tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+
+      return (
+        safeUserMessage.includes(name) ||
+        safeUserMessage.includes(shortName) ||
+        tagList.some((tag) => safeUserMessage.includes(tag))
+      );
+    })
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 }
 
 module.exports = {

@@ -4,7 +4,7 @@
  * services/v35/buildV35Prompt.js
  *
  * 役割:
- * - V3.51 用の AI入力プロンプトを生成する
+ * - V3.52 用の AI入力プロンプトを生成する
  * - userMessage / wiki候補 / stock候補 / company候補 を AIに渡す
  * - JSON固定で返させる
  *
@@ -26,7 +26,7 @@ const DEFAULT_TOPIC_LABEL = "テーマ無し";
  */
 function buildSystemPrompt() {
   return [
-    "あなたはV3.51会話エンジンの中核AIです。",
+    "あなたはV3.52会話エンジンの中核AIです。",
     "目的は、ユーザ発話に対して、返答・未回答収集・wiki下書き生成を同時に行うことです。",
     "",
     "最重要ルール:",
@@ -54,9 +54,10 @@ function buildSystemPrompt() {
     "- 例: スーツ金井, 法律池田, ワイン小澤, テーマ無し",
     "",
     "companyCandidates の扱い:",
-    "- companyCandidates は、コード側で絞り込まれたテーマ候補です",
+    "- companyCandidates は、company_master シートを元にコード側で絞り込まれたテーマ候補です",
     "- topic_label を優先参照して topicLabel を判断してよいです",
     "- company_id を使って matchedCompanyId を決めてよいです",
+    "- keywords は補助情報です",
     "- ただし、根拠が弱い場合は無理に会社を決め打ちせず テーマ無し にしてください",
     "",
     "replyMessage の方針:",
