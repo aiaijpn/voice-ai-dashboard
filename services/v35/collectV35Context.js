@@ -10,6 +10,7 @@
  * 方針:
  * - 全件渡さない（最大件数で絞る）
  * - 最初は軽い一致で候補を拾う
+ * - company_name / company_id / 質問文 / 回答文 も候補抽出に使う
  * - 厳密正解ではなく「候補を落としすぎない」ことを優先
  */
 
@@ -23,6 +24,65 @@ const { getAllQuestionStockRows } = require("../questionStockService");
  */
 const MAX_WIKI_CANDIDATES = 5;
 const MAX_STOCK_CANDIDATES = 5;
+
+/**
+ * 協賛テーマの補助キーワード
+ *
+ * 目的:
+ * - company_wiki 候補が薄くても
+ *   userMessage からテーマを拾いやすくする
+ */
+const COMPANY_HINTS = [
+  {
+    company_id: "kanai_suits",
+    company_name: "オーダースーツ金井",
+    topic_label: "スーツ金井",
+    keywords: [
+      "スーツ",
+      "オーダースーツ",
+      "オーダー",
+      "仕立て",
+      "ジャケット",
+      "パンツ",
+      "ネクタイ",
+      "礼服",
+      "採寸",
+      "金井",
+    ],
+  },
+  {
+    company_id: "ikeda_law",
+    company_name: "池田法律",
+    topic_label: "法律池田",
+    keywords: [
+      "法律",
+      "弁護士",
+      "法務",
+      "相談",
+      "契約",
+      "離婚",
+      "相続",
+      "トラブル",
+      "裁判",
+      "池田",
+    ],
+  },
+  {
+    company_id: "ozawa_wine",
+    company_name: "ワイン小澤",
+    topic_label: "ワイン小澤",
+    keywords: [
+      "ワイン",
+      "赤ワイン",
+      "白ワイン",
+      "ロゼ",
+      "ぶどう",
+      "酒",
+      "ペアリング",
+      "小澤",
+    ],
+  },
+];
 
 /**
  * 安全に文字列化
@@ -104,6 +164,48 @@ function isLooseMatch(userText = "", targetText = "") {
 }
 
 /**
+ * userMessage がキーワード群のどれかに一致するか
+ */
+function matchesAnyKeyword(userMessage = "", keywords = []) {
+  if (!Array.isArray(keywords) || keywords.length === 0) {
+    return false;
+  }
+
+  return keywords.some((keyword) => isLooseMatch(userMessage, keyword));
+}
+
+/**
+ * userMessage から company hint を抽出
+ */
+function detectCompanyHints(userMessage = "") {
+  return COMPANY_HINTS.filter((item) =>
+    matchesAnyKeyword(userMessage, item.keywords)
+  );
+}
+
+/**
+ * hint から擬似 wiki 候補を作る
+ *
+ * 目的:
+ * - 実wiki候補が薄いときでも
+ *   AIに company テーマ候補を渡せるようにする
+ */
+function buildHintBasedWikiCandidates(hints = []) {
+  if (!Array.isArray(hints) || hints.length === 0) {
+    return [];
+  }
+
+  return hints.map((hint) => ({
+    company_id: toSafeString(hint.company_id),
+    company_name: toSafeString(hint.company_name),
+    question_pattern: "",
+    normalized_question: "",
+    answer_text: "",
+    status: "hint",
+  }));
+}
+
+/**
  * company_wiki 候補抽出
  */
 function pickWikiCandidates(userMessage = "", wikiItems = []) {
@@ -112,11 +214,15 @@ function pickWikiCandidates(userMessage = "", wikiItems = []) {
   }
 
   const matched = wikiItems.filter((item) => {
+    const companyId = toSafeString(item.company_id);
+    const companyName = toSafeString(item.company_name);
     const questionPattern = toSafeString(item.question_pattern);
     const normalizedQuestion = toSafeString(item.normalized_question);
     const answerText = toSafeString(item.answer_text);
 
     return (
+      isLooseMatch(userMessage, companyId) ||
+      isLooseMatch(userMessage, companyName) ||
       isLooseMatch(userMessage, questionPattern) ||
       isLooseMatch(userMessage, normalizedQuestion) ||
       isLooseMatch(userMessage, answerText)
@@ -135,18 +241,52 @@ function pickStockCandidates(userMessage = "", stockItems = []) {
   }
 
   const matched = stockItems.filter((item) => {
+    const companyId = toSafeString(item.company_id);
     const question = toSafeString(item.question);
     const normalizedQuestion = toSafeString(item.normalized_question);
     const userQuestion = toSafeString(item.user_question);
+    const draftAnswer = toSafeString(item.draft_answer);
 
     return (
+      isLooseMatch(userMessage, companyId) ||
       isLooseMatch(userMessage, question) ||
       isLooseMatch(userMessage, normalizedQuestion) ||
-      isLooseMatch(userMessage, userQuestion)
+      isLooseMatch(userMessage, userQuestion) ||
+      isLooseMatch(userMessage, draftAnswer)
     );
   });
 
   return matched.slice(0, MAX_STOCK_CANDIDATES);
+}
+
+/**
+ * 重複除去
+ *
+ * 優先キー:
+ * - company_id
+ * - normalized_question
+ * - question_pattern
+ */
+function dedupeWikiCandidates(items = []) {
+  const seen = new Set();
+  const result = [];
+
+  for (const item of items) {
+    const key = [
+      toSafeString(item.company_id),
+      toSafeString(item.normalized_question),
+      toSafeString(item.question_pattern),
+    ].join("::");
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(item);
+  }
+
+  return result.slice(0, MAX_WIKI_CANDIDATES);
 }
 
 /**
@@ -216,15 +356,29 @@ async function collectV35Context(input = {}) {
     const allStockItems = await getAllQuestionStockRows(sheets);
 
     /**
-     * 3. 候補抽出
+     * 3. 既存データから候補抽出
      */
-    const wikiCandidates = pickWikiCandidates(userMessage, allWikiItems);
+    const matchedWikiCandidates = pickWikiCandidates(userMessage, allWikiItems);
     const stockCandidates = pickStockCandidates(userMessage, allStockItems);
 
     /**
-     * 4. AI 用に軽量化
+     * 4. 補助キーワードから擬似候補追加
      */
-    const companyWikiCandidates = slimWikiCandidates(wikiCandidates);
+    const hintMatches = detectCompanyHints(userMessage);
+    const hintBasedWikiCandidates = buildHintBasedWikiCandidates(hintMatches);
+
+    /**
+     * 5. wiki候補を統合
+     */
+    const mergedWikiCandidates = dedupeWikiCandidates([
+      ...matchedWikiCandidates,
+      ...hintBasedWikiCandidates,
+    ]);
+
+    /**
+     * 6. AI 用に軽量化
+     */
+    const companyWikiCandidates = slimWikiCandidates(mergedWikiCandidates);
     const questionStockCandidates = slimStockCandidates(stockCandidates);
 
     return {
@@ -249,11 +403,16 @@ async function collectV35Context(input = {}) {
 module.exports = {
   MAX_WIKI_CANDIDATES,
   MAX_STOCK_CANDIDATES,
+  COMPANY_HINTS,
   toSafeString,
   createSheetsClient,
   isLooseMatch,
+  matchesAnyKeyword,
+  detectCompanyHints,
+  buildHintBasedWikiCandidates,
   pickWikiCandidates,
   pickStockCandidates,
+  dedupeWikiCandidates,
   slimWikiCandidates,
   slimStockCandidates,
   collectV35Context,
