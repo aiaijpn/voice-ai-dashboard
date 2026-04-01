@@ -4,7 +4,7 @@
  * services/v35/collectV35Context.js
  *
  * 役割:
- * - userMessage から company_wiki / question_stock の候補を抽出する
+ * - userMessage から company_wiki / question_stock / companyCandidates の候補を抽出する
  * - AI に渡す最小コンテキストを構築する
  *
  * 方針:
@@ -23,6 +23,33 @@ const { getAllQuestionStockRows } = require("../questionStockService");
  */
 const MAX_WIKI_CANDIDATES = 5;
 const MAX_STOCK_CANDIDATES = 5;
+const MAX_COMPANY_CANDIDATES = 3;
+
+/**
+ * V3.51:
+ * company_wiki が薄い段階でも AI がテーマ類推しやすいように
+ * コード側で軽く company 候補を絞って渡す
+ */
+const COMPANY_HINTS = [
+  {
+    company_id: "kanai_suits",
+    topic_label: "スーツ金井",
+    company_name: "オーダースーツ金井",
+    keywords: ["スーツ", "オーダー", "仕立て", "ジャケット", "金井"],
+  },
+  {
+    company_id: "ikeda_law",
+    topic_label: "法律池田",
+    company_name: "池田法律",
+    keywords: ["法律", "弁護士", "相談", "契約", "相続", "池田"],
+  },
+  {
+    company_id: "ozawa_wine",
+    topic_label: "ワイン小澤",
+    company_name: "ワイン小澤",
+    keywords: ["ワイン", "赤ワイン", "白ワイン", "酒", "ペアリング", "小澤"],
+  },
+];
 
 /**
  * 安全に文字列化
@@ -150,6 +177,43 @@ function pickStockCandidates(userMessage = "", stockItems = []) {
 }
 
 /**
+ * companyCandidates 候補抽出
+ *
+ * 方針:
+ * - userMessage と keyword の軽い一致
+ * - 1件も当たらない場合は空配列
+ * - AI へノイズを渡しすぎないため最大3件
+ */
+function pickCompanyCandidates(userMessage = "", companyHints = []) {
+  if (!Array.isArray(companyHints) || companyHints.length === 0) {
+    return [];
+  }
+
+  const safeUserMessage = toSafeString(userMessage);
+
+  const matched = companyHints
+    .map((company) => {
+      const keywords = Array.isArray(company.keywords) ? company.keywords : [];
+
+      const score = keywords.reduce((total, keyword) => {
+        if (isLooseMatch(safeUserMessage, keyword)) {
+          return total + 1;
+        }
+        return total;
+      }, 0);
+
+      return {
+        ...company,
+        _score: score,
+      };
+    })
+    .filter((company) => company._score > 0)
+    .sort((a, b) => b._score - a._score);
+
+  return matched.slice(0, MAX_COMPANY_CANDIDATES);
+}
+
+/**
  * AI に渡すために company_wiki 候補を軽量化
  */
 function slimWikiCandidates(items = []) {
@@ -187,6 +251,24 @@ function slimStockCandidates(items = []) {
 }
 
 /**
+ * AI に渡すために companyCandidates を軽量化
+ */
+function slimCompanyCandidates(items = []) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => ({
+    company_id: toSafeString(item.company_id),
+    topic_label: toSafeString(item.topic_label),
+    company_name: toSafeString(item.company_name),
+    keywords: Array.isArray(item.keywords)
+      ? item.keywords.map((keyword) => toSafeString(keyword)).filter(Boolean)
+      : [],
+  }));
+}
+
+/**
  * メイン
  */
 async function collectV35Context(input = {}) {
@@ -220,12 +302,14 @@ async function collectV35Context(input = {}) {
      */
     const wikiCandidates = pickWikiCandidates(userMessage, allWikiItems);
     const stockCandidates = pickStockCandidates(userMessage, allStockItems);
+    const companyCandidatesRaw = pickCompanyCandidates(userMessage, COMPANY_HINTS);
 
     /**
      * 4. AI 用に軽量化
      */
     const companyWikiCandidates = slimWikiCandidates(wikiCandidates);
     const questionStockCandidates = slimStockCandidates(stockCandidates);
+    const companyCandidates = slimCompanyCandidates(companyCandidatesRaw);
 
     return {
       success: true,
@@ -233,6 +317,7 @@ async function collectV35Context(input = {}) {
       data: {
         companyWikiCandidates,
         questionStockCandidates,
+        companyCandidates,
       },
     };
   } catch (error) {
@@ -249,12 +334,16 @@ async function collectV35Context(input = {}) {
 module.exports = {
   MAX_WIKI_CANDIDATES,
   MAX_STOCK_CANDIDATES,
+  MAX_COMPANY_CANDIDATES,
+  COMPANY_HINTS,
   toSafeString,
   createSheetsClient,
   isLooseMatch,
   pickWikiCandidates,
   pickStockCandidates,
+  pickCompanyCandidates,
   slimWikiCandidates,
   slimStockCandidates,
+  slimCompanyCandidates,
   collectV35Context,
 };
