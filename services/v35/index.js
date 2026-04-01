@@ -1,236 +1,149 @@
 "use strict";
 
 /**
- * services/v35/applyV35Actions.js
+ * services/v35/index.js
+ *
+ * V3.5 会話エンジンの司令塔
  *
  * 役割:
- * - AI解析結果をもとに最終返信文を作る
- * - 必要時のみ question_stock へ保存する
- * - 今回は company_wiki へは保存しない（draftのみ保持）
- *
- * このファイルでやること:
- * - 回答本文を優先した最終返信生成
- * - 文末に topicLabel を付与
- * - テーマ無し時は文末に固定案内を付与
- * - stockAction === "append" のときだけ question_stock 保存
+ * - V3.5全体フローを順番に実行する
+ * - context収集
+ * - prompt生成
+ * - AI呼び出し
+ * - AI返却JSON解析
+ * - action適用
  *
  * このファイルでやらないこと:
- * - OpenAI API 呼び出し
- * - AI返却JSON解析
- * - company_wiki 本保存
- */
-
-const { saveQuestionStock } = require("../questionStockService");
-const { normalizeText } = require("../../utils/textMatch");
-
-const NO_TOPIC_LABEL = "テーマ無し";
-const NO_TOPIC_SUFFIX = "【テーマ無し】⇒協賛企業から選択";
-
-/**
- * 安全に文字列化
- */
-function toSafeString(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value).trim();
-}
-
-/**
- * 文末に付けるテーマ表示を作る
+ * - company_wiki 候補抽出の詳細実装
+ * - prompt文面の詳細定義
+ * - OpenAI APIの詳細実装
+ * - JSONの細かい補正
+ * - question_stock保存の詳細実装
  *
- * 仕様:
- * - テーマ無し -> 【テーマ無し】⇒協賛企業から選択
- * - それ以外   -> 【topicLabel】
+ * それぞれ専用ファイルへ委譲する。
  */
-function buildTopicSuffix(parsed = {}) {
-  const topicLabel = toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL;
 
-  if (topicLabel === NO_TOPIC_LABEL) {
-    return NO_TOPIC_SUFFIX;
-  }
-
-  return `【${topicLabel}】`;
-}
+const { collectV35Context } = require("./collectV35Context");
+const { buildV35Prompt } = require("./buildV35Prompt");
+const { callV35Ai } = require("./callV35Ai");
+const { parseV35Response } = require("./parseV35Response");
+const { applyV35Actions } = require("./applyV35Actions");
 
 /**
- * 最終返信文を作る
+ * V3.5 メイン処理
  *
- * 仕様:
- * - 回答本文を先に出す
- * - 最後にテーマ表示を付ける
- * - replyMessage が空でも、テーマ表示だけは返す
+ * @param {Object} input
+ * @param {string} input.rid
+ * @param {string} input.bot_id
+ * @param {string} input.userId
+ * @param {string} input.userMessage
+ * @returns {Promise<{success:boolean,message:string,data:any}>}
  */
-function buildFinalReply(parsed = {}) {
-  const replyMessage = toSafeString(parsed.replyMessage);
-  const topicSuffix = buildTopicSuffix(parsed);
-
-  if (!replyMessage) {
-    return topicSuffix;
-  }
-
-  return `${replyMessage}\n${topicSuffix}`;
-}
-
-/**
- * question_stock 保存payloadを作る
- */
-function buildQuestionStockPayload(input = {}) {
-  const parsed = input.parsed || {};
-  const stockDraft = parsed.stockDraft || {};
-
-  const userMessage = toSafeString(input.userMessage);
-  const normalizedUserMessage = normalizeText(userMessage);
-
-  return {
-    user_id: toSafeString(input.userId),
-    bot_id: toSafeString(input.bot_id),
-    question: toSafeString(stockDraft.question) || userMessage,
-    normalized_question:
-      toSafeString(stockDraft.normalized_question) || normalizedUserMessage,
-    company_id:
-      toSafeString(stockDraft.company_id) ||
-      toSafeString(parsed.matchedCompanyId),
-    user_question: toSafeString(stockDraft.user_question) || userMessage,
-    wiki_answer: "",
-    review_note: "",
-    question_category: toSafeString(stockDraft.question_category) || "",
-    group_key: "",
-    canonical_question: "",
-    draft_answer: toSafeString(stockDraft.draft_answer) || "",
-    draft_answer_source:
-      toSafeString(stockDraft.draft_answer_source) || "v35_ai",
-    adopted_at: "",
+async function runV35(input = {}) {
+  const safeInput = {
+    rid: String(input.rid || "no_rid"),
+    bot_id: String(input.bot_id || "voice-ai-dashboard"),
+    userId: String(input.userId || ""),
+    userMessage: String(input.userMessage || ""),
   };
-}
-
-/**
- * question_stock 保存
- */
-async function saveStockIfNeeded(input = {}) {
-  const parsed = input.parsed || {};
-  const stockAction = toSafeString(parsed.stockAction);
-
-  if (stockAction !== "append") {
-    return {
-      success: true,
-      message: "stock save skipped",
-      data: {
-        action: "none",
-      },
-    };
-  }
-
-  const payload = buildQuestionStockPayload(input);
-
-  if (!payload.question || !payload.normalized_question) {
-    return {
-      success: false,
-      message: "question_stock payload invalid",
-      data: {
-        payload,
-      },
-    };
-  }
-
-  const saveResult = await saveQuestionStock(payload);
-
-  if (!saveResult?.success) {
-    return {
-      success: false,
-      message: saveResult?.message || "saveQuestionStock failed",
-      data: {
-        payload,
-        saveResult: saveResult?.data || null,
-      },
-    };
-  }
-
-  return {
-    success: true,
-    message: "stock saved",
-    data: {
-      action: "append",
-      payload,
-      saveResult: saveResult.data || null,
-    },
-  };
-}
-
-/**
- * メイン
- */
-async function applyV35Actions(input = {}) {
-  const rid = toSafeString(input.rid) || "no_rid";
-  const parsed = input.parsed || null;
 
   try {
-    if (!parsed || typeof parsed !== "object") {
+    /**
+     * 1. 入力素材収集
+     */
+    const contextResult = await collectV35Context(safeInput);
+    if (!contextResult?.success) {
       return {
         success: false,
-        message: "parsed is required",
-        data: {
-          rid,
-        },
+        message: contextResult?.message || "collectV35Context failed",
+        data: contextResult?.data || null,
       };
     }
 
-    const finalReply = buildFinalReply(parsed);
-
-    const stockResult = await saveStockIfNeeded({
-      ...input,
-      parsed,
+    /**
+     * 2. AI prompt 生成
+     */
+    const promptResult = buildV35Prompt({
+      ...safeInput,
+      ...contextResult.data,
     });
 
-    if (!stockResult.success) {
+    if (!promptResult?.success) {
       return {
         success: false,
-        message: stockResult.message || "saveStockIfNeeded failed",
-        data: {
-          rid,
-          parsed,
-          finalReply,
-          stockResult: stockResult.data || null,
-        },
+        message: promptResult?.message || "buildV35Prompt failed",
+        data: promptResult?.data || null,
+      };
+    }
+
+    /**
+     * 3. OpenAI 呼び出し
+     */
+    const aiResult = await callV35Ai({
+      ...safeInput,
+      ...contextResult.data,
+      ...promptResult.data,
+    });
+
+    if (!aiResult?.success) {
+      return {
+        success: false,
+        message: aiResult?.message || "callV35Ai failed",
+        data: aiResult?.data || null,
+      };
+    }
+
+    /**
+     * 4. AI返却JSON解析
+     */
+    const parsedResult = parseV35Response({
+      ...safeInput,
+      aiRawText: aiResult.data?.aiRawText || "",
+    });
+
+    if (!parsedResult?.success) {
+      return {
+        success: false,
+        message: parsedResult?.message || "parseV35Response failed",
+        data: parsedResult?.data || null,
+      };
+    }
+
+    /**
+     * 5. 保存処理 + 最終返信生成
+     */
+    const actionResult = await applyV35Actions({
+      ...safeInput,
+      ...contextResult.data,
+      parsed: parsedResult.data?.parsed || null,
+    });
+
+    if (!actionResult?.success) {
+      return {
+        success: false,
+        message: actionResult?.message || "applyV35Actions failed",
+        data: actionResult?.data || null,
       };
     }
 
     return {
       success: true,
-      message: "applyV35Actions success",
-      data: {
-        rid,
-        replyText: finalReply,
-        topicLabel: toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL,
-        matchedCompanyId: toSafeString(parsed.matchedCompanyId),
-        usedWiki: parsed.usedWiki === true,
-        wikiAction: toSafeString(parsed.wikiAction) || "none",
-        wikiDraft: parsed.wikiDraft || null,
-        stockAction: toSafeString(parsed.stockAction) || "none",
-        stockDraft: parsed.stockDraft || null,
-        judgement: toSafeString(parsed.judgement) || "general_reply",
-        stockSaveResult: stockResult.data || null,
-      },
+      message: "runV35 success",
+      data: actionResult.data || null,
     };
   } catch (error) {
     return {
       success: false,
-      message: error?.message || "applyV35Actions failed",
+      message: error?.message || "runV35 failed",
       data: {
-        rid,
+        rid: safeInput.rid,
+        bot_id: safeInput.bot_id,
+        userId: safeInput.userId,
       },
     };
   }
 }
 
 module.exports = {
-  NO_TOPIC_LABEL,
-  NO_TOPIC_SUFFIX,
-  toSafeString,
-  buildTopicSuffix,
-  buildFinalReply,
-  buildQuestionStockPayload,
-  saveStockIfNeeded,
-  applyV35Actions,
+  runV35,
 };
