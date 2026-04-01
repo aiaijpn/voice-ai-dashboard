@@ -9,8 +9,9 @@
  * - 今回は company_wiki へは保存しない（draftのみ保持）
  *
  * このファイルでやること:
- * - topicLabel 付き返信生成
- * - テーマ無し時の固定上書き
+ * - 回答本文を優先した最終返信生成
+ * - 文末に topicLabel を付与
+ * - テーマ無し時は文末に固定案内を付与
  * - stockAction === "append" のときだけ question_stock 保存
  *
  * このファイルでやらないこと:
@@ -23,11 +24,10 @@ const { saveQuestionStock } = require("../questionStockService");
 const { normalizeText } = require("../../utils/textMatch");
 
 const NO_TOPIC_LABEL = "テーマ無し";
-const NO_TOPIC_REPLY =
-  "【テーマ無し】⇒協賛企業から選択\n今日はどんなことを知りたいですか？";
+const NO_TOPIC_SUFFIX = "【テーマ無し】⇒協賛企業から選択";
 
 /**
- * 文字列化
+ * 安全に文字列化
  */
 function toSafeString(value) {
   if (value === null || value === undefined) {
@@ -38,23 +38,39 @@ function toSafeString(value) {
 }
 
 /**
+ * 文末に付けるテーマ表示を作る
+ *
+ * 仕様:
+ * - テーマ無し -> 【テーマ無し】⇒協賛企業から選択
+ * - それ以外   -> 【topicLabel】
+ */
+function buildTopicSuffix(parsed = {}) {
+  const topicLabel = toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL;
+
+  if (topicLabel === NO_TOPIC_LABEL) {
+    return NO_TOPIC_SUFFIX;
+  }
+
+  return `【${topicLabel}】`;
+}
+
+/**
  * 最終返信文を作る
  *
  * 仕様:
- * - topicLabel が テーマ無し のときは固定文を強制返却
- * - それ以外は
- *   【topicLabel】
- *   replyMessage
+ * - 回答本文を先に出す
+ * - 最後にテーマ表示を付ける
+ * - replyMessage が空でも、テーマ表示だけは返す
  */
 function buildFinalReply(parsed = {}) {
-  const topicLabel = toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL;
   const replyMessage = toSafeString(parsed.replyMessage);
+  const topicSuffix = buildTopicSuffix(parsed);
 
-  if (topicLabel === NO_TOPIC_LABEL) {
-    return NO_TOPIC_REPLY;
+  if (!replyMessage) {
+    return topicSuffix;
   }
 
-  return `【${topicLabel}】\n${replyMessage || "確認しました。"}`;
+  return `${replyMessage}\n${topicSuffix}`;
 }
 
 /**
@@ -62,31 +78,27 @@ function buildFinalReply(parsed = {}) {
  */
 function buildQuestionStockPayload(input = {}) {
   const parsed = input.parsed || {};
-
   const stockDraft = parsed.stockDraft || {};
+
   const userMessage = toSafeString(input.userMessage);
   const normalizedUserMessage = normalizeText(userMessage);
 
   return {
     user_id: toSafeString(input.userId),
     bot_id: toSafeString(input.bot_id),
-    question:
-      toSafeString(stockDraft.question) || userMessage,
+    question: toSafeString(stockDraft.question) || userMessage,
     normalized_question:
       toSafeString(stockDraft.normalized_question) || normalizedUserMessage,
     company_id:
       toSafeString(stockDraft.company_id) ||
       toSafeString(parsed.matchedCompanyId),
-    user_question:
-      toSafeString(stockDraft.user_question) || userMessage,
+    user_question: toSafeString(stockDraft.user_question) || userMessage,
     wiki_answer: "",
     review_note: "",
-    question_category:
-      toSafeString(stockDraft.question_category) || "",
+    question_category: toSafeString(stockDraft.question_category) || "",
     group_key: "",
     canonical_question: "",
-    draft_answer:
-      toSafeString(stockDraft.draft_answer) || "",
+    draft_answer: toSafeString(stockDraft.draft_answer) || "",
     draft_answer_source:
       toSafeString(stockDraft.draft_answer_source) || "v35_ai",
     adopted_at: "",
@@ -214,8 +226,9 @@ async function applyV35Actions(input = {}) {
 
 module.exports = {
   NO_TOPIC_LABEL,
-  NO_TOPIC_REPLY,
+  NO_TOPIC_SUFFIX,
   toSafeString,
+  buildTopicSuffix,
   buildFinalReply,
   buildQuestionStockPayload,
   saveStockIfNeeded,
