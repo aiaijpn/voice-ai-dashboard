@@ -1,320 +1,151 @@
 "use strict";
 
+/**
+ * services/messageService/index.js
+ *
+ * V3.5 接続版
+ *
+ * 役割:
+ * - LINE handler から受けた userMessage を V3.5 へ渡す
+ * - V3.5の返答を conversation_history に保存する
+ * - handler が使う replyText を返す
+ *
+ * 方針:
+ * - 会話ロジック本体は services/v35/ に集約
+ * - messageService は入口と保存に絞る
+ */
+
 const { log, error: logError } = require("../../utils/logger");
 const { success, fail } = require("../../utils/serviceResponse");
 
-const {
-  saveConversationHistory,
-  getConversationHistory,
-  getLatestCompanyIdFromHistory,
-} = require("../historyService");
-
-const { handleAnswerRule } = require("./answerRuleHandler");
+const { saveConversationHistory } = require("../historyService");
+const { runV35 } = require("../v35");
 
 const {
-  buildReplyText,
   buildProcessMessageSuccessData,
 } = require("./buildReply");
-
-/**
- * ★ V3.2 / V3.4
- */
-const { findCompaniesForAi } = require("../companyService");
-const { findCompanyWikiAnswer } = require("../companyWikiService");
-
-/**
- * ★ 未回答収集
- */
-const { saveQuestionStock } = require("../questionStockService");
-const { normalizeText } = require("../../utils/textMatch");
-
-/**
- * ★ 固定フォールバック
- */
-const WIKI_NOT_FOUND_REPLY =
-  "そのご質問についての情報は現在登録されておりません。\nお時間いただきますが、お調べいたします。";
 
 log("📦 messageService/index.js loaded:", new Date().toISOString());
 
 /**
- * company 候補から上位1件を返す
+ * V3.5 会話処理
  *
- * @param {string} text
- * @returns {Object|null}
+ * @param {Object} context
+ * @param {string} context.rid
+ * @param {string} context.bot_id
+ * @param {string} context.userId
+ * @param {string} context.text
+ * @returns {Promise<{success:boolean,message:string,data:any}>}
  */
-function findTopCompanyFromText(text = "") {
-  const companyCandidates = findCompaniesForAi(text);
-  return Array.isArray(companyCandidates) && companyCandidates.length > 0
-    ? companyCandidates[0]
-    : null;
-}
-
-/**
- * 履歴 companyId と今回推定結果から
- * 最終 company を決める
- *
- * 優先順位:
- * 1. 履歴の companyId
- * 2. 今回の推定
- * 3. null
- *
- * @param {string|null} historyCompanyId
- * @param {Object|null} currentTopCompany
- * @returns {Object}
- */
-function resolveActiveCompany(historyCompanyId, currentTopCompany) {
-  const safeHistoryCompanyId = String(historyCompanyId || "").trim();
-
-  if (safeHistoryCompanyId) {
-    return {
-      companyId: safeHistoryCompanyId,
-      source: "history",
-    };
-  }
-
-  if (currentTopCompany && currentTopCompany.id) {
-    return {
-      companyId: currentTopCompany.id,
-      source: "current_text",
-    };
-  }
-
-  return {
-    companyId: "",
-    source: "none",
-  };
-}
-
-async function processMessage(context) {
+async function processMessage(context = {}) {
   const {
     rid = "no_rid",
     bot_id = "voice-ai-dashboard",
     userId = "",
     text = "",
-  } = context || {};
+  } = context;
 
   try {
-    /**
-     * 1. 会話履歴取得
-     */
-    let historyItems = [];
+    const userMessage = String(text || "").trim();
 
-    const historyResult = await getConversationHistory({
-      botId: bot_id,
-      userId,
-      limit: 10,
-    });
-
-    if (historyResult.success) {
-      historyItems = Array.isArray(historyResult.data?.items)
-        ? historyResult.data.items
-        : [];
-    }
-
-    /**
-     * 2. 履歴から最新 companyId を取得
-     */
-    let historyCompanyId = "";
-
-    try {
-      const latestCompanyResult = await getLatestCompanyIdFromHistory({
-        botId: bot_id,
+    if (!userId) {
+      return fail("processMessage: userId is required", {
+        replyText: "",
         userId,
-        limit: 10,
+        bot_id,
+        rid,
       });
-
-      if (latestCompanyResult.success) {
-        historyCompanyId = String(
-          latestCompanyResult.data?.companyId || ""
-        ).trim();
-      }
-
-      log(`🧪 [${rid}] historyCompanyId`, historyCompanyId || "(none)");
-    } catch (e) {
-      logError(
-        `⚠️ [${rid}] getLatestCompanyIdFromHistory error:`,
-        e?.message || e
-      );
     }
 
-    /**
-     * 3. 今回入力から company 推定
-     */
-    let currentTopCompany = null;
-
-    try {
-      currentTopCompany = findTopCompanyFromText(text);
-      log(`🧪 [${rid}] currentTopCompany`, currentTopCompany?.id || "(none)");
-    } catch (e) {
-      logError(`⚠️ [${rid}] findTopCompanyFromText error:`, e?.message || e);
+    if (!userMessage) {
+      return fail("processMessage: text is required", {
+        replyText: "",
+        userId,
+        bot_id,
+        rid,
+      });
     }
 
-    /**
-     * 4. 履歴優先で active company 決定
-     */
-    const activeCompany = resolveActiveCompany(
-      historyCompanyId,
-      currentTopCompany
-    );
-    const activeCompanyId = String(activeCompany.companyId || "").trim();
-
-    log(`🧪 [${rid}] activeCompany`, {
-      activeCompanyId,
-      source: activeCompany.source,
-      historyItemsCount: historyItems.length,
+    log(`🧠 [${rid}] V3.5 start`, {
+      bot_id,
+      userId,
+      userMessage,
     });
 
-
     /**
-     * 6. companyWiki検索
+     * 1. V3.5 実行
      */
-    if (activeCompanyId) {
-      try {
-        const wikiResult = await findCompanyWikiAnswer({
-          companyId: activeCompanyId,
-          userQuestion: text,
-        });
-
-        if (wikiResult.found && wikiResult.item?.answer_text) {
-          const reply = buildReplyText(wikiResult.item.answer_text);
-
-          await saveConversationHistory({
-            botId: bot_id,
-            userId,
-            userMessage: text,
-            sourceType: "user_message",
-            companyId: activeCompanyId,
-          });
-
-          await saveConversationHistory({
-            botId: bot_id,
-            userId,
-            aiReply: reply,
-            sourceType: "ai_reply",
-            companyId: activeCompanyId,
-          });
-
-          return success(
-            buildProcessMessageSuccessData({
-              finalReply: reply,
-              parsed: {},
-              userId,
-              bot_id,
-              rid,
-            }),
-            "companyWiki hit"
-          );
-        }
-      } catch (e) {
-        logError(`⚠️ [${rid}] companyWiki error:`, e?.message || e);
-      }
-    }
-
-
-    /**
-     * 5. answerRule
-     * ※ V3.4では company 決定の後に動かす
-     *    answerRule ヒット時も companyId を履歴保存する
-     */
-    const ruleResult = await handleAnswerRule({
+    const v35Result = await runV35({
       rid,
       bot_id,
       userId,
-      text,
-      aiInputText: text,
-      log,
-      logError,
+      userMessage,
     });
-    if (ruleResult.handled) {
-      const replyText = String(ruleResult.response?.data?.replyText || "");
 
-      await saveConversationHistory({
-        botId: bot_id,
+    if (!v35Result?.success) {
+      logError(`❌ [${rid}] runV35 failed:`, v35Result?.message || "unknown");
+
+      return fail(v35Result?.message || "runV35 failed", {
+        replyText: "",
         userId,
-        userMessage: text,
-        sourceType: "user_message",
-        companyId: activeCompanyId,
-      });
-
-      await saveConversationHistory({
-        botId: bot_id,
-        userId,
-        aiReply: replyText,
-        sourceType: "ai_reply",
-        companyId: activeCompanyId,
-      });
-
-      return ruleResult.response;
-    }
-
-
-
-
-    /**
-     * 7. 未回答ストック
-     * - companyId が確定していてWiki未登録
-     * - または companyId 不明
-     */
-    try {
-      const questionStockInput = {
-        user_id: userId,
         bot_id,
-        question: text,
-        normalized_question: normalizeText(text),
-        company_id: activeCompanyId,
-        user_question: text,
-      };
-
-      log(`🧪 [${rid}] questionStock input`, questionStockInput);
-
-      const questionStockResult = await saveQuestionStock(questionStockInput);
-
-      log(`🧪 [${rid}] questionStock result`, questionStockResult);
-    } catch (e) {
-      logError(`⚠️ [${rid}] questionStock error:`, e?.message || e);
+        rid,
+        v35Result: v35Result?.data || null,
+      });
     }
 
     /**
-     * 8. 固定フォールバック返信
+     * 2. V3.5 結果取得
      */
-    const finalReply = buildReplyText(WIKI_NOT_FOUND_REPLY);
+    const replyText = String(v35Result.data?.replyText || "").trim() || "確認しました。";
+    const matchedCompanyId = String(v35Result.data?.matchedCompanyId || "").trim();
+
+    log(`🧩 [${rid}] V3.5 result`, {
+      topicLabel: v35Result.data?.topicLabel || "",
+      matchedCompanyId,
+      judgement: v35Result.data?.judgement || "",
+      stockAction: v35Result.data?.stockAction || "",
+      wikiAction: v35Result.data?.wikiAction || "",
+    });
 
     /**
-     * 9. 履歴保存
+     * 3. 履歴保存
+     * - user_message
+     * - ai_reply
      */
     await saveConversationHistory({
       botId: bot_id,
       userId,
-      userMessage: text,
+      userMessage,
       sourceType: "user_message",
-      companyId: activeCompanyId,
+      companyId: matchedCompanyId,
     });
 
     await saveConversationHistory({
       botId: bot_id,
       userId,
-      aiReply: finalReply,
+      aiReply: replyText,
       sourceType: "ai_reply",
-      companyId: activeCompanyId,
+      companyId: matchedCompanyId,
     });
 
     /**
-     * 最終返却
+     * 4. handler 返却形式へ整形
      */
     return success(
       buildProcessMessageSuccessData({
-        finalReply,
-        parsed: {},
+        finalReply: replyText,
+        parsed: v35Result.data || {},
         userId,
         bot_id,
         rid,
       }),
-      "fallback reply"
+      "v35 reply"
     );
-  } catch (e) {
-    logError(`❌ [${rid}] processMessage failed:`, e?.message || e);
+  } catch (error) {
+    logError(`❌ [${rid}] processMessage failed:`, error?.message || error);
 
-    return fail(e?.message || "processMessage failed", {
+    return fail(error?.message || "processMessage failed", {
       replyText: "",
       userId,
       bot_id,
