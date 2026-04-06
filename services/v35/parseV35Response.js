@@ -8,6 +8,7 @@
  * - 不正IDは強制的に空にする
  * - companyCandidates が1件だけで、replyMessage がその企業に明確に触れている場合は
  *   matchedCompanyId / topicLabel を補完する
+ * - デバッグログ追加
  */
 
 const DEFAULT_PARSED = {
@@ -246,7 +247,18 @@ function parseV35Response(input = {}) {
     }
 
     const rawObject = JSON.parse(jsonText);
+
+    console.log("### PARSE V3.53 RAW ###");
+    console.log("rid:", rid);
+    console.log("aiRawText:", aiRawText);
+    console.log("rawObject:", rawObject);
+    console.log("context.companyCandidates:", context.companyCandidates);
+    console.log("context.currentCompanyId:", context.currentCompanyId);
+
     let parsed = normalizeParsedObject(rawObject);
+
+    console.log("### PARSE V3.53 NORMALIZED ###");
+    console.log("parsed(beforeFill):", parsed);
 
     /**
      * 1. AI返却の不整合を補完
@@ -256,10 +268,16 @@ function parseV35Response(input = {}) {
      */
     parsed = fillCompanyFromSingleCandidate(parsed, context);
 
+    console.log("### PARSE V3.53 AFTER FILL ###");
+    console.log("parsed(afterFill):", parsed);
+
     /**
      * 2. 許可されていない company_id を排除
      */
     const allowedIds = buildAllowedCompanyIdSet(context);
+
+    console.log("### PARSE V3.53 ALLOWED IDS ###");
+    console.log("allowedIds:", Array.from(allowedIds));
 
     if (!allowedIds.has(parsed.matchedCompanyId)) {
       parsed.matchedCompanyId = "";
@@ -268,9 +286,15 @@ function parseV35Response(input = {}) {
     /**
      * 3. company_id が空に戻ったら topicLabel も最低限整える
      */
-    if (!parsed.matchedCompanyId && parsed.topicLabel !== DEFAULT_PARSED.topicLabel) {
+    if (
+      !parsed.matchedCompanyId &&
+      parsed.topicLabel !== DEFAULT_PARSED.topicLabel
+    ) {
       parsed.topicLabel = DEFAULT_PARSED.topicLabel;
     }
+
+    console.log("### PARSE V3.53 FINAL ###");
+    console.log("parsed(final):", parsed);
 
     return {
       success: true,
@@ -283,6 +307,11 @@ function parseV35Response(input = {}) {
       },
     };
   } catch (error) {
+    console.log("### PARSE V3.53 ERROR ###");
+    console.log("rid:", rid);
+    console.log("aiRawText:", aiRawText);
+    console.log("error:", error?.message || error);
+
     return {
       success: false,
       message: error?.message || "parseV35Response failed",
