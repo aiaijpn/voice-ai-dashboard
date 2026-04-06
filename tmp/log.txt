@@ -1,0 +1,188 @@
+
+
+
+==> Your service is live ??
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://voice-ai-dashboard.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+? GET / healthcheck
+========================================
+?? [80bbe7] POST /webhook received
+?? [80bbe7] time=2026-04-06T14:20:29.360Z
+?? [80bbe7] headers x-line-signature=present
+?? [80bbe7] body keys= [ 'destination', 'events' ]
+?? [80bbe7] events length=1
+??  [80bbe7] handleEvent start idx=0 type=message msgType=text
+========================================
+?? [7a6004] handleEvent start
+type=message
+messageType=text
+?? [7a6004] userText= スーツを作りたい
+?? [7a6004] V3.5 start {
+  bot_id: 'voice-ai-dashboard',
+  userId: 'U9b2475d6ef51548f1785a133f72861c1',
+  userMessage: 'スーツを作りたい'
+}
+### COLLECT V3.53 ###
+rid: 7a6004
+userMessage: スーツを作りたい
+wikiCandidates.length: 0
+stockCandidates.length: 0
+companyCandidatesRaw: [
+  {
+    company_id: 'kanai_suits',
+    name: 'オーダースーツの金井',
+    short_name: 'スーツ金井',
+    category: 'suits',
+    tags: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'ビジネス',
+      '礼服',
+      '成人式',
+      '相談',
+      '予約',
+      '来店'
+    ],
+    short_pitch: '装いを整えたい方へ、オーダースーツのご相談を承ります。',
+    site_url: 'temp',
+    line_url: 'temp',
+    map_url: 'TRUE',
+    show_in_ai: true,
+    show_in_html: false,
+    sort_order: 9999,
+    priority: 0,
+    score: 1
+  }
+]
+companyCandidates: [
+  {
+    company_id: 'kanai_suits',
+    topic_label: 'スーツ金井',
+    company_name: 'オーダースーツの金井',
+    keywords: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'ビジネス',
+      '礼服',
+      '成人式',
+      '相談',
+      '予約',
+      '来店'
+    ]
+  }
+]
+companyCandidates.length: 1
+currentCompanyId: 
+currentCompanyName: 
+isConversationContinuing: false
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: 7a6004
+aiRawText: {
+  "topicLabel": "スーツ金井",
+  "replyMessage": "オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。",
+  "matchedCompanyId": "kanai_suits",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "wiki_answer"
+}
+rawObject: {
+  topicLabel: 'スーツ金井',
+  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  matchedCompanyId: 'kanai_suits',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+context.companyCandidates: undefined
+context.currentCompanyId: undefined
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'スーツ金井',
+  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  matchedCompanyId: 'kanai_suits',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'スーツ金井',
+  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  matchedCompanyId: 'kanai_suits',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: []
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'テーマ無し',
+  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+?? [7a6004] V3.5 result {
+  topicLabel: 'テーマ無し',
+  matchedCompanyId: '',
+  judgement: 'wiki_answer',
+  stockAction: '',
+  wikiAction: ''
+}
+sheet/saver.appendRowToSheet start {
+  spreadsheetId: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  sheetName: 'conversation_history',
+  valueCount: 10
+}
+sheet/saver.appendRowToSheet success {
+  spreadsheetId: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  sheetName: 'conversation_history',
+  valueCount: 10
+}
+sheet/saver.appendRowToSheet start {
+  spreadsheetId: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  sheetName: 'conversation_history',
+  valueCount: 10
+}
+sheet/saver.appendRowToSheet success {
+  spreadsheetId: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  sheetName: 'conversation_history',
+  valueCount: 10
+}
+?? [7a6004] service result message= v35 reply
+?? [7a6004] service replyText= オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。
+【テーマ無し】⇒協賛企業から選択
+?? [7a6004] sending reply
+? LINE reply sent { messageCount: 1 }
+?? [7a6004] LINE reply success
+??? [7a6004] markAsRead success
+?? [7a6004] handleEvent done
+? [80bbe7] handleEvent done  idx=0
+?? [80bbe7] results ok=1 ng=0
+??  [80bbe7] total ms=5073

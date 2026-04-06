@@ -95,10 +95,16 @@ async function runV35(input = {}) {
 
     /**
      * 4. AI返却JSON解析
+     *
+     * 重要:
+     * - parseV35Response には context を必ず渡す
+     * - companyCandidates / currentCompanyId を使って
+     *   matchedCompanyId の検証・補完を行うため
      */
     const parsedResult = parseV35Response({
       ...safeInput,
       aiRawText: aiResult.data?.aiRawText || "",
+      context: contextResult.data || {},
     });
 
     if (!parsedResult?.success) {
