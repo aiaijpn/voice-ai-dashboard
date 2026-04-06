@@ -22,16 +22,16 @@
  * - 「companyCandidates がある」だけで企業を出してしまう誤誘導を減らす
  * - currentCompanyId がある場合だけ、会話継続として企業文脈を使いやすくする
  * - 企業を出す / 出さない を AIに明示的に判断させる
+ *
+ * 今回の強化点:
+ * - companyCandidates が 1件だけで、その内容が userMessage と明確に一致する場合は、
+ *   その企業を積極採用してよいことを明文化
  */
 
 const DEFAULT_TOPIC_LABEL = "テーマ無し";
 
 /**
  * system prompt を作る
- *
- * 重要:
- * - ここで AI の判断ルールをかなり強めに固定する
- * - 特に V3.53 では「候補がある ≠ 企業を出す」ことを明文化する
  */
 function buildSystemPrompt() {
   return [
@@ -47,11 +47,12 @@ function buildSystemPrompt() {
     "6. company_wiki 候補で十分に答えられる場合は、それを最優先して judgement を wiki_answer にしてください。",
     "7. companyCandidates は補助候補です。companyCandidates が存在しても、それだけを理由に企業を確定してはいけません。",
     "8. 企業テーマが明確なとき、または currentCompanyId があり会話継続が明確なときだけ、topicLabel と matchedCompanyId を企業寄りにしてよいです。",
-    "9. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。",
-    "10. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。",
-    `11. 該当テーマが弱い、または特定できない場合は topicLabel を "${DEFAULT_TOPIC_LABEL}" にしてください。`,
-    "12. matchedCompanyId は該当企業がない場合は空文字にしてください。",
-    "13. 少しでも根拠が弱い場合は、企業を無理に選ばず、テーマ無しを優先してください。",
+    "9. ただし、companyCandidates が1件のみで、その topic_label / company_name / keywords が userMessage と明確に一致する場合は、その企業を採用してよいです。",
+    "10. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。",
+    "11. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。",
+    `12. 該当テーマが弱い、または特定できない場合は topicLabel を "${DEFAULT_TOPIC_LABEL}" にしてください。`,
+    "13. matchedCompanyId は該当企業がない場合は空文字にしてください。",
+    "14. companyCandidates が空で、currentCompanyId もなく、企業テーマの根拠が弱い場合は、企業を無理に選ばずテーマ無しを優先してください。",
     "",
     "判断優先順位:",
     "1. companyWikiCandidates",
@@ -70,8 +71,9 @@ function buildSystemPrompt() {
     "- topic_label を優先参照して topicLabel を判断してよいです",
     "- company_id を使って matchedCompanyId を決めてよいです",
     "- keywords は補助情報です",
-    "- ただし、候補があるだけでは不十分です",
-    "- ユーザ発話が企業に紐づく話題かどうかを見て判断してください",
+    "- 候補が複数ある場合は慎重に判断してください",
+    "- 候補が1件だけで、userMessage と自然に結びつくなら、その企業を優先採用してよいです",
+    "- 例: userMessage が「スーツを作りたい」で、companyCandidates がスーツ金井だけなら、その企業を採用してよいです",
     "- 一般質問、雑談、広い話題、無関係話題なら企業を出さず テーマ無し にしてください",
     "",
     "currentCompanyId の扱い:",
@@ -85,7 +87,7 @@ function buildSystemPrompt() {
     "- 企業に寄せる根拠が弱い場合は、一般回答 + テーマ無し を優先する",
     "",
     "典型例:",
-    "- ユーザ: スーツを作りたい -> 企業テーマが明確なら企業を採用してよい",
+    "- ユーザ: スーツを作りたい -> companyCandidates がスーツ金井のみなら企業を採用してよい",
     "- ユーザ: 駐車場は？ -> currentCompanyId があり会話継続ならその企業を採用してよい",
     "- ユーザ: 駐車場は？ -> currentCompanyId がなく、企業手がかりも弱いならテーマ無し",
     "- ユーザ: 今日の天気は？ -> テーマ無し",
@@ -146,10 +148,6 @@ function buildSystemPrompt() {
 
 /**
  * user prompt を作る
- *
- * ここでは AI に渡す実データをまとめる。
- * system prompt でルールを固定し、
- * user prompt では「今回の入力データ」を安全に渡す。
  */
 function buildUserPrompt({
   userMessage = "",
@@ -161,25 +159,16 @@ function buildUserPrompt({
   isConversationContinuing = false,
 }) {
   const safePayload = {
-    // 今回のユーザ発話
     userMessage: String(userMessage || ""),
-
-    // wiki 候補
     companyWikiCandidates: Array.isArray(companyWikiCandidates)
       ? companyWikiCandidates
       : [],
-
-    // 未回答stock候補
     questionStockCandidates: Array.isArray(questionStockCandidates)
       ? questionStockCandidates
       : [],
-
-    // company候補
     companyCandidates: Array.isArray(companyCandidates)
       ? companyCandidates
       : [],
-
-    // 会話継続情報
     currentCompanyId: String(currentCompanyId || ""),
     currentCompanyName: String(currentCompanyName || ""),
     isConversationContinuing: Boolean(isConversationContinuing),
@@ -189,7 +178,7 @@ function buildUserPrompt({
     "以下の入力をもとに、必ずJSONのみで判定結果を返してください。",
     "replyMessage には回答本文のみを書いてください。topicLabel表示は書かないでください。",
     "companyWikiCandidates が十分なら最優先してください。",
-    "companyCandidates は補助候補です。候補があるだけで企業を採用しないでください。",
+    "companyCandidates は補助候補ですが、1件のみで userMessage と明確に一致する場合は採用してよいです。",
     "currentCompanyId があり、かつ今回の発話が会話継続と見なせる場合のみ、企業文脈を優先してよいです。",
     `根拠が弱ければ topicLabel は "${DEFAULT_TOPIC_LABEL}"、matchedCompanyId は空文字にしてください。`,
     "",
@@ -199,16 +188,6 @@ function buildUserPrompt({
 
 /**
  * メイン
- *
- * 返却形式:
- * {
- *   success: true,
- *   message: "...",
- *   data: {
- *     systemPrompt,
- *     userPrompt
- *   }
- * }
  */
 function buildV35Prompt(input = {}) {
   try {

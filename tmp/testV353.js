@@ -1,12 +1,20 @@
 "use strict";
 
-
 require("dotenv").config();
 
+const OpenAI = require("openai");
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /**
- * V3.53 統合テスト（ローカル）
+ * V3.53 統合テスト（ローカル / 実AI呼び出し版）
+ *
+ * 目的:
+ * - collect → buildPrompt → OpenAI → parse → apply の連結確認
+ * - 実AIが本当に companyCandidates を見て企業判定するか確認
+ * - 実機との差分をローカルで再現確認する
  */
 
 const { collectV35Context } = require("../services/v35/collectV35Context");
@@ -15,128 +23,168 @@ const { parseV35Response } = require("../services/v35/parseV35Response");
 const { applyV35Actions } = require("../services/v35/applyV35Actions");
 
 /**
- * 🔧 AIモック
+ * 実AI呼び出し
+ *
+ * 注意:
+ * - buildV35Prompt が返した systemPrompt / userPrompt をそのまま使う
+ * - temperature は低めでブレを抑える
  */
-function mockAIResponse(caseName, context) {
-  switch (caseName) {
-    case "スーツ":
-      return JSON.stringify({
-        topicLabel: "スーツ金井",
-        replyMessage: "オーダースーツの相談ですね。",
-        matchedCompanyId: "kanai_suits",
-        usedWiki: false,
-        wikiAction: "none",
-        stockAction: "none",
-        judgement: "general_reply",
-      });
+async function callRealAI({ systemPrompt, userPrompt }) {
+  const response = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: userPrompt,
+      },
+    ],
+  });
 
-    case "駐車場_単発":
-      return JSON.stringify({
-        topicLabel: "スーツ金井",
-        replyMessage: "駐車場あります。",
-        matchedCompanyId: "kanai_suits", // ❌誤爆
-      });
-
-    case "駐車場_継続":
-      return JSON.stringify({
-        topicLabel: "スーツ金井",
-        replyMessage: "駐車場あります。",
-        matchedCompanyId: context.currentCompanyId,
-      });
-
-    default:
-      return JSON.stringify({
-        topicLabel: "テーマ無し",
-        replyMessage: "一般回答です",
-        matchedCompanyId: "",
-      });
-  }
+  return String(response?.choices?.[0]?.message?.content || "").trim();
 }
 
 /**
  * 共通テスト処理
  */
-async function runTest({ label, userMessage, history, caseName }) {
+async function runTest({ label, userMessage, history }) {
   console.log("\n====================");
   console.log("TEST:", label);
   console.log("====================");
 
-  // ① collect
+  /**
+   * ① collect
+   */
   const ctxRes = await collectV35Context({
     userMessage,
     conversationHistory: history,
   });
 
-console.log("ctxRes.success:", ctxRes.success);
-console.log("ctxRes.message:", ctxRes.message);
-console.log("ctxRes.data:", ctxRes.data);
+  console.log("ctxRes.success:", ctxRes.success);
+  console.log("ctxRes.message:", ctxRes.message);
+  console.log("ctxRes.data:", ctxRes.data);
 
+  if (!ctxRes.success) {
+    console.log("collect failed");
+    return;
+  }
 
+  const context = ctxRes.data || {};
 
-
-  const context = ctxRes.data;
-
-  // 🔥 ここでログ出す（重要）
   console.log("companyCandidates:", context.companyCandidates);
+  console.log("currentCompanyId:", context.currentCompanyId);
+  console.log("currentCompanyName:", context.currentCompanyName);
+  console.log("isConversationContinuing:", context.isConversationContinuing);
 
-  // ② buildPrompt（今回は使わないが通しておく）
-  buildV35Prompt({
+  /**
+   * ② buildPrompt
+   */
+  const promptRes = buildV35Prompt({
     ...context,
     userMessage,
   });
 
-  // ③ AIモック
-  const aiRawText = mockAIResponse(caseName, context);
+  console.log("promptRes.success:", promptRes.success);
+  console.log("promptRes.message:", promptRes.message);
 
-  // ④ parse
+  if (!promptRes.success) {
+    console.log("buildV35Prompt failed");
+    return;
+  }
+
+  const systemPrompt = promptRes.data?.systemPrompt || "";
+  const userPrompt = promptRes.data?.userPrompt || "";
+
+  console.log("\n--- systemPrompt ---");
+  console.log(systemPrompt);
+
+  console.log("\n--- userPrompt ---");
+  console.log(userPrompt);
+
+  /**
+   * ③ 実AI呼び出し
+   */
+  const aiRawText = await callRealAI({
+    systemPrompt,
+    userPrompt,
+  });
+
+  console.log("\n--- AI RAW ---");
+  console.log(aiRawText);
+
+  /**
+   * ④ parse
+   */
   const parsedRes = parseV35Response({
     aiRawText,
     context,
   });
 
-  const parsed = parsedRes.data.parsed;
+  console.log("\n--- parsedRes ---");
+  console.log(parsedRes);
 
-  // ⑤ apply
+  if (!parsedRes.success) {
+    console.log("parse failed");
+    return;
+  }
+
+  const parsed = parsedRes.data?.parsed || {};
+
+  /**
+   * ⑤ apply
+   */
   const finalRes = await applyV35Actions({
     parsed,
     userMessage,
   });
 
+  console.log("\n--- finalRes ---");
+  console.log(finalRes);
+
+  console.log("\n--- summary ---");
   console.log("userMessage:", userMessage);
   console.log("currentCompanyId:", context.currentCompanyId);
-  console.log("matchedCompanyId:", finalRes.data.matchedCompanyId);
-  console.log("replyText:", finalRes.data.replyText);
+  console.log("matchedCompanyId:", finalRes?.data?.matchedCompanyId);
+  console.log("replyText:", finalRes?.data?.replyText);
 }
 
 /**
  * 実行
+ *
+ * まずは1本ずつでもよいが、
+ * 今回は比較しやすいよう3ケース連続で回す
  */
 async function main() {
-  await runTest({
-    label: "スーツ（正常）",
-    userMessage: "スーツを作りたい",
-    history: [],
-    caseName: "スーツ",
-  });
+  try {
+    await runTest({
+      label: "スーツ（実AI）",
+      userMessage: "スーツを作りたい",
+      history: [],
+    });
 
-  await runTest({
-    label: "駐車場（単発 → 出るべきでない）",
-    userMessage: "駐車場ある？",
-    history: [],
-    caseName: "駐車場_単発",
-  });
+    await runTest({
+      label: "駐車場（単発 / 実AI）",
+      userMessage: "駐車場ある？",
+      history: [],
+    });
 
-  await runTest({
-    label: "駐車場（継続 → 出るべき）",
-    userMessage: "駐車場ある？",
-    history: [
-      {
-        matchedCompanyId: "kanai_suits",
-        matchedCompanyName: "スーツ金井",
-      },
-    ],
-    caseName: "駐車場_継続",
-  });
+    await runTest({
+      label: "駐車場（継続 / 実AI）",
+      userMessage: "駐車場ある？",
+      history: [
+        {
+          matchedCompanyId: "kanai_suits",
+          matchedCompanyName: "スーツ金井",
+        },
+      ],
+    });
+  } catch (error) {
+    console.error("main failed:", error);
+  }
 }
 
 main();
