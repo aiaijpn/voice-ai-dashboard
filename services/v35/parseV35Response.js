@@ -6,6 +6,8 @@
  * V3.53 変更点:
  * - matchedCompanyId を許可リストで検証
  * - 不正IDは強制的に空にする
+ * - companyCandidates が1件だけで、replyMessage がその企業に明確に触れている場合は
+ *   matchedCompanyId / topicLabel を補完する
  */
 
 const DEFAULT_PARSED = {
@@ -96,7 +98,7 @@ function normalizeStockDraft(value) {
 }
 
 /**
- * 許可IDセット生成（V3.53コア）
+ * 許可IDセット生成
  */
 function buildAllowedCompanyIdSet(context = {}) {
   const set = new Set();
@@ -149,12 +151,80 @@ function extractJsonText(text = "") {
 }
 
 /**
+ * 文字列に企業語が含まれているかをざっくり判定
+ *
+ * 対象:
+ * - topic_label
+ * - company_name
+ * - keywords
+ *
+ * 方針:
+ * - 厳密一致ではなく includes
+ * - 長さ2以上の語のみ対象
+ */
+function messageMentionsCandidate(replyMessage = "", candidate = {}) {
+  const safeReply = toSafeString(replyMessage);
+  if (!safeReply) return false;
+
+  const words = [
+    toSafeString(candidate.topic_label),
+    toSafeString(candidate.company_name),
+    ...(Array.isArray(candidate.keywords) ? candidate.keywords : []),
+  ]
+    .map((x) => toSafeString(x))
+    .filter((x) => x && x.length >= 2);
+
+  return words.some((word) => safeReply.includes(word));
+}
+
+/**
+ * AI返却が不整合なときに company を補完
+ *
+ * 条件:
+ * - matchedCompanyId が空
+ * - companyCandidates が1件だけ
+ * - replyMessage がその企業に明確に触れている
+ *
+ * 補完内容:
+ * - matchedCompanyId
+ * - topicLabel
+ */
+function fillCompanyFromSingleCandidate(parsed = {}, context = {}) {
+  const safeMatchedCompanyId = toSafeString(parsed.matchedCompanyId);
+  if (safeMatchedCompanyId) {
+    return parsed;
+  }
+
+  const candidates = Array.isArray(context.companyCandidates)
+    ? context.companyCandidates
+    : [];
+
+  if (candidates.length !== 1) {
+    return parsed;
+  }
+
+  const candidate = candidates[0] || {};
+
+  if (!messageMentionsCandidate(parsed.replyMessage, candidate)) {
+    return parsed;
+  }
+
+  return {
+    ...parsed,
+    matchedCompanyId: toSafeString(candidate.company_id || candidate.companyId),
+    topicLabel:
+      toSafeString(candidate.topic_label || candidate.topicLabel) ||
+      parsed.topicLabel,
+  };
+}
+
+/**
  * メイン（V3.53）
  */
 function parseV35Response(input = {}) {
   const rid = String(input.rid || "no_rid");
   const aiRawText = String(input.aiRawText || "").trim();
-  const context = input.context || {}; // ←追加
+  const context = input.context || {};
 
   try {
     if (!aiRawText) {
@@ -176,16 +246,30 @@ function parseV35Response(input = {}) {
     }
 
     const rawObject = JSON.parse(jsonText);
-    const parsed = normalizeParsedObject(rawObject);
+    let parsed = normalizeParsedObject(rawObject);
 
     /**
-     * 🔥 V3.53 コア
-     * 不正 company_id を排除
+     * 1. AI返却の不整合を補完
+     * 例:
+     * - replyMessage では「オーダースーツの金井」と書いている
+     * - でも matchedCompanyId が空
+     */
+    parsed = fillCompanyFromSingleCandidate(parsed, context);
+
+    /**
+     * 2. 許可されていない company_id を排除
      */
     const allowedIds = buildAllowedCompanyIdSet(context);
 
     if (!allowedIds.has(parsed.matchedCompanyId)) {
       parsed.matchedCompanyId = "";
+    }
+
+    /**
+     * 3. company_id が空に戻ったら topicLabel も最低限整える
+     */
+    if (!parsed.matchedCompanyId && parsed.topicLabel !== DEFAULT_PARSED.topicLabel) {
+      parsed.topicLabel = DEFAULT_PARSED.topicLabel;
     }
 
     return {

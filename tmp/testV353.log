@@ -3,6 +3,63 @@
 ====================
 TEST: スーツ（実AI）
 ====================
+### COLLECT V3.53 ###
+rid: no_rid
+userMessage: スーツを作りたい
+wikiCandidates.length: 0
+stockCandidates.length: 0
+companyCandidatesRaw: [
+  {
+    company_id: 'kanai_suits',
+    name: 'オーダースーツの金井',
+    short_name: 'スーツ金井',
+    category: 'suits',
+    tags: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'ビジネス',
+      '礼服',
+      '成人式',
+      '相談',
+      '予約',
+      '来店'
+    ],
+    short_pitch: '装いを整えたい方へ、オーダースーツのご相談を承ります。',
+    site_url: 'temp',
+    line_url: 'temp',
+    map_url: 'TRUE',
+    show_in_ai: true,
+    show_in_html: false,
+    sort_order: 9999,
+    priority: 0,
+    score: 1
+  }
+]
+companyCandidates: [
+  {
+    company_id: 'kanai_suits',
+    topic_label: 'スーツ金井',
+    company_name: 'オーダースーツの金井',
+    keywords: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'ビジネス',
+      '礼服',
+      '成人式',
+      '相談',
+      '予約',
+      '来店'
+    ]
+  }
+]
+companyCandidates.length: 1
+currentCompanyId: 
+currentCompanyName: 
+isConversationContinuing: false
 ctxRes.success: true
 ctxRes.message: collectV35Context success
 ctxRes.data: {
@@ -42,6 +99,7 @@ companyCandidates: [
 currentCompanyId: 
 currentCompanyName: 
 isConversationContinuing: false
+### BUILD PROMPT V3.53 ###
 promptRes.success: true
 promptRes.message: buildV35Prompt success
 
@@ -194,7 +252,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
 --- AI RAW ---
 {
   "topicLabel": "スーツ金井",
-  "replyMessage": "スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。",
+  "replyMessage": "オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。",
   "matchedCompanyId": "kanai_suits",
   "usedWiki": false,
   "wikiAction": "none",
@@ -212,7 +270,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
     rid: 'no_rid',
     parsed: {
       topicLabel: 'スーツ金井',
-      replyMessage: 'スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。',
+      replyMessage: 'オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。',
       matchedCompanyId: 'kanai_suits',
       usedWiki: false,
       wikiAction: 'none',
@@ -223,7 +281,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
     },
     aiRawText: '{\n' +
       '  "topicLabel": "スーツ金井",\n' +
-      '  "replyMessage": "スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。",\n' +
+      '  "replyMessage": "オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。",\n' +
       '  "matchedCompanyId": "kanai_suits",\n' +
       '  "usedWiki": false,\n' +
       '  "wikiAction": "none",\n' +
@@ -234,7 +292,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
       '}',
     jsonText: '{\n' +
       '  "topicLabel": "スーツ金井",\n' +
-      '  "replyMessage": "スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。",\n' +
+      '  "replyMessage": "オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。",\n' +
       '  "matchedCompanyId": "kanai_suits",\n' +
       '  "usedWiki": false,\n' +
       '  "wikiAction": "none",\n' +
@@ -252,7 +310,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
   message: 'applyV35Actions success',
   data: {
     rid: 'no_rid',
-    replyText: 'スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。\n【スーツ金井】',
+    replyText: 'オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。\n【スーツ金井】',
     topicLabel: 'スーツ金井',
     matchedCompanyId: 'kanai_suits',
     usedWiki: false,
@@ -263,299 +321,26 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
 --- summary ---
 userMessage: スーツを作りたい
 currentCompanyId: 
-matchedCompanyId: kanai_suits
-replyText: スーツを作りたい場合、オーダースーツの金井ではお客様のサイズに合わせたスーツを提供しています。ぜひご相談ください。
+parsed.topicLabel: スーツ金井
+parsed.matchedCompanyId: kanai_suits
+final.matchedCompanyId: kanai_suits
+replyText: オーダースーツの金井では、スーツのオーダーを承っております。ぜひご相談ください。
 【スーツ金井】
 
 ====================
 TEST: 駐車場（単発 / 実AI）
 ====================
-ctxRes.success: true
-ctxRes.message: collectV35Context success
-ctxRes.data: {
-  companyWikiCandidates: [],
-  questionStockCandidates: [
-    {
-      company_id: 'kanai_suit',
-      question: '金井って駐車場ある？',
-      normalized_question: '金井って駐車場ある？',
-      user_question: '金井って駐車場ある？',
-      asked_count: 1,
-      stock_status: 'new',
-      draft_answer: ''
-    },
-    {
-      company_id: 'kanai_suit',
-      question: '駐車場ある？',
-      normalized_question: '駐車場ある？',
-      user_question: '駐車場ある？',
-      asked_count: 2,
-      stock_status: 'new',
-      draft_answer: ''
-    }
-  ],
-  companyCandidates: [],
-  currentCompanyId: '',
-  currentCompanyName: '',
-  isConversationContinuing: false
-}
+### COLLECT V3.53 ###
+rid: no_rid
+userMessage: 駐車場ある？
+wikiCandidates.length: 0
+stockCandidates.length: 3
+companyCandidatesRaw: []
 companyCandidates: []
+companyCandidates.length: 0
 currentCompanyId: 
 currentCompanyName: 
 isConversationContinuing: false
-promptRes.success: true
-promptRes.message: buildV35Prompt success
-
---- systemPrompt ---
-あなたはV3.53会話エンジンの中核AIです。
-目的は、ユーザ発話に対して、返答・未回答収集・wiki下書き生成を同時に行うことです。
-
-最重要ルール:
-1. 必ずJSONのみを返してください。
-2. JSON以外の文章は一切出力しないでください。
-3. replyMessage には、ユーザへ見せる回答本文だけを書いてください。
-4. topicLabel の表示文（例: 【スーツ金井】 や 【テーマ無し】⇒協賛企業から選択）はシステム側で付けます。replyMessage に topicLabel 表示を書かないでください。
-5. テーマ無しでも、ユーザの質問に一般的に答えられるなら、自然な回答本文を replyMessage に入れてください。
-6. company_wiki 候補で十分に答えられる場合は、それを最優先して judgement を wiki_answer にしてください。
-7. companyCandidates は補助候補です。companyCandidates が存在しても、それだけを理由に企業を確定してはいけません。
-8. 企業テーマが明確なとき、または currentCompanyId があり会話継続が明確なときだけ、topicLabel と matchedCompanyId を企業寄りにしてよいです。
-9. ただし、companyCandidates が1件のみで、その topic_label / company_name / keywords が userMessage と明確に一致する場合は、その企業を採用してよいです。
-10. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。
-11. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。
-12. 該当テーマが弱い、または特定できない場合は topicLabel を "テーマ無し" にしてください。
-13. matchedCompanyId は該当企業がない場合は空文字にしてください。
-14. companyCandidates が空で、currentCompanyId もなく、企業テーマの根拠が弱い場合は、企業を無理に選ばずテーマ無しを優先してください。
-
-判断優先順位:
-1. companyWikiCandidates
-2. currentCompanyId と会話継続性
-3. companyCandidates
-4. questionStockCandidates
-5. テーマ無し
-
-topicLabel の方針:
-- 協賛企業や会話テーマが明確なら、その短い表示名を入れる
-- 明確でなければ "テーマ無し" を入れる
-- 例: スーツ金井, 法律池田, ワイン小澤, テーマ無し
-
-companyCandidates の扱い:
-- companyCandidates は、company_master シートを元にコード側で絞り込まれたテーマ候補です
-- topic_label を優先参照して topicLabel を判断してよいです
-- company_id を使って matchedCompanyId を決めてよいです
-- keywords は補助情報です
-- 候補が複数ある場合は慎重に判断してください
-- 候補が1件だけで、userMessage と自然に結びつくなら、その企業を優先採用してよいです
-- 例: userMessage が「スーツを作りたい」で、companyCandidates がスーツ金井だけなら、その企業を採用してよいです
-- 一般質問、雑談、広い話題、無関係話題なら企業を出さず テーマ無し にしてください
-
-currentCompanyId の扱い:
-- currentCompanyId は、直前まで会話で使われていた企業IDです
-- isConversationContinuing が true でも、現在のユーザ発話が明らかに別話題なら無理に引き継がないでください
-- ただし、短い追撃質問（例: 駐車場は？ 予約は？ 何時まで？）は currentCompanyId を強く参考にしてよいです
-- currentCompanyName は補助情報です
-
-一般質問の扱い:
-- 天気、AI活用、交流会のコツなど、一般的に答えられる内容は、テーマ無しでも簡潔に答える
-- 企業に寄せる根拠が弱い場合は、一般回答 + テーマ無し を優先する
-
-典型例:
-- ユーザ: スーツを作りたい -> companyCandidates がスーツ金井のみなら企業を採用してよい
-- ユーザ: 駐車場は？ -> currentCompanyId があり会話継続ならその企業を採用してよい
-- ユーザ: 駐車場は？ -> currentCompanyId がなく、企業手がかりも弱いならテーマ無し
-- ユーザ: 今日の天気は？ -> テーマ無し
-- ユーザ: AI活用のコツは？ -> 一般回答できるならテーマ無し
-
-judgement の候補:
-- "wiki_answer": wiki候補で回答可能
-- "stock_append": 未回答としてstock追加すべき
-- "general_reply": 一般返答のみ
-- "no_topic": テーマ無し
-
-wikiAction の候補:
-- "none"
-- "draft"
-
-stockAction の候補:
-- "none"
-- "append"
-
-usedWiki の方針:
-- companyWikiCandidates の回答を使って答えた場合のみ true
-- 一般回答や companyCandidates ベースだけの推定回答では false
-
-返却JSONの形式は必ず以下に従ってください:
-{
-  "topicLabel": "スーツ金井",
-  "replyMessage": "返答文",
-  "matchedCompanyId": "kanai_suits",
-  "usedWiki": true,
-  "wikiAction": "none",
-  "wikiDraft": null,
-  "stockAction": "none",
-  "stockDraft": null,
-  "judgement": "wiki_answer"
-}
-
-wikiDraft を作る場合の形式:
-{
-  "company_id": "kanai_suits",
-  "question_pattern": "予約は必要ですか？",
-  "normalized_question": "予約は必要ですか？",
-  "answer_text": "ご予約をおすすめしております。",
-  "draft_reason": "未回答質問として今後wiki登録候補"
-}
-
-stockDraft を作る場合の形式:
-{
-  "company_id": "kanai_suits",
-  "question": "予約は必要ですか？",
-  "normalized_question": "予約は必要ですか？",
-  "user_question": "予約は必要ですか？",
-  "question_category": "faq",
-  "draft_answer": "",
-  "draft_answer_source": "v35_ai"
-}
-
---- userPrompt ---
-以下の入力をもとに、必ずJSONのみで判定結果を返してください。
-replyMessage には回答本文のみを書いてください。topicLabel表示は書かないでください。
-companyWikiCandidates が十分なら最優先してください。
-companyCandidates は補助候補ですが、1件のみで userMessage と明確に一致する場合は採用してよいです。
-currentCompanyId があり、かつ今回の発話が会話継続と見なせる場合のみ、企業文脈を優先してよいです。
-根拠が弱ければ topicLabel は "テーマ無し"、matchedCompanyId は空文字にしてください。
-
-{
-  "userMessage": "駐車場ある？",
-  "companyWikiCandidates": [],
-  "questionStockCandidates": [
-    {
-      "company_id": "kanai_suit",
-      "question": "金井って駐車場ある？",
-      "normalized_question": "金井って駐車場ある？",
-      "user_question": "金井って駐車場ある？",
-      "asked_count": 1,
-      "stock_status": "new",
-      "draft_answer": ""
-    },
-    {
-      "company_id": "kanai_suit",
-      "question": "駐車場ある？",
-      "normalized_question": "駐車場ある？",
-      "user_question": "駐車場ある？",
-      "asked_count": 2,
-      "stock_status": "new",
-      "draft_answer": ""
-    }
-  ],
-  "companyCandidates": [],
-  "currentCompanyId": "",
-  "currentCompanyName": "",
-  "isConversationContinuing": false
-}
-
---- AI RAW ---
-{
-  "topicLabel": "テーマ無し",
-  "replyMessage": "駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。",
-  "matchedCompanyId": "",
-  "usedWiki": false,
-  "wikiAction": "none",
-  "wikiDraft": null,
-  "stockAction": "append",
-  "stockDraft": {
-    "company_id": "kanai_suit",
-    "question": "駐車場ある？",
-    "normalized_question": "駐車場ある？",
-    "user_question": "駐車場ある？",
-    "question_category": "faq",
-    "draft_answer": "",
-    "draft_answer_source": "v35_ai"
-  },
-  "judgement": "stock_append"
-}
-
---- parsedRes ---
-{
-  success: true,
-  message: 'parseV35Response success',
-  data: {
-    rid: 'no_rid',
-    parsed: {
-      topicLabel: 'テーマ無し',
-      replyMessage: '駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。',
-      matchedCompanyId: '',
-      usedWiki: false,
-      wikiAction: 'none',
-      wikiDraft: null,
-      stockAction: 'append',
-      stockDraft: [Object],
-      judgement: 'stock_append'
-    },
-    aiRawText: '{\n' +
-      '  "topicLabel": "テーマ無し",\n' +
-      '  "replyMessage": "駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。",\n' +
-      '  "matchedCompanyId": "",\n' +
-      '  "usedWiki": false,\n' +
-      '  "wikiAction": "none",\n' +
-      '  "wikiDraft": null,\n' +
-      '  "stockAction": "append",\n' +
-      '  "stockDraft": {\n' +
-      '    "company_id": "kanai_suit",\n' +
-      '    "question": "駐車場ある？",\n' +
-      '    "normalized_question": "駐車場ある？",\n' +
-      '    "user_question": "駐車場ある？",\n' +
-      '    "question_category": "faq",\n' +
-      '    "draft_answer": "",\n' +
-      '    "draft_answer_source": "v35_ai"\n' +
-      '  },\n' +
-      '  "judgement": "stock_append"\n' +
-      '}',
-    jsonText: '{\n' +
-      '  "topicLabel": "テーマ無し",\n' +
-      '  "replyMessage": "駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。",\n' +
-      '  "matchedCompanyId": "",\n' +
-      '  "usedWiki": false,\n' +
-      '  "wikiAction": "none",\n' +
-      '  "wikiDraft": null,\n' +
-      '  "stockAction": "append",\n' +
-      '  "stockDraft": {\n' +
-      '    "company_id": "kanai_suit",\n' +
-      '    "question": "駐車場ある？",\n' +
-      '    "normalized_question": "駐車場ある？",\n' +
-      '    "user_question": "駐車場ある？",\n' +
-      '    "question_category": "faq",\n' +
-      '    "draft_answer": "",\n' +
-      '    "draft_answer_source": "v35_ai"\n' +
-      '  },\n' +
-      '  "judgement": "stock_append"\n' +
-      '}'
-  }
-}
-
---- finalRes ---
-{
-  success: true,
-  message: 'applyV35Actions success',
-  data: {
-    rid: 'no_rid',
-    replyText: '駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。\n【テーマ無し】⇒協賛企業から選択',
-    topicLabel: 'テーマ無し',
-    matchedCompanyId: '',
-    usedWiki: false,
-    judgement: 'stock_append'
-  }
-}
-
---- summary ---
-userMessage: 駐車場ある？
-currentCompanyId: 
-matchedCompanyId: 
-replyText: 駐車場の有無については、各店舗や施設によって異なりますので、具体的な場所を確認することをおすすめします。
-【テーマ無し】⇒協賛企業から選択
-
-====================
-TEST: 駐車場（継続 / 実AI）
-====================
 ctxRes.success: true
 ctxRes.message: collectV35Context success
 ctxRes.data: {
@@ -578,17 +363,27 @@ ctxRes.data: {
       asked_count: 3,
       stock_status: 'new',
       draft_answer: ''
+    },
+    {
+      company_id: '',
+      question: '駐車場ある？',
+      normalized_question: '駐車場ある？',
+      user_question: '駐車場ある？',
+      asked_count: 1,
+      stock_status: 'new',
+      draft_answer: ''
     }
   ],
   companyCandidates: [],
-  currentCompanyId: 'kanai_suits',
-  currentCompanyName: 'スーツ金井',
-  isConversationContinuing: true
+  currentCompanyId: '',
+  currentCompanyName: '',
+  isConversationContinuing: false
 }
 companyCandidates: []
-currentCompanyId: kanai_suits
-currentCompanyName: スーツ金井
-isConversationContinuing: true
+currentCompanyId: 
+currentCompanyName: 
+isConversationContinuing: false
+### BUILD PROMPT V3.53 ###
 promptRes.success: true
 promptRes.message: buildV35Prompt success
 
@@ -731,6 +526,333 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
       "asked_count": 3,
       "stock_status": "new",
       "draft_answer": ""
+    },
+    {
+      "company_id": "",
+      "question": "駐車場ある？",
+      "normalized_question": "駐車場ある？",
+      "user_question": "駐車場ある？",
+      "asked_count": 1,
+      "stock_status": "new",
+      "draft_answer": ""
+    }
+  ],
+  "companyCandidates": [],
+  "currentCompanyId": "",
+  "currentCompanyName": "",
+  "isConversationContinuing": false
+}
+
+--- AI RAW ---
+{
+  "topicLabel": "テーマ無し",
+  "replyMessage": "駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。",
+  "matchedCompanyId": "",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "append",
+  "stockDraft": {
+    "company_id": "",
+    "question": "駐車場ある？",
+    "normalized_question": "駐車場ある？",
+    "user_question": "駐車場ある？",
+    "question_category": "faq",
+    "draft_answer": "",
+    "draft_answer_source": "v35_ai"
+  },
+  "judgement": "stock_append"
+}
+
+--- parsedRes ---
+{
+  success: true,
+  message: 'parseV35Response success',
+  data: {
+    rid: 'no_rid',
+    parsed: {
+      topicLabel: 'テーマ無し',
+      replyMessage: '駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。',
+      matchedCompanyId: '',
+      usedWiki: false,
+      wikiAction: 'none',
+      wikiDraft: null,
+      stockAction: 'append',
+      stockDraft: [Object],
+      judgement: 'stock_append'
+    },
+    aiRawText: '{\n' +
+      '  "topicLabel": "テーマ無し",\n' +
+      '  "replyMessage": "駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。",\n' +
+      '  "matchedCompanyId": "",\n' +
+      '  "usedWiki": false,\n' +
+      '  "wikiAction": "none",\n' +
+      '  "wikiDraft": null,\n' +
+      '  "stockAction": "append",\n' +
+      '  "stockDraft": {\n' +
+      '    "company_id": "",\n' +
+      '    "question": "駐車場ある？",\n' +
+      '    "normalized_question": "駐車場ある？",\n' +
+      '    "user_question": "駐車場ある？",\n' +
+      '    "question_category": "faq",\n' +
+      '    "draft_answer": "",\n' +
+      '    "draft_answer_source": "v35_ai"\n' +
+      '  },\n' +
+      '  "judgement": "stock_append"\n' +
+      '}',
+    jsonText: '{\n' +
+      '  "topicLabel": "テーマ無し",\n' +
+      '  "replyMessage": "駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。",\n' +
+      '  "matchedCompanyId": "",\n' +
+      '  "usedWiki": false,\n' +
+      '  "wikiAction": "none",\n' +
+      '  "wikiDraft": null,\n' +
+      '  "stockAction": "append",\n' +
+      '  "stockDraft": {\n' +
+      '    "company_id": "",\n' +
+      '    "question": "駐車場ある？",\n' +
+      '    "normalized_question": "駐車場ある？",\n' +
+      '    "user_question": "駐車場ある？",\n' +
+      '    "question_category": "faq",\n' +
+      '    "draft_answer": "",\n' +
+      '    "draft_answer_source": "v35_ai"\n' +
+      '  },\n' +
+      '  "judgement": "stock_append"\n' +
+      '}'
+  }
+}
+
+--- finalRes ---
+{
+  success: true,
+  message: 'applyV35Actions success',
+  data: {
+    rid: 'no_rid',
+    replyText: '駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。\n【テーマ無し】⇒協賛企業から選択',
+    topicLabel: 'テーマ無し',
+    matchedCompanyId: '',
+    usedWiki: false,
+    judgement: 'stock_append'
+  }
+}
+
+--- summary ---
+userMessage: 駐車場ある？
+currentCompanyId: 
+parsed.topicLabel: テーマ無し
+parsed.matchedCompanyId: 
+final.matchedCompanyId: 
+replyText: 駐車場の有無については、各施設や店舗によって異なりますので、具体的な場所を確認することをおすすめします。
+【テーマ無し】⇒協賛企業から選択
+
+====================
+TEST: 駐車場（継続 / 実AI）
+====================
+### COLLECT V3.53 ###
+rid: no_rid
+userMessage: 駐車場ある？
+wikiCandidates.length: 0
+stockCandidates.length: 3
+companyCandidatesRaw: []
+companyCandidates: []
+companyCandidates.length: 0
+currentCompanyId: kanai_suits
+currentCompanyName: スーツ金井
+isConversationContinuing: true
+ctxRes.success: true
+ctxRes.message: collectV35Context success
+ctxRes.data: {
+  companyWikiCandidates: [],
+  questionStockCandidates: [
+    {
+      company_id: 'kanai_suit',
+      question: '金井って駐車場ある？',
+      normalized_question: '金井って駐車場ある？',
+      user_question: '金井って駐車場ある？',
+      asked_count: 1,
+      stock_status: 'new',
+      draft_answer: ''
+    },
+    {
+      company_id: 'kanai_suit',
+      question: '駐車場ある？',
+      normalized_question: '駐車場ある？',
+      user_question: '駐車場ある？',
+      asked_count: 3,
+      stock_status: 'new',
+      draft_answer: ''
+    },
+    {
+      company_id: '',
+      question: '駐車場ある？',
+      normalized_question: '駐車場ある？',
+      user_question: '駐車場ある？',
+      asked_count: 2,
+      stock_status: 'new',
+      draft_answer: ''
+    }
+  ],
+  companyCandidates: [],
+  currentCompanyId: 'kanai_suits',
+  currentCompanyName: 'スーツ金井',
+  isConversationContinuing: true
+}
+companyCandidates: []
+currentCompanyId: kanai_suits
+currentCompanyName: スーツ金井
+isConversationContinuing: true
+### BUILD PROMPT V3.53 ###
+promptRes.success: true
+promptRes.message: buildV35Prompt success
+
+--- systemPrompt ---
+あなたはV3.53会話エンジンの中核AIです。
+目的は、ユーザ発話に対して、返答・未回答収集・wiki下書き生成を同時に行うことです。
+
+最重要ルール:
+1. 必ずJSONのみを返してください。
+2. JSON以外の文章は一切出力しないでください。
+3. replyMessage には、ユーザへ見せる回答本文だけを書いてください。
+4. topicLabel の表示文（例: 【スーツ金井】 や 【テーマ無し】⇒協賛企業から選択）はシステム側で付けます。replyMessage に topicLabel 表示を書かないでください。
+5. テーマ無しでも、ユーザの質問に一般的に答えられるなら、自然な回答本文を replyMessage に入れてください。
+6. company_wiki 候補で十分に答えられる場合は、それを最優先して judgement を wiki_answer にしてください。
+7. companyCandidates は補助候補です。companyCandidates が存在しても、それだけを理由に企業を確定してはいけません。
+8. 企業テーマが明確なとき、または currentCompanyId があり会話継続が明確なときだけ、topicLabel と matchedCompanyId を企業寄りにしてよいです。
+9. ただし、companyCandidates が1件のみで、その topic_label / company_name / keywords が userMessage と明確に一致する場合は、その企業を採用してよいです。
+10. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。
+11. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。
+12. 該当テーマが弱い、または特定できない場合は topicLabel を "テーマ無し" にしてください。
+13. matchedCompanyId は該当企業がない場合は空文字にしてください。
+14. companyCandidates が空で、currentCompanyId もなく、企業テーマの根拠が弱い場合は、企業を無理に選ばずテーマ無しを優先してください。
+
+判断優先順位:
+1. companyWikiCandidates
+2. currentCompanyId と会話継続性
+3. companyCandidates
+4. questionStockCandidates
+5. テーマ無し
+
+topicLabel の方針:
+- 協賛企業や会話テーマが明確なら、その短い表示名を入れる
+- 明確でなければ "テーマ無し" を入れる
+- 例: スーツ金井, 法律池田, ワイン小澤, テーマ無し
+
+companyCandidates の扱い:
+- companyCandidates は、company_master シートを元にコード側で絞り込まれたテーマ候補です
+- topic_label を優先参照して topicLabel を判断してよいです
+- company_id を使って matchedCompanyId を決めてよいです
+- keywords は補助情報です
+- 候補が複数ある場合は慎重に判断してください
+- 候補が1件だけで、userMessage と自然に結びつくなら、その企業を優先採用してよいです
+- 例: userMessage が「スーツを作りたい」で、companyCandidates がスーツ金井だけなら、その企業を採用してよいです
+- 一般質問、雑談、広い話題、無関係話題なら企業を出さず テーマ無し にしてください
+
+currentCompanyId の扱い:
+- currentCompanyId は、直前まで会話で使われていた企業IDです
+- isConversationContinuing が true でも、現在のユーザ発話が明らかに別話題なら無理に引き継がないでください
+- ただし、短い追撃質問（例: 駐車場は？ 予約は？ 何時まで？）は currentCompanyId を強く参考にしてよいです
+- currentCompanyName は補助情報です
+
+一般質問の扱い:
+- 天気、AI活用、交流会のコツなど、一般的に答えられる内容は、テーマ無しでも簡潔に答える
+- 企業に寄せる根拠が弱い場合は、一般回答 + テーマ無し を優先する
+
+典型例:
+- ユーザ: スーツを作りたい -> companyCandidates がスーツ金井のみなら企業を採用してよい
+- ユーザ: 駐車場は？ -> currentCompanyId があり会話継続ならその企業を採用してよい
+- ユーザ: 駐車場は？ -> currentCompanyId がなく、企業手がかりも弱いならテーマ無し
+- ユーザ: 今日の天気は？ -> テーマ無し
+- ユーザ: AI活用のコツは？ -> 一般回答できるならテーマ無し
+
+judgement の候補:
+- "wiki_answer": wiki候補で回答可能
+- "stock_append": 未回答としてstock追加すべき
+- "general_reply": 一般返答のみ
+- "no_topic": テーマ無し
+
+wikiAction の候補:
+- "none"
+- "draft"
+
+stockAction の候補:
+- "none"
+- "append"
+
+usedWiki の方針:
+- companyWikiCandidates の回答を使って答えた場合のみ true
+- 一般回答や companyCandidates ベースだけの推定回答では false
+
+返却JSONの形式は必ず以下に従ってください:
+{
+  "topicLabel": "スーツ金井",
+  "replyMessage": "返答文",
+  "matchedCompanyId": "kanai_suits",
+  "usedWiki": true,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "wiki_answer"
+}
+
+wikiDraft を作る場合の形式:
+{
+  "company_id": "kanai_suits",
+  "question_pattern": "予約は必要ですか？",
+  "normalized_question": "予約は必要ですか？",
+  "answer_text": "ご予約をおすすめしております。",
+  "draft_reason": "未回答質問として今後wiki登録候補"
+}
+
+stockDraft を作る場合の形式:
+{
+  "company_id": "kanai_suits",
+  "question": "予約は必要ですか？",
+  "normalized_question": "予約は必要ですか？",
+  "user_question": "予約は必要ですか？",
+  "question_category": "faq",
+  "draft_answer": "",
+  "draft_answer_source": "v35_ai"
+}
+
+--- userPrompt ---
+以下の入力をもとに、必ずJSONのみで判定結果を返してください。
+replyMessage には回答本文のみを書いてください。topicLabel表示は書かないでください。
+companyWikiCandidates が十分なら最優先してください。
+companyCandidates は補助候補ですが、1件のみで userMessage と明確に一致する場合は採用してよいです。
+currentCompanyId があり、かつ今回の発話が会話継続と見なせる場合のみ、企業文脈を優先してよいです。
+根拠が弱ければ topicLabel は "テーマ無し"、matchedCompanyId は空文字にしてください。
+
+{
+  "userMessage": "駐車場ある？",
+  "companyWikiCandidates": [],
+  "questionStockCandidates": [
+    {
+      "company_id": "kanai_suit",
+      "question": "金井って駐車場ある？",
+      "normalized_question": "金井って駐車場ある？",
+      "user_question": "金井って駐車場ある？",
+      "asked_count": 1,
+      "stock_status": "new",
+      "draft_answer": ""
+    },
+    {
+      "company_id": "kanai_suit",
+      "question": "駐車場ある？",
+      "normalized_question": "駐車場ある？",
+      "user_question": "駐車場ある？",
+      "asked_count": 3,
+      "stock_status": "new",
+      "draft_answer": ""
+    },
+    {
+      "company_id": "",
+      "question": "駐車場ある？",
+      "normalized_question": "駐車場ある？",
+      "user_question": "駐車場ある？",
+      "asked_count": 2,
+      "stock_status": "new",
+      "draft_answer": ""
     }
   ],
   "companyCandidates": [],
@@ -742,7 +864,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
 --- AI RAW ---
 {
   "topicLabel": "スーツ金井",
-  "replyMessage": "はい、スーツ金井には駐車場があります。",
+  "replyMessage": "スーツ金井には駐車場がありますので、ご利用いただけます。",
   "matchedCompanyId": "kanai_suits",
   "usedWiki": false,
   "wikiAction": "none",
@@ -760,7 +882,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
     rid: 'no_rid',
     parsed: {
       topicLabel: 'スーツ金井',
-      replyMessage: 'はい、スーツ金井には駐車場があります。',
+      replyMessage: 'スーツ金井には駐車場がありますので、ご利用いただけます。',
       matchedCompanyId: 'kanai_suits',
       usedWiki: false,
       wikiAction: 'none',
@@ -771,7 +893,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
     },
     aiRawText: '{\n' +
       '  "topicLabel": "スーツ金井",\n' +
-      '  "replyMessage": "はい、スーツ金井には駐車場があります。",\n' +
+      '  "replyMessage": "スーツ金井には駐車場がありますので、ご利用いただけます。",\n' +
       '  "matchedCompanyId": "kanai_suits",\n' +
       '  "usedWiki": false,\n' +
       '  "wikiAction": "none",\n' +
@@ -782,7 +904,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
       '}',
     jsonText: '{\n' +
       '  "topicLabel": "スーツ金井",\n' +
-      '  "replyMessage": "はい、スーツ金井には駐車場があります。",\n' +
+      '  "replyMessage": "スーツ金井には駐車場がありますので、ご利用いただけます。",\n' +
       '  "matchedCompanyId": "kanai_suits",\n' +
       '  "usedWiki": false,\n' +
       '  "wikiAction": "none",\n' +
@@ -800,7 +922,7 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
   message: 'applyV35Actions success',
   data: {
     rid: 'no_rid',
-    replyText: 'はい、スーツ金井には駐車場があります。\n【スーツ金井】',
+    replyText: 'スーツ金井には駐車場がありますので、ご利用いただけます。\n【スーツ金井】',
     topicLabel: 'スーツ金井',
     matchedCompanyId: 'kanai_suits',
     usedWiki: false,
@@ -811,6 +933,8 @@ currentCompanyId があり、かつ今回の発話が会話継続と見なせる
 --- summary ---
 userMessage: 駐車場ある？
 currentCompanyId: kanai_suits
-matchedCompanyId: kanai_suits
-replyText: はい、スーツ金井には駐車場があります。
+parsed.topicLabel: スーツ金井
+parsed.matchedCompanyId: kanai_suits
+final.matchedCompanyId: kanai_suits
+replyText: スーツ金井には駐車場がありますので、ご利用いただけます。
 【スーツ金井】

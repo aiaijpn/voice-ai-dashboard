@@ -14,6 +14,7 @@ const openai = new OpenAI({
  * 目的:
  * - collect → buildPrompt → OpenAI → parse → apply の連結確認
  * - 実AIが本当に companyCandidates を見て企業判定するか確認
+ * - parseV35Response の補完ロジックが効くか確認
  * - 実機との差分をローカルで再現確認する
  */
 
@@ -49,12 +50,19 @@ async function callRealAI({ systemPrompt, userPrompt }) {
 }
 
 /**
+ * 補助表示
+ */
+function printDivider(title = "") {
+  console.log("\n====================");
+  console.log(title);
+  console.log("====================");
+}
+
+/**
  * 共通テスト処理
  */
 async function runTest({ label, userMessage, history }) {
-  console.log("\n====================");
-  console.log("TEST:", label);
-  console.log("====================");
+  printDivider(`TEST: ${label}`);
 
   /**
    * ① collect
@@ -118,6 +126,11 @@ async function runTest({ label, userMessage, history }) {
 
   /**
    * ④ parse
+   *
+   * ここで context を渡すのが重要
+   * - companyCandidates
+   * - currentCompanyId
+   * を使って補完・検証する
    */
   const parsedRes = parseV35Response({
     aiRawText,
@@ -145,18 +158,25 @@ async function runTest({ label, userMessage, history }) {
   console.log("\n--- finalRes ---");
   console.log(finalRes);
 
+  /**
+   * ⑥ 最終確認サマリ
+   */
   console.log("\n--- summary ---");
   console.log("userMessage:", userMessage);
   console.log("currentCompanyId:", context.currentCompanyId);
-  console.log("matchedCompanyId:", finalRes?.data?.matchedCompanyId);
+  console.log("parsed.topicLabel:", parsed.topicLabel);
+  console.log("parsed.matchedCompanyId:", parsed.matchedCompanyId);
+  console.log("final.matchedCompanyId:", finalRes?.data?.matchedCompanyId);
   console.log("replyText:", finalRes?.data?.replyText);
 }
 
 /**
  * 実行
  *
- * まずは1本ずつでもよいが、
- * 今回は比較しやすいよう3ケース連続で回す
+ * 3ケース:
+ * 1. スーツ（1件候補 → 企業採用）
+ * 2. 駐車場単発（候補なし → テーマ無し）
+ * 3. 駐車場継続（currentCompanyIdあり → 継続採用）
  */
 async function main() {
   try {

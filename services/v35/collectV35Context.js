@@ -259,7 +259,6 @@ function slimCompanyCandidates(items = []) {
 /**
  * メイン
  */
-
 async function collectV35Context(input = {}) {
   const rid = toSafeString(input.rid) || "no_rid";
   const userMessage = toSafeString(input.userMessage);
@@ -312,6 +311,21 @@ async function collectV35Context(input = {}) {
     const questionStockCandidates = slimStockCandidates(stockCandidates);
     const companyCandidates = slimCompanyCandidates(companyCandidatesRaw);
 
+    /**
+     * 6. デバッグログ
+     */
+    console.log("### COLLECT V3.53 ###");
+    console.log("rid:", rid);
+    console.log("userMessage:", userMessage);
+    console.log("wikiCandidates.length:", companyWikiCandidates.length);
+    console.log("stockCandidates.length:", questionStockCandidates.length);
+    console.log("companyCandidatesRaw:", companyCandidatesRaw);
+    console.log("companyCandidates:", companyCandidates);
+    console.log("companyCandidates.length:", companyCandidates.length);
+    console.log("currentCompanyId:", currentCompanyId);
+    console.log("currentCompanyName:", currentCompanyName);
+    console.log("isConversationContinuing:", isConversationContinuing);
+
     return {
       success: true,
       message: "collectV35Context success",
@@ -325,6 +339,11 @@ async function collectV35Context(input = {}) {
       },
     };
   } catch (error) {
+    console.log("### COLLECT V3.53 ERROR ###");
+    console.log("rid:", rid);
+    console.log("userMessage:", userMessage);
+    console.log("error:", error?.message || error);
+
     return {
       success: false,
       message: error?.message || "collectV35Context failed",
@@ -334,6 +353,7 @@ async function collectV35Context(input = {}) {
     };
   }
 }
+
 module.exports = {
   MAX_WIKI_CANDIDATES,
   MAX_STOCK_CANDIDATES,
