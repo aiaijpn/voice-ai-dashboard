@@ -3,21 +3,9 @@
 /**
  * services/v35/parseV35Response.js
  *
- * 役割:
- * - AI返却テキストを JSON として解析する
- * - 必須項目を安全に補完する
- * - 壊れたJSONでも極力落ちずに返す
- *
- * このファイルでやること:
- * - JSON.parse
- * - 必須フィールド補完
- * - null / 空文字の安全化
- *
- * このファイルでやらないこと:
- * - OpenAI API 呼び出し
- * - question_stock 保存
- * - company_wiki 保存
- * - 最終返信文の装飾
+ * V3.53 変更点:
+ * - matchedCompanyId を許可リストで検証
+ * - 不正IDは強制的に空にする
  */
 
 const DEFAULT_PARSED = {
@@ -33,75 +21,53 @@ const DEFAULT_PARSED = {
 };
 
 /**
- * 文字列化
+ * 安全文字列
  */
 function toSafeString(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
+  if (value === null || value === undefined) return "";
   return String(value).trim();
 }
 
 /**
- * boolean化
+ * boolean
  */
 function toSafeBoolean(value) {
   return value === true;
 }
 
 /**
- * wikiAction 正規化
+ * wikiAction
  */
 function normalizeWikiAction(value) {
-  const safe = toSafeString(value);
-
-  if (safe === "draft") {
-    return "draft";
-  }
-
-  return "none";
+  return toSafeString(value) === "draft" ? "draft" : "none";
 }
 
 /**
- * stockAction 正規化
+ * stockAction
  */
 function normalizeStockAction(value) {
-  const safe = toSafeString(value);
-
-  if (safe === "append") {
-    return "append";
-  }
-
-  return "none";
+  return toSafeString(value) === "append" ? "append" : "none";
 }
 
 /**
- * judgement 正規化
+ * judgement
  */
 function normalizeJudgement(value) {
-  const safe = toSafeString(value);
-
   const allowed = [
     "wiki_answer",
     "stock_append",
     "general_reply",
     "no_topic",
   ];
-
-  if (allowed.includes(safe)) {
-    return safe;
-  }
-
-  return "general_reply";
+  const safe = toSafeString(value);
+  return allowed.includes(safe) ? safe : "general_reply";
 }
 
 /**
- * wikiDraft 正規化
+ * wikiDraft
  */
 function normalizeWikiDraft(value) {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
+  if (!value || typeof value !== "object") return null;
 
   return {
     company_id: toSafeString(value.company_id),
@@ -113,12 +79,10 @@ function normalizeWikiDraft(value) {
 }
 
 /**
- * stockDraft 正規化
+ * stockDraft
  */
 function normalizeStockDraft(value) {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
+  if (!value || typeof value !== "object") return null;
 
   return {
     company_id: toSafeString(value.company_id),
@@ -132,7 +96,28 @@ function normalizeStockDraft(value) {
 }
 
 /**
- * AI返却オブジェクトを安全化
+ * 許可IDセット生成（V3.53コア）
+ */
+function buildAllowedCompanyIdSet(context = {}) {
+  const set = new Set();
+
+  const candidates = Array.isArray(context.companyCandidates)
+    ? context.companyCandidates
+    : [];
+
+  for (const c of candidates) {
+    const id = toSafeString(c.company_id || c.companyId);
+    if (id) set.add(id);
+  }
+
+  const currentId = toSafeString(context.currentCompanyId);
+  if (currentId) set.add(currentId);
+
+  return set;
+}
+
+/**
+ * parsed object 正規化
  */
 function normalizeParsedObject(raw = {}) {
   return {
@@ -150,8 +135,7 @@ function normalizeParsedObject(raw = {}) {
 }
 
 /**
- * JSON文字列の前後に余計な文字が混じる場合に備え、
- * 最初の "{" から最後の "}" までを切り出す
+ * JSON抽出
  */
 function extractJsonText(text = "") {
   const safeText = String(text || "").trim();
@@ -159,29 +143,25 @@ function extractJsonText(text = "") {
   const start = safeText.indexOf("{");
   const end = safeText.lastIndexOf("}");
 
-  if (start === -1 || end === -1 || end < start) {
-    return "";
-  }
+  if (start === -1 || end === -1 || end < start) return "";
 
   return safeText.slice(start, end + 1);
 }
 
 /**
- * メイン
+ * メイン（V3.53）
  */
 function parseV35Response(input = {}) {
   const rid = String(input.rid || "no_rid");
   const aiRawText = String(input.aiRawText || "").trim();
+  const context = input.context || {}; // ←追加
 
   try {
     if (!aiRawText) {
       return {
         success: false,
         message: "aiRawText is empty",
-        data: {
-          rid,
-          parsed: { ...DEFAULT_PARSED },
-        },
+        data: { rid, parsed: { ...DEFAULT_PARSED } },
       };
     }
 
@@ -191,16 +171,22 @@ function parseV35Response(input = {}) {
       return {
         success: false,
         message: "JSON block not found",
-        data: {
-          rid,
-          parsed: { ...DEFAULT_PARSED },
-          aiRawText,
-        },
+        data: { rid, parsed: { ...DEFAULT_PARSED }, aiRawText },
       };
     }
 
     const rawObject = JSON.parse(jsonText);
     const parsed = normalizeParsedObject(rawObject);
+
+    /**
+     * 🔥 V3.53 コア
+     * 不正 company_id を排除
+     */
+    const allowedIds = buildAllowedCompanyIdSet(context);
+
+    if (!allowedIds.has(parsed.matchedCompanyId)) {
+      parsed.matchedCompanyId = "";
+    }
 
     return {
       success: true,
@@ -226,15 +212,5 @@ function parseV35Response(input = {}) {
 }
 
 module.exports = {
-  DEFAULT_PARSED,
-  toSafeString,
-  toSafeBoolean,
-  normalizeWikiAction,
-  normalizeStockAction,
-  normalizeJudgement,
-  normalizeWikiDraft,
-  normalizeStockDraft,
-  normalizeParsedObject,
-  extractJsonText,
   parseV35Response,
 };

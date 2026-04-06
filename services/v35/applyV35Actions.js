@@ -3,21 +3,9 @@
 /**
  * services/v35/applyV35Actions.js
  *
- * 役割:
- * - AI解析結果をもとに最終返信文を作る
- * - 必要時のみ question_stock へ保存する
- * - 今回は company_wiki へは保存しない（draftのみ保持）
- *
- * このファイルでやること:
- * - 回答本文を優先した最終返信生成
- * - 文末に topicLabel を付与
- * - テーマ無し時は文末に固定案内を付与
- * - stockAction === "append" のときだけ question_stock 保存
- *
- * このファイルでやらないこと:
- * - OpenAI API 呼び出し
- * - AI返却JSON解析
- * - company_wiki 本保存
+ * V3.53 変更点:
+ * - matchedCompanyId を最終ゲートとして使用
+ * - 空の場合は必ず「テーマ無し扱い」に補正
  */
 
 const { saveQuestionStock } = require("../questionStockService");
@@ -30,19 +18,33 @@ const NO_TOPIC_SUFFIX = "【テーマ無し】⇒協賛企業から選択";
  * 安全に文字列化
  */
 function toSafeString(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
+  if (value === null || value === undefined) return "";
   return String(value).trim();
 }
 
 /**
- * 文末に付けるテーマ表示を作る
+ * 🔥 V3.53コア
+ * topicLabel と matchedCompanyId の整合性を保証
  *
- * 仕様:
- * - テーマ無し -> 【テーマ無し】⇒協賛企業から選択
- * - それ以外   -> 【topicLabel】
+ * ルール:
+ * - matchedCompanyId が空なら必ず テーマ無し
+ */
+function normalizeCompanyOutput(parsed = {}) {
+  const matchedCompanyId = toSafeString(parsed.matchedCompanyId);
+
+  if (!matchedCompanyId) {
+    return {
+      ...parsed,
+      topicLabel: NO_TOPIC_LABEL,
+      matchedCompanyId: "",
+    };
+  }
+
+  return parsed;
+}
+
+/**
+ * 文末テーマ表示
  */
 function buildTopicSuffix(parsed = {}) {
   const topicLabel = toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL;
@@ -55,12 +57,7 @@ function buildTopicSuffix(parsed = {}) {
 }
 
 /**
- * 最終返信文を作る
- *
- * 仕様:
- * - 回答本文を先に出す
- * - 最後にテーマ表示を付ける
- * - replyMessage が空でも、テーマ表示だけは返す
+ * 最終返信文
  */
 function buildFinalReply(parsed = {}) {
   const replyMessage = toSafeString(parsed.replyMessage);
@@ -74,7 +71,7 @@ function buildFinalReply(parsed = {}) {
 }
 
 /**
- * question_stock 保存payloadを作る
+ * question_stock payload
  */
 function buildQuestionStockPayload(input = {}) {
   const parsed = input.parsed || {};
@@ -106,20 +103,14 @@ function buildQuestionStockPayload(input = {}) {
 }
 
 /**
- * question_stock 保存
+ * stock保存
  */
 async function saveStockIfNeeded(input = {}) {
   const parsed = input.parsed || {};
   const stockAction = toSafeString(parsed.stockAction);
 
   if (stockAction !== "append") {
-    return {
-      success: true,
-      message: "stock save skipped",
-      data: {
-        action: "none",
-      },
-    };
+    return { success: true, message: "stock save skipped", data: {} };
   }
 
   const payload = buildQuestionStockPayload(input);
@@ -128,9 +119,7 @@ async function saveStockIfNeeded(input = {}) {
     return {
       success: false,
       message: "question_stock payload invalid",
-      data: {
-        payload,
-      },
+      data: { payload },
     };
   }
 
@@ -140,21 +129,14 @@ async function saveStockIfNeeded(input = {}) {
     return {
       success: false,
       message: saveResult?.message || "saveQuestionStock failed",
-      data: {
-        payload,
-        saveResult: saveResult?.data || null,
-      },
+      data: { payload },
     };
   }
 
   return {
     success: true,
     message: "stock saved",
-    data: {
-      action: "append",
-      payload,
-      saveResult: saveResult.data || null,
-    },
+    data: saveResult.data || null,
   };
 }
 
@@ -163,18 +145,21 @@ async function saveStockIfNeeded(input = {}) {
  */
 async function applyV35Actions(input = {}) {
   const rid = toSafeString(input.rid) || "no_rid";
-  const parsed = input.parsed || null;
+  let parsed = input.parsed || null;
 
   try {
     if (!parsed || typeof parsed !== "object") {
       return {
         success: false,
         message: "parsed is required",
-        data: {
-          rid,
-        },
+        data: { rid },
       };
     }
+
+    /**
+     * 🔥 V3.53コア適用
+     */
+    parsed = normalizeCompanyOutput(parsed);
 
     const finalReply = buildFinalReply(parsed);
 
@@ -186,12 +171,11 @@ async function applyV35Actions(input = {}) {
     if (!stockResult.success) {
       return {
         success: false,
-        message: stockResult.message || "saveStockIfNeeded failed",
+        message: stockResult.message,
         data: {
           rid,
           parsed,
           finalReply,
-          stockResult: stockResult.data || null,
         },
       };
     }
@@ -202,35 +186,21 @@ async function applyV35Actions(input = {}) {
       data: {
         rid,
         replyText: finalReply,
-        topicLabel: toSafeString(parsed.topicLabel) || NO_TOPIC_LABEL,
+        topicLabel: toSafeString(parsed.topicLabel),
         matchedCompanyId: toSafeString(parsed.matchedCompanyId),
         usedWiki: parsed.usedWiki === true,
-        wikiAction: toSafeString(parsed.wikiAction) || "none",
-        wikiDraft: parsed.wikiDraft || null,
-        stockAction: toSafeString(parsed.stockAction) || "none",
-        stockDraft: parsed.stockDraft || null,
-        judgement: toSafeString(parsed.judgement) || "general_reply",
-        stockSaveResult: stockResult.data || null,
+        judgement: toSafeString(parsed.judgement),
       },
     };
   } catch (error) {
     return {
       success: false,
       message: error?.message || "applyV35Actions failed",
-      data: {
-        rid,
-      },
+      data: { rid },
     };
   }
 }
 
 module.exports = {
-  NO_TOPIC_LABEL,
-  NO_TOPIC_SUFFIX,
-  toSafeString,
-  buildTopicSuffix,
-  buildFinalReply,
-  buildQuestionStockPayload,
-  saveStockIfNeeded,
   applyV35Actions,
 };

@@ -5,6 +5,7 @@
  *
  * 役割:
  * - userMessage から company_wiki / question_stock / companyCandidates の候補を抽出する
+ * - 会話履歴から currentCompany を補助取得する
  * - AI に渡す最小コンテキストを構築する
  *
  * 方針:
@@ -12,6 +13,7 @@
  * - 最初は軽い一致で候補を拾う
  * - 厳密正解ではなく「候補を落としすぎない」ことを優先
  * - V3.52では companyCandidates を company_master シート由来に切り替える
+ * - V3.53では currentCompanyId / isConversationContinuing を追加する
  */
 
 const { google } = require("googleapis");
@@ -153,6 +155,49 @@ function pickStockCandidates(userMessage = "", stockItems = []) {
 }
 
 /**
+ * 会話履歴から currentCompany を拾う
+ *
+ * 想定:
+ * - conversationHistory の新しいものから見る
+ * - matchedCompanyId があれば採用
+ */
+function pickCurrentCompanyFromHistory(conversationHistory = []) {
+  if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+    return {
+      currentCompanyId: "",
+      currentCompanyName: "",
+      isConversationContinuing: false,
+    };
+  }
+
+  for (let i = conversationHistory.length - 1; i >= 0; i -= 1) {
+    const row = conversationHistory[i] || {};
+
+    const matchedCompanyId = toSafeString(
+      row.matchedCompanyId || row.matched_company_id || row.company_id
+    );
+
+    const matchedCompanyName = toSafeString(
+      row.matchedCompanyName || row.matched_company_name || row.company_name
+    );
+
+    if (matchedCompanyId) {
+      return {
+        currentCompanyId: matchedCompanyId,
+        currentCompanyName: matchedCompanyName,
+        isConversationContinuing: true,
+      };
+    }
+  }
+
+  return {
+    currentCompanyId: "",
+    currentCompanyName: "",
+    isConversationContinuing: false,
+  };
+}
+
+/**
  * AI に渡すために company_wiki 候補を軽量化
  */
 function slimWikiCandidates(items = []) {
@@ -214,9 +259,13 @@ function slimCompanyCandidates(items = []) {
 /**
  * メイン
  */
+
 async function collectV35Context(input = {}) {
   const rid = toSafeString(input.rid) || "no_rid";
   const userMessage = toSafeString(input.userMessage);
+  const conversationHistory = Array.isArray(input.conversationHistory)
+    ? input.conversationHistory
+    : [];
 
   try {
     if (!userMessage) {
@@ -248,7 +297,16 @@ async function collectV35Context(input = {}) {
     const companyCandidatesRaw = await findCompaniesForAi(userMessage);
 
     /**
-     * 4. AI 用に軽量化
+     * 4. 会話継続中の currentCompany を取得
+     */
+    const {
+      currentCompanyId,
+      currentCompanyName,
+      isConversationContinuing,
+    } = pickCurrentCompanyFromHistory(conversationHistory);
+
+    /**
+     * 5. AI 用に軽量化
      */
     const companyWikiCandidates = slimWikiCandidates(wikiCandidates);
     const questionStockCandidates = slimStockCandidates(stockCandidates);
@@ -261,6 +319,9 @@ async function collectV35Context(input = {}) {
         companyWikiCandidates,
         questionStockCandidates,
         companyCandidates,
+        currentCompanyId,
+        currentCompanyName,
+        isConversationContinuing,
       },
     };
   } catch (error) {
@@ -273,7 +334,6 @@ async function collectV35Context(input = {}) {
     };
   }
 }
-
 module.exports = {
   MAX_WIKI_CANDIDATES,
   MAX_STOCK_CANDIDATES,
@@ -283,6 +343,7 @@ module.exports = {
   isLooseMatch,
   pickWikiCandidates,
   pickStockCandidates,
+  pickCurrentCompanyFromHistory,
   slimWikiCandidates,
   slimStockCandidates,
   slimCompanyCandidates,

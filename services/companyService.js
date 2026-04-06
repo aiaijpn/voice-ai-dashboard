@@ -1,7 +1,6 @@
 "use strict";
 
 const { getAllCompaniesFromSheet } = require("./companySheetService");
-const { matchesCompanyTags } = require("../utils/textMatch");
 
 /**
  * TRUE判定
@@ -12,9 +11,24 @@ function isTrue(value) {
 }
 
 /**
+ * 正規化
+ */
+function normalize(text = "") {
+  return String(text).toLowerCase().trim();
+}
+
+/**
+ * tags分解
+ */
+function parseTags(tags = "") {
+  return String(tags)
+    .split(",")
+    .map((t) => normalize(t))
+    .filter(Boolean);
+}
+
+/**
  * 協賛一覧
- *
- * show_in_html が値ありなら表示
  */
 async function getCompaniesForList() {
   const companyMaster = await getAllCompaniesFromSheet();
@@ -37,34 +51,48 @@ async function getCompanyById(id = "") {
 }
 
 /**
- * AI候補
+ * AI候補（V3.53）
  */
 async function findCompaniesForAi(userMessage = "") {
   const companyMaster = await getAllCompaniesFromSheet();
-  const safeUserMessage = String(userMessage || "").trim();
+  const user = normalize(userMessage);
 
-  return companyMaster
-    .filter((item) => {
-      if (!isTrue(item.show_in_ai)) {
-        return false;
+  const results = [];
+
+  for (const c of companyMaster) {
+    if (!isTrue(c.show_in_ai)) continue;
+
+    const name = normalize(c.name);
+    const shortName = normalize(c.short_name);
+    const tags = parseTags(c.tags);
+
+    let score = 0;
+
+    // 名前一致
+    if (user.includes(name)) score += 2;
+    if (user.includes(shortName)) score += 2;
+
+    // タグ一致
+    for (const tag of tags) {
+      if (user.includes(tag)) {
+        score += 1;
       }
+    }
 
-      const name = String(item.name || "");
-      const shortName = String(item.short_name || "");
-      const tags = String(item.tags || "");
+    if (score > 0) {
+      results.push({
+        ...c,
+        score,
+      });
+    }
+  }
 
-      const tagList = tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+  /**
+   * スコア順
+   */
+  results.sort((a, b) => b.score - a.score);
 
-      return (
-        safeUserMessage.includes(name) ||
-        safeUserMessage.includes(shortName) ||
-        tagList.some((tag) => safeUserMessage.includes(tag))
-      );
-    })
-    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+  return results;
 }
 
 module.exports = {

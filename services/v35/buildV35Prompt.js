@@ -4,8 +4,8 @@
  * services/v35/buildV35Prompt.js
  *
  * 役割:
- * - V3.52 用の AI入力プロンプトを生成する
- * - userMessage / wiki候補 / stock候補 / company候補 を AIに渡す
+ * - V3.53 用の AI入力プロンプトを生成する
+ * - userMessage / wiki候補 / stock候補 / company候補 / currentCompany を AIに渡す
  * - JSON固定で返させる
  *
  * このファイルでやること:
@@ -17,16 +17,25 @@
  * - OpenAI API 呼び出し
  * - JSON解析
  * - question_stock 保存
+ *
+ * V3.53 の主目的:
+ * - 「companyCandidates がある」だけで企業を出してしまう誤誘導を減らす
+ * - currentCompanyId がある場合だけ、会話継続として企業文脈を使いやすくする
+ * - 企業を出す / 出さない を AIに明示的に判断させる
  */
 
 const DEFAULT_TOPIC_LABEL = "テーマ無し";
 
 /**
  * system prompt を作る
+ *
+ * 重要:
+ * - ここで AI の判断ルールをかなり強めに固定する
+ * - 特に V3.53 では「候補がある ≠ 企業を出す」ことを明文化する
  */
 function buildSystemPrompt() {
   return [
-    "あなたはV3.52会話エンジンの中核AIです。",
+    "あなたはV3.53会話エンジンの中核AIです。",
     "目的は、ユーザ発話に対して、返答・未回答収集・wiki下書き生成を同時に行うことです。",
     "",
     "最重要ルール:",
@@ -36,17 +45,20 @@ function buildSystemPrompt() {
     "4. topicLabel の表示文（例: 【スーツ金井】 や 【テーマ無し】⇒協賛企業から選択）はシステム側で付けます。replyMessage に topicLabel 表示を書かないでください。",
     "5. テーマ無しでも、ユーザの質問に一般的に答えられるなら、自然な回答本文を replyMessage に入れてください。",
     "6. company_wiki 候補で十分に答えられる場合は、それを最優先して judgement を wiki_answer にしてください。",
-    "7. company_wiki 候補が弱い場合は、companyCandidates を見て topicLabel と matchedCompanyId を判断してよいです。",
-    "8. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。",
-    "9. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。",
-    `10. 該当テーマが弱い、または特定できない場合は topicLabel を "${DEFAULT_TOPIC_LABEL}" にしてください。`,
-    "11. matchedCompanyId は該当企業がない場合は空文字にしてください。",
+    "7. companyCandidates は補助候補です。companyCandidates が存在しても、それだけを理由に企業を確定してはいけません。",
+    "8. 企業テーマが明確なとき、または currentCompanyId があり会話継続が明確なときだけ、topicLabel と matchedCompanyId を企業寄りにしてよいです。",
+    "9. 未回答で、question_stock に追加すべき場合は stockAction を append にしてください。",
+    "10. company_wiki に将来追加すべきと判断した場合は wikiDraft を生成してください。",
+    `11. 該当テーマが弱い、または特定できない場合は topicLabel を "${DEFAULT_TOPIC_LABEL}" にしてください。`,
+    "12. matchedCompanyId は該当企業がない場合は空文字にしてください。",
+    "13. 少しでも根拠が弱い場合は、企業を無理に選ばず、テーマ無しを優先してください。",
     "",
     "判断優先順位:",
     "1. companyWikiCandidates",
-    "2. companyCandidates",
-    "3. questionStockCandidates",
-    `4. ${DEFAULT_TOPIC_LABEL}`,
+    "2. currentCompanyId と会話継続性",
+    "3. companyCandidates",
+    "4. questionStockCandidates",
+    `5. ${DEFAULT_TOPIC_LABEL}`,
     "",
     "topicLabel の方針:",
     "- 協賛企業や会話テーマが明確なら、その短い表示名を入れる",
@@ -58,16 +70,26 @@ function buildSystemPrompt() {
     "- topic_label を優先参照して topicLabel を判断してよいです",
     "- company_id を使って matchedCompanyId を決めてよいです",
     "- keywords は補助情報です",
-    "- ただし、根拠が弱い場合は無理に会社を決め打ちせず テーマ無し にしてください",
+    "- ただし、候補があるだけでは不十分です",
+    "- ユーザ発話が企業に紐づく話題かどうかを見て判断してください",
+    "- 一般質問、雑談、広い話題、無関係話題なら企業を出さず テーマ無し にしてください",
     "",
-    "replyMessage の方針:",
-    "- できるだけ自然な日本語で答える",
-    "- 長すぎず、会話が続けやすい文にする",
-    "- topicLabel 表示は書かない",
+    "currentCompanyId の扱い:",
+    "- currentCompanyId は、直前まで会話で使われていた企業IDです",
+    "- isConversationContinuing が true でも、現在のユーザ発話が明らかに別話題なら無理に引き継がないでください",
+    "- ただし、短い追撃質問（例: 駐車場は？ 予約は？ 何時まで？）は currentCompanyId を強く参考にしてよいです",
+    "- currentCompanyName は補助情報です",
     "",
     "一般質問の扱い:",
     "- 天気、AI活用、交流会のコツなど、一般的に答えられる内容は、テーマ無しでも簡潔に答える",
-    "- ただし、協賛企業テーマが明確ならそちらを優先して判断する",
+    "- 企業に寄せる根拠が弱い場合は、一般回答 + テーマ無し を優先する",
+    "",
+    "典型例:",
+    "- ユーザ: スーツを作りたい -> 企業テーマが明確なら企業を採用してよい",
+    "- ユーザ: 駐車場は？ -> currentCompanyId があり会話継続ならその企業を採用してよい",
+    "- ユーザ: 駐車場は？ -> currentCompanyId がなく、企業手がかりも弱いならテーマ無し",
+    "- ユーザ: 今日の天気は？ -> テーマ無し",
+    "- ユーザ: AI活用のコツは？ -> 一般回答できるならテーマ無し",
     "",
     "judgement の候補:",
     '- "wiki_answer": wiki候補で回答可能',
@@ -82,6 +104,10 @@ function buildSystemPrompt() {
     "stockAction の候補:",
     '- "none"',
     '- "append"',
+    "",
+    "usedWiki の方針:",
+    "- companyWikiCandidates の回答を使って答えた場合のみ true",
+    "- 一般回答や companyCandidates ベースだけの推定回答では false",
     "",
     "返却JSONの形式は必ず以下に従ってください:",
     "{",
@@ -120,31 +146,52 @@ function buildSystemPrompt() {
 
 /**
  * user prompt を作る
+ *
+ * ここでは AI に渡す実データをまとめる。
+ * system prompt でルールを固定し、
+ * user prompt では「今回の入力データ」を安全に渡す。
  */
 function buildUserPrompt({
   userMessage = "",
   companyWikiCandidates = [],
   questionStockCandidates = [],
   companyCandidates = [],
+  currentCompanyId = "",
+  currentCompanyName = "",
+  isConversationContinuing = false,
 }) {
   const safePayload = {
+    // 今回のユーザ発話
     userMessage: String(userMessage || ""),
+
+    // wiki 候補
     companyWikiCandidates: Array.isArray(companyWikiCandidates)
       ? companyWikiCandidates
       : [],
+
+    // 未回答stock候補
     questionStockCandidates: Array.isArray(questionStockCandidates)
       ? questionStockCandidates
       : [],
+
+    // company候補
     companyCandidates: Array.isArray(companyCandidates)
       ? companyCandidates
       : [],
+
+    // 会話継続情報
+    currentCompanyId: String(currentCompanyId || ""),
+    currentCompanyName: String(currentCompanyName || ""),
+    isConversationContinuing: Boolean(isConversationContinuing),
   };
 
   return [
     "以下の入力をもとに、必ずJSONのみで判定結果を返してください。",
     "replyMessage には回答本文のみを書いてください。topicLabel表示は書かないでください。",
     "companyWikiCandidates が十分なら最優先してください。",
-    "companyWikiCandidates が弱い場合は、companyCandidates を使って topicLabel と matchedCompanyId を判断してよいです。",
+    "companyCandidates は補助候補です。候補があるだけで企業を採用しないでください。",
+    "currentCompanyId があり、かつ今回の発話が会話継続と見なせる場合のみ、企業文脈を優先してよいです。",
+    `根拠が弱ければ topicLabel は "${DEFAULT_TOPIC_LABEL}"、matchedCompanyId は空文字にしてください。`,
     "",
     JSON.stringify(safePayload, null, 2),
   ].join("\n");
@@ -152,6 +199,16 @@ function buildUserPrompt({
 
 /**
  * メイン
+ *
+ * 返却形式:
+ * {
+ *   success: true,
+ *   message: "...",
+ *   data: {
+ *     systemPrompt,
+ *     userPrompt
+ *   }
+ * }
  */
 function buildV35Prompt(input = {}) {
   try {
@@ -162,6 +219,9 @@ function buildV35Prompt(input = {}) {
       companyWikiCandidates: input.companyWikiCandidates,
       questionStockCandidates: input.questionStockCandidates,
       companyCandidates: input.companyCandidates,
+      currentCompanyId: input.currentCompanyId,
+      currentCompanyName: input.currentCompanyName,
+      isConversationContinuing: input.isConversationContinuing,
     });
 
     return {
