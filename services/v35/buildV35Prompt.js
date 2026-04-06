@@ -190,6 +190,9 @@ function buildUserPrompt({
  * メイン
  */
 function buildV35Prompt(input = {}) {
+
+   console.log("### BUILD PROMPT V3.53 ###"); 
+
   try {
     const systemPrompt = buildSystemPrompt();
 

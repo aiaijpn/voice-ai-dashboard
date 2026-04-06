@@ -16,6 +16,7 @@ app.use("/api/operator", operatorProfileRoutes);
 // 入口ログ（起動確認）
 log("🚀 SERVER BOOT: server.js is running");
 log("⏱️  BOOT TIME:", new Date().toISOString());
+log("### ENTRY V3.53 ###");
 
 // 環境変数の存在チェック（値は出さない）
 const requiredEnv = [
