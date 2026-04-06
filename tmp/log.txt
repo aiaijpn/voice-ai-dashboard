@@ -1,6 +1,4 @@
-
-
-
+? GET / healthcheck
 ==> Your service is live ??
 ==> 
 ==> ///////////////////////////////////////////////////////////
@@ -10,24 +8,24 @@
 ==> ///////////////////////////////////////////////////////////
 ? GET / healthcheck
 ========================================
-?? [80bbe7] POST /webhook received
-?? [80bbe7] time=2026-04-06T14:20:29.360Z
-?? [80bbe7] headers x-line-signature=present
-?? [80bbe7] body keys= [ 'destination', 'events' ]
-?? [80bbe7] events length=1
-??  [80bbe7] handleEvent start idx=0 type=message msgType=text
+?? [a99d40] POST /webhook received
+?? [a99d40] time=2026-04-06T14:34:34.253Z
+?? [a99d40] headers x-line-signature=present
+?? [a99d40] body keys= [ 'destination', 'events' ]
+?? [a99d40] events length=1
+??  [a99d40] handleEvent start idx=0 type=message msgType=text
 ========================================
-?? [7a6004] handleEvent start
+?? [add2aa] handleEvent start
 type=message
 messageType=text
-?? [7a6004] userText= スーツを作りたい
-?? [7a6004] V3.5 start {
+?? [add2aa] userText= スーツを作りたい
+?? [add2aa] V3.5 start {
   bot_id: 'voice-ai-dashboard',
   userId: 'U9b2475d6ef51548f1785a133f72861c1',
   userMessage: 'スーツを作りたい'
 }
 ### COLLECT V3.53 ###
-rid: 7a6004
+rid: add2aa
 userMessage: スーツを作りたい
 wikiCandidates.length: 0
 stockCandidates.length: 0
@@ -85,73 +83,91 @@ currentCompanyName:
 isConversationContinuing: false
 ### BUILD PROMPT V3.53 ###
 ### PARSE V3.53 RAW ###
-rid: 7a6004
+rid: add2aa
 aiRawText: {
   "topicLabel": "スーツ金井",
-  "replyMessage": "オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。",
+  "replyMessage": "オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。",
   "matchedCompanyId": "kanai_suits",
   "usedWiki": false,
   "wikiAction": "none",
   "wikiDraft": null,
   "stockAction": "none",
   "stockDraft": null,
-  "judgement": "wiki_answer"
+  "judgement": "general_reply"
 }
 rawObject: {
   topicLabel: 'スーツ金井',
-  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  replyMessage: 'オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。',
   matchedCompanyId: 'kanai_suits',
   usedWiki: false,
   wikiAction: 'none',
   wikiDraft: null,
   stockAction: 'none',
   stockDraft: null,
-  judgement: 'wiki_answer'
+  judgement: 'general_reply'
 }
-context.companyCandidates: undefined
-context.currentCompanyId: undefined
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suits',
+    topic_label: 'スーツ金井',
+    company_name: 'オーダースーツの金井',
+    keywords: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'ビジネス',
+      '礼服',
+      '成人式',
+      '相談',
+      '予約',
+      '来店'
+    ]
+  }
+]
+context.currentCompanyId: 
 ### PARSE V3.53 NORMALIZED ###
 parsed(beforeFill): {
   topicLabel: 'スーツ金井',
-  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  replyMessage: 'オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。',
   matchedCompanyId: 'kanai_suits',
   usedWiki: false,
   wikiAction: 'none',
   wikiDraft: null,
   stockAction: 'none',
   stockDraft: null,
-  judgement: 'wiki_answer'
+  judgement: 'general_reply'
 }
 ### PARSE V3.53 AFTER FILL ###
 parsed(afterFill): {
   topicLabel: 'スーツ金井',
-  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
+  replyMessage: 'オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。',
   matchedCompanyId: 'kanai_suits',
   usedWiki: false,
   wikiAction: 'none',
   wikiDraft: null,
   stockAction: 'none',
   stockDraft: null,
-  judgement: 'wiki_answer'
+  judgement: 'general_reply'
 }
 ### PARSE V3.53 ALLOWED IDS ###
-allowedIds: []
+allowedIds: [ 'kanai_suits' ]
 ### PARSE V3.53 FINAL ###
 parsed(final): {
-  topicLabel: 'テーマ無し',
-  replyMessage: 'オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。',
-  matchedCompanyId: '',
+  topicLabel: 'スーツ金井',
+  replyMessage: 'オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。',
+  matchedCompanyId: 'kanai_suits',
   usedWiki: false,
   wikiAction: 'none',
   wikiDraft: null,
   stockAction: 'none',
   stockDraft: null,
-  judgement: 'wiki_answer'
+  judgement: 'general_reply'
 }
-?? [7a6004] V3.5 result {
-  topicLabel: 'テーマ無し',
-  matchedCompanyId: '',
-  judgement: 'wiki_answer',
+?? [add2aa] V3.5 result {
+  topicLabel: 'スーツ金井',
+  matchedCompanyId: 'kanai_suits',
+  judgement: 'general_reply',
   stockAction: '',
   wikiAction: ''
 }
@@ -175,14 +191,43 @@ sheet/saver.appendRowToSheet success {
   sheetName: 'conversation_history',
   valueCount: 10
 }
-?? [7a6004] service result message= v35 reply
-?? [7a6004] service replyText= オーダースーツの金井では、スーツのご注文を承っています。まずはご相談ください。
-【テーマ無し】⇒協賛企業から選択
-?? [7a6004] sending reply
+?? [add2aa] service result message= v35 reply
+?? [add2aa] service replyText= オーダースーツを作りたいのであれば、ぜひスーツ金井にご相談ください。専門のスタッフが丁寧に対応し、採寸から仕立てまでサポートいたします。
+【スーツ金井】
+?? [add2aa] sending reply
 ? LINE reply sent { messageCount: 1 }
-?? [7a6004] LINE reply success
-??? [7a6004] markAsRead success
-?? [7a6004] handleEvent done
-? [80bbe7] handleEvent done  idx=0
-?? [80bbe7] results ok=1 ng=0
-??  [80bbe7] total ms=5073
+?? [add2aa] LINE reply success
+??? [add2aa] markAsRead success
+?? [add2aa] handleEvent done
+? [a99d40] handleEvent done  idx=0
+?? [a99d40] results ok=1 ng=0
+??  [a99d40] total ms=7242
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm start'
+> voice-ai-dashboard@0.1.0 start
+> node server.js
+?? SERVER BOOT: server.js is running
+??  BOOT TIME: 2026-04-06T14:35:18.195Z
+### ENTRY V3.53 ###
+?? ENV CHANNEL_ACCESS_TOKEN: OK
+?? ENV OPENAI_API_KEY: OK
+?? ENV OPENAI_MODEL: OK
+?? ENV SPREADSHEET_ID: OK
+?? ENV GOOGLE_SERVICE_ACCOUNT_JSON: OK
+?? ENV BASIC_USER: OK
+?? ENV BASIC_PASS: OK
+?? messageService/index.js loaded: 2026-04-06T14:35:18.602Z
+?? handler.js loaded: 2026-04-06T14:35:18.604Z
+?? ENV CHECK (handler)
+ - CHANNEL_ACCESS_TOKEN: OK
+?? Server running on port 10000
+? GET / healthcheck
+==> Your service is live ??
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://voice-ai-dashboard.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
+? GET / healthcheck

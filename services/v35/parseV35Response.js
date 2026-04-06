@@ -3,12 +3,11 @@
 /**
  * services/v35/parseV35Response.js
  *
- * V3.53 変更点:
+ * V3.53:
  * - matchedCompanyId を許可リストで検証
  * - 不正IDは強制的に空にする
  * - companyCandidates が1件だけで、replyMessage がその企業に明確に触れている場合は
  *   matchedCompanyId / topicLabel を補完する
- * - デバッグログ追加
  */
 
 const DEFAULT_PARSED = {
@@ -23,38 +22,23 @@ const DEFAULT_PARSED = {
   judgement: "general_reply",
 };
 
-/**
- * 安全文字列
- */
 function toSafeString(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
 }
 
-/**
- * boolean
- */
 function toSafeBoolean(value) {
   return value === true;
 }
 
-/**
- * wikiAction
- */
 function normalizeWikiAction(value) {
   return toSafeString(value) === "draft" ? "draft" : "none";
 }
 
-/**
- * stockAction
- */
 function normalizeStockAction(value) {
   return toSafeString(value) === "append" ? "append" : "none";
 }
 
-/**
- * judgement
- */
 function normalizeJudgement(value) {
   const allowed = [
     "wiki_answer",
@@ -66,9 +50,6 @@ function normalizeJudgement(value) {
   return allowed.includes(safe) ? safe : "general_reply";
 }
 
-/**
- * wikiDraft
- */
 function normalizeWikiDraft(value) {
   if (!value || typeof value !== "object") return null;
 
@@ -81,9 +62,6 @@ function normalizeWikiDraft(value) {
   };
 }
 
-/**
- * stockDraft
- */
 function normalizeStockDraft(value) {
   if (!value || typeof value !== "object") return null;
 
@@ -98,9 +76,6 @@ function normalizeStockDraft(value) {
   };
 }
 
-/**
- * 許可IDセット生成
- */
 function buildAllowedCompanyIdSet(context = {}) {
   const set = new Set();
 
@@ -119,9 +94,6 @@ function buildAllowedCompanyIdSet(context = {}) {
   return set;
 }
 
-/**
- * parsed object 正規化
- */
 function normalizeParsedObject(raw = {}) {
   return {
     topicLabel: toSafeString(raw.topicLabel) || DEFAULT_PARSED.topicLabel,
@@ -137,9 +109,6 @@ function normalizeParsedObject(raw = {}) {
   };
 }
 
-/**
- * JSON抽出
- */
 function extractJsonText(text = "") {
   const safeText = String(text || "").trim();
 
@@ -151,18 +120,6 @@ function extractJsonText(text = "") {
   return safeText.slice(start, end + 1);
 }
 
-/**
- * 文字列に企業語が含まれているかをざっくり判定
- *
- * 対象:
- * - topic_label
- * - company_name
- * - keywords
- *
- * 方針:
- * - 厳密一致ではなく includes
- * - 長さ2以上の語のみ対象
- */
 function messageMentionsCandidate(replyMessage = "", candidate = {}) {
   const safeReply = toSafeString(replyMessage);
   if (!safeReply) return false;
@@ -178,18 +135,6 @@ function messageMentionsCandidate(replyMessage = "", candidate = {}) {
   return words.some((word) => safeReply.includes(word));
 }
 
-/**
- * AI返却が不整合なときに company を補完
- *
- * 条件:
- * - matchedCompanyId が空
- * - companyCandidates が1件だけ
- * - replyMessage がその企業に明確に触れている
- *
- * 補完内容:
- * - matchedCompanyId
- * - topicLabel
- */
 function fillCompanyFromSingleCandidate(parsed = {}, context = {}) {
   const safeMatchedCompanyId = toSafeString(parsed.matchedCompanyId);
   if (safeMatchedCompanyId) {
@@ -219,9 +164,6 @@ function fillCompanyFromSingleCandidate(parsed = {}, context = {}) {
   };
 }
 
-/**
- * メイン（V3.53）
- */
 function parseV35Response(input = {}) {
   const rid = String(input.rid || "no_rid");
   const aiRawText = String(input.aiRawText || "").trim();
@@ -247,45 +189,19 @@ function parseV35Response(input = {}) {
     }
 
     const rawObject = JSON.parse(jsonText);
-
-    console.log("### PARSE V3.53 RAW ###");
-    console.log("rid:", rid);
-    console.log("aiRawText:", aiRawText);
-    console.log("rawObject:", rawObject);
-    console.log("context.companyCandidates:", context.companyCandidates);
-    console.log("context.currentCompanyId:", context.currentCompanyId);
-
     let parsed = normalizeParsedObject(rawObject);
 
-    console.log("### PARSE V3.53 NORMALIZED ###");
-    console.log("parsed(beforeFill):", parsed);
+    const beforeMatchedCompanyId = parsed.matchedCompanyId;
+    const beforeTopicLabel = parsed.topicLabel;
 
-    /**
-     * 1. AI返却の不整合を補完
-     * 例:
-     * - replyMessage では「オーダースーツの金井」と書いている
-     * - でも matchedCompanyId が空
-     */
     parsed = fillCompanyFromSingleCandidate(parsed, context);
 
-    console.log("### PARSE V3.53 AFTER FILL ###");
-    console.log("parsed(afterFill):", parsed);
-
-    /**
-     * 2. 許可されていない company_id を排除
-     */
     const allowedIds = buildAllowedCompanyIdSet(context);
-
-    console.log("### PARSE V3.53 ALLOWED IDS ###");
-    console.log("allowedIds:", Array.from(allowedIds));
 
     if (!allowedIds.has(parsed.matchedCompanyId)) {
       parsed.matchedCompanyId = "";
     }
 
-    /**
-     * 3. company_id が空に戻ったら topicLabel も最低限整える
-     */
     if (
       !parsed.matchedCompanyId &&
       parsed.topicLabel !== DEFAULT_PARSED.topicLabel
@@ -293,8 +209,15 @@ function parseV35Response(input = {}) {
       parsed.topicLabel = DEFAULT_PARSED.topicLabel;
     }
 
-    console.log("### PARSE V3.53 FINAL ###");
-    console.log("parsed(final):", parsed);
+    // 最小ログ
+    console.log("### PARSE V3.53 ###", {
+      rid,
+      beforeMatchedCompanyId,
+      beforeTopicLabel,
+      finalMatchedCompanyId: parsed.matchedCompanyId,
+      finalTopicLabel: parsed.topicLabel,
+      allowedIdCount: allowedIds.size,
+    });
 
     return {
       success: true,
@@ -307,10 +230,10 @@ function parseV35Response(input = {}) {
       },
     };
   } catch (error) {
-    console.log("### PARSE V3.53 ERROR ###");
-    console.log("rid:", rid);
-    console.log("aiRawText:", aiRawText);
-    console.log("error:", error?.message || error);
+    console.log("### PARSE V3.53 ERROR ###", {
+      rid,
+      error: error?.message || error,
+    });
 
     return {
       success: false,

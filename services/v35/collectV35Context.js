@@ -7,13 +7,6 @@
  * - userMessage から company_wiki / question_stock / companyCandidates の候補を抽出する
  * - 会話履歴から currentCompany を補助取得する
  * - AI に渡す最小コンテキストを構築する
- *
- * 方針:
- * - 全件渡さない（最大件数で絞る）
- * - 最初は軽い一致で候補を拾う
- * - 厳密正解ではなく「候補を落としすぎない」ことを優先
- * - V3.52では companyCandidates を company_master シート由来に切り替える
- * - V3.53では currentCompanyId / isConversationContinuing を追加する
  */
 
 const { google } = require("googleapis");
@@ -22,16 +15,10 @@ const { getAllCompanyWikiItems } = require("../companyWikiService");
 const { getAllQuestionStockRows } = require("../questionStockService");
 const { findCompaniesForAi } = require("../companyService");
 
-/**
- * 候補上限
- */
 const MAX_WIKI_CANDIDATES = 5;
 const MAX_STOCK_CANDIDATES = 5;
 const MAX_COMPANY_CANDIDATES = 3;
 
-/**
- * 安全に文字列化
- */
 function toSafeString(value) {
   if (value === null || value === undefined) {
     return "";
@@ -40,13 +27,6 @@ function toSafeString(value) {
   return String(value).trim();
 }
 
-/**
- * Google Sheets client を作成
- *
- * 対応:
- * - 本番: GOOGLE_SERVICE_ACCOUNT_JSON
- * - ローカル: GOOGLE_SERVICE_ACCOUNT_FILE
- */
 function createSheetsClient() {
   const fs = require("fs");
   const path = require("path");
@@ -90,13 +70,6 @@ function createSheetsClient() {
   });
 }
 
-/**
- * 超軽量一致
- *
- * 方針:
- * - normalize 後に includes
- * - 双方向 includes を許容
- */
 function isLooseMatch(userText = "", targetText = "") {
   const safeUser = normalizeText(userText);
   const safeTarget = normalizeText(targetText);
@@ -108,9 +81,6 @@ function isLooseMatch(userText = "", targetText = "") {
   return safeUser.includes(safeTarget) || safeTarget.includes(safeUser);
 }
 
-/**
- * company_wiki 候補抽出
- */
 function pickWikiCandidates(userMessage = "", wikiItems = []) {
   if (!Array.isArray(wikiItems) || wikiItems.length === 0) {
     return [];
@@ -131,9 +101,6 @@ function pickWikiCandidates(userMessage = "", wikiItems = []) {
   return matched.slice(0, MAX_WIKI_CANDIDATES);
 }
 
-/**
- * question_stock 候補抽出
- */
 function pickStockCandidates(userMessage = "", stockItems = []) {
   if (!Array.isArray(stockItems) || stockItems.length === 0) {
     return [];
@@ -154,13 +121,6 @@ function pickStockCandidates(userMessage = "", stockItems = []) {
   return matched.slice(0, MAX_STOCK_CANDIDATES);
 }
 
-/**
- * 会話履歴から currentCompany を拾う
- *
- * 想定:
- * - conversationHistory の新しいものから見る
- * - matchedCompanyId があれば採用
- */
 function pickCurrentCompanyFromHistory(conversationHistory = []) {
   if (!Array.isArray(conversationHistory) || conversationHistory.length === 0) {
     return {
@@ -197,9 +157,6 @@ function pickCurrentCompanyFromHistory(conversationHistory = []) {
   };
 }
 
-/**
- * AI に渡すために company_wiki 候補を軽量化
- */
 function slimWikiCandidates(items = []) {
   if (!Array.isArray(items)) {
     return [];
@@ -215,9 +172,6 @@ function slimWikiCandidates(items = []) {
   }));
 }
 
-/**
- * AI に渡すために question_stock 候補を軽量化
- */
 function slimStockCandidates(items = []) {
   if (!Array.isArray(items)) {
     return [];
@@ -234,12 +188,6 @@ function slimStockCandidates(items = []) {
   }));
 }
 
-/**
- * AI に渡すために companyCandidates を軽量化
- *
- * V3.52:
- * - company_master シート由来の row を AI入力用shapeへ変換
- */
 function slimCompanyCandidates(items = []) {
   if (!Array.isArray(items)) {
     return [];
@@ -256,9 +204,6 @@ function slimCompanyCandidates(items = []) {
   }));
 }
 
-/**
- * メイン
- */
 async function collectV35Context(input = {}) {
   const rid = toSafeString(input.rid) || "no_rid";
   const userMessage = toSafeString(input.userMessage);
@@ -277,54 +222,35 @@ async function collectV35Context(input = {}) {
       };
     }
 
-    /**
-     * 1. company_wiki 全件取得
-     */
     const allWikiItems = await getAllCompanyWikiItems();
 
-    /**
-     * 2. question_stock 全件取得
-     */
     const sheets = createSheetsClient();
     const allStockItems = await getAllQuestionStockRows(sheets);
 
-    /**
-     * 3. 候補抽出
-     */
     const wikiCandidates = pickWikiCandidates(userMessage, allWikiItems);
     const stockCandidates = pickStockCandidates(userMessage, allStockItems);
     const companyCandidatesRaw = await findCompaniesForAi(userMessage);
 
-    /**
-     * 4. 会話継続中の currentCompany を取得
-     */
     const {
       currentCompanyId,
       currentCompanyName,
       isConversationContinuing,
     } = pickCurrentCompanyFromHistory(conversationHistory);
 
-    /**
-     * 5. AI 用に軽量化
-     */
     const companyWikiCandidates = slimWikiCandidates(wikiCandidates);
     const questionStockCandidates = slimStockCandidates(stockCandidates);
     const companyCandidates = slimCompanyCandidates(companyCandidatesRaw);
 
-    /**
-     * 6. デバッグログ
-     */
-    console.log("### COLLECT V3.53 ###");
-    console.log("rid:", rid);
-    console.log("userMessage:", userMessage);
-    console.log("wikiCandidates.length:", companyWikiCandidates.length);
-    console.log("stockCandidates.length:", questionStockCandidates.length);
-    console.log("companyCandidatesRaw:", companyCandidatesRaw);
-    console.log("companyCandidates:", companyCandidates);
-    console.log("companyCandidates.length:", companyCandidates.length);
-    console.log("currentCompanyId:", currentCompanyId);
-    console.log("currentCompanyName:", currentCompanyName);
-    console.log("isConversationContinuing:", isConversationContinuing);
+    // 最小ログ
+    console.log("### COLLECT V3.53 ###", {
+      rid,
+      userMessage,
+      wikiCount: companyWikiCandidates.length,
+      stockCount: questionStockCandidates.length,
+      companyCount: companyCandidates.length,
+      currentCompanyId,
+      isConversationContinuing,
+    });
 
     return {
       success: true,
@@ -339,10 +265,11 @@ async function collectV35Context(input = {}) {
       },
     };
   } catch (error) {
-    console.log("### COLLECT V3.53 ERROR ###");
-    console.log("rid:", rid);
-    console.log("userMessage:", userMessage);
-    console.log("error:", error?.message || error);
+    console.log("### COLLECT V3.53 ERROR ###", {
+      rid,
+      userMessage,
+      error: error?.message || error,
+    });
 
     return {
       success: false,
