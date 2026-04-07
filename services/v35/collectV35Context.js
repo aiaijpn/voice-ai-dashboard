@@ -7,6 +7,11 @@
  * - userMessage から company_wiki / question_stock / companyCandidates の候補を抽出する
  * - 会話履歴から currentCompany を補助取得する
  * - AI に渡す最小コンテキストを構築する
+ *
+ * V3.54 修正点:
+ * - companyJudgeService が使う score / strongHitCount / weakHitCount / matchedTerms を
+ *   slimCompanyCandidates に残す
+ * - companyCandidates の判断材料を落とさない
  */
 
 const { google } = require("googleapis");
@@ -25,6 +30,10 @@ function toSafeString(value) {
   }
 
   return String(value).trim();
+}
+
+function toSafeArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function createSheetsClient() {
@@ -188,6 +197,10 @@ function slimStockCandidates(items = []) {
   }));
 }
 
+/**
+ * V3.54:
+ * - judge前段で使う scoring 情報を残す
+ */
 function slimCompanyCandidates(items = []) {
   if (!Array.isArray(items)) {
     return [];
@@ -197,10 +210,21 @@ function slimCompanyCandidates(items = []) {
     company_id: toSafeString(item.company_id),
     topic_label: toSafeString(item.short_name || item.name),
     company_name: toSafeString(item.name),
-    keywords: toSafeString(item.tags)
-      .split(",")
+    keywords: toSafeArray(item.tags)
       .map((keyword) => toSafeString(keyword))
       .filter(Boolean),
+
+    // judge用に必要な材料を残す
+    score: Number(item.score || 0),
+    strongHitCount: Number(item.strongHitCount || 0),
+    weakHitCount: Number(item.weakHitCount || 0),
+    matchedTerms: toSafeArray(item.matchedTerms)
+      .map((term) => toSafeString(term))
+      .filter(Boolean),
+
+    // デバッグ補助
+    priority: Number(item.priority || 0),
+    sort_order: Number(item.sort_order || 9999),
   }));
 }
 
@@ -226,11 +250,13 @@ async function collectV35Context(input = {}) {
 
     const sheets = createSheetsClient();
     const allStockItems = await getAllQuestionStockRows(sheets);
+    
 
     const wikiCandidates = pickWikiCandidates(userMessage, allWikiItems);
     const stockCandidates = pickStockCandidates(userMessage, allStockItems);
+    
     const companyCandidatesRaw = await findCompaniesForAi(userMessage);
-
+  
     const {
       currentCompanyId,
       currentCompanyName,
@@ -241,8 +267,7 @@ async function collectV35Context(input = {}) {
     const questionStockCandidates = slimStockCandidates(stockCandidates);
     const companyCandidates = slimCompanyCandidates(companyCandidatesRaw);
 
-    // 最小ログ
-    console.log("### COLLECT V3.53 ###", {
+    console.log("### COLLECT V3.54 ###", {
       rid,
       userMessage,
       wikiCount: companyWikiCandidates.length,
@@ -250,6 +275,16 @@ async function collectV35Context(input = {}) {
       companyCount: companyCandidates.length,
       currentCompanyId,
       isConversationContinuing,
+      companyTop: companyCandidates[0]
+        ? {
+            company_id: companyCandidates[0].company_id,
+            topic_label: companyCandidates[0].topic_label,
+            score: companyCandidates[0].score,
+            strongHitCount: companyCandidates[0].strongHitCount,
+            weakHitCount: companyCandidates[0].weakHitCount,
+            matchedTerms: companyCandidates[0].matchedTerms,
+          }
+        : null,
     });
 
     return {
@@ -265,7 +300,7 @@ async function collectV35Context(input = {}) {
       },
     };
   } catch (error) {
-    console.log("### COLLECT V3.53 ERROR ###", {
+    console.log("### COLLECT V3.54 ERROR ###", {
       rid,
       userMessage,
       error: error?.message || error,
@@ -286,6 +321,7 @@ module.exports = {
   MAX_STOCK_CANDIDATES,
   MAX_COMPANY_CANDIDATES,
   toSafeString,
+  toSafeArray,
   createSheetsClient,
   isLooseMatch,
   pickWikiCandidates,
