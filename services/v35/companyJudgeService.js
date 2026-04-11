@@ -131,6 +131,12 @@ function isStrongTopCandidate(candidate = {}) {
  * 1. wiki候補あり
  * 2. currentCompanyId があり継続会話が強い
  * 3. トップ候補が十分強い
+ *
+ * 注意:
+ * - ここで返す matchedCompanyId は「最終確定」ではなく
+ *   code側の参考情報として扱う
+ * - conversation_continuing は、後段の最終決定に委ねるため
+ *   matchedCompanyId を返さず、reason だけ返す
  */
 function shouldSkipJudgeAI(context = {}) {
   const companyWikiCandidates = toSafeArray(context.companyWikiCandidates);
@@ -153,7 +159,7 @@ function shouldSkipJudgeAI(context = {}) {
     return {
       skip: true,
       reason: "conversation_continuing",
-      matchedCompanyId: currentCompanyId,
+      matchedCompanyId: "",
       confidence: "high",
     };
   }
@@ -245,17 +251,33 @@ function buildJudgeUserPrompt(input = {}) {
 
 /**
  * judge AI 結果の最低限整形
+ *
+ * 方針:
+ * - judgeResult は「参考情報」
+ * - 最終 companyId は後段で決める
+ * - matchedCompanyId は、明確に来たときだけ残す
  */
 function normalizeJudgeResult(result = {}) {
+  const rawMatchedCompanyId = normalizeCompanyId(result.matchedCompanyId);
+  const reason = toSafeString(result.reason);
+  const confidence = ["high", "medium", "low"].includes(result.confidence)
+    ? result.confidence
+    : "low";
+
+  let normalizedMatchedCompanyId = rawMatchedCompanyId;
+
+  // 継続理由だけで入ってきた companyId は、ここで消す
+  if (reason === "conversation_continuing") {
+    normalizedMatchedCompanyId = "";
+  }
+
   return {
     shouldUseCompany: Boolean(result.shouldUseCompany),
-    matchedCompanyId: normalizeCompanyId(result.matchedCompanyId),
-    confidence: ["high", "medium", "low"].includes(result.confidence)
-      ? result.confidence
-      : "low",
+    matchedCompanyId: normalizedMatchedCompanyId,
+    confidence,
     needsClarification: Boolean(result.needsClarification),
     topicLabel: toSafeString(result.topicLabel) || "テーマ無し",
-    reason: toSafeString(result.reason),
+    reason,
   };
 }
 
@@ -277,7 +299,9 @@ function prepareCompanyJudge(input = {}) {
         data: {
           mode: "skip_ai",
           judgeResult: normalizeJudgeResult({
-            shouldUseCompany: Boolean(precheck.matchedCompanyId),
+            shouldUseCompany: Boolean(
+              precheck.matchedCompanyId || precheck.reason === "conversation_continuing"
+            ),
             matchedCompanyId: precheck.matchedCompanyId,
             confidence: precheck.confidence,
             needsClarification: false,

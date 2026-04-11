@@ -8,13 +8,15 @@ const {
 } = require("./companyJudgeService");
 
 const { callV35Ai } = require("./callV35Ai");
-
-// ✅ 追加（これが最重要）
 const { parseV35Response } = require("./parseV35Response");
 
 function toSafeString(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
+}
+
+function toSafeArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function normalizeCompanyId(companyId = "") {
@@ -24,6 +26,20 @@ function normalizeCompanyId(companyId = "") {
     kanai_suits: "kanai_suit",
   };
   return ID_ALIAS_MAP[value] || value;
+}
+
+function getDefaultTopicLabelByCompanyId(companyId = "") {
+  const id = normalizeCompanyId(companyId);
+
+  const TOPIC_LABEL_BY_ID = {
+    kanai_suit: "オーダースーツ金井",
+    ogata_souzoku: "相続の尾形",
+    ikeda_law: "池田法律相談",
+    takamura_ai: "AIサービス高村",
+    nishikawa_beauty: "美容西川",
+  };
+
+  return TOPIC_LABEL_BY_ID[id] || "";
 }
 
 function formatTopicLabel(topicLabel = "") {
@@ -57,9 +73,86 @@ function buildClarificationReply(companyCandidates = []) {
   return `どの内容について知りたいですか？\n・${names.join("\n・")}`;
 }
 
+function looksLikeInternalId(value = "") {
+  const text = toSafeString(value);
+  if (!text) return false;
+
+  return /^[a-z0-9_]+$/i.test(text) && text.includes("_");
+}
+
+function findTopicLabelByCompanyId(companyId = "", companyCandidates = []) {
+  const normalizedId = normalizeCompanyId(companyId);
+  const items = toSafeArray(companyCandidates);
+
+  for (const item of items) {
+    const itemId = normalizeCompanyId(item.company_id);
+    if (itemId !== normalizedId) continue;
+
+    const label =
+      toSafeString(item.topic_label) ||
+      toSafeString(item.company_name);
+
+    if (label && !looksLikeInternalId(label)) {
+      return label;
+    }
+  }
+
+  return getDefaultTopicLabelByCompanyId(normalizedId);
+}
+
 /**
- * 判定AI
+ * 継続候補を補う
+ * ただし currentCompanyId は「最後の保険」なので、
+ * byConversationContext フラグ付きで末尾寄りの弱い候補として扱う
  */
+function ensureContinuingCompanyCandidate(context = {}) {
+  const companyCandidates = toSafeArray(context.companyCandidates);
+  const currentCompanyId = normalizeCompanyId(context.currentCompanyId);
+  const isConversationContinuing = Boolean(context.isConversationContinuing);
+
+  if (!isConversationContinuing || !currentCompanyId) {
+    return context;
+  }
+
+  const alreadyExists = companyCandidates.some((item) => {
+    return normalizeCompanyId(item.company_id) === currentCompanyId;
+  });
+
+  if (alreadyExists) {
+    return {
+      ...context,
+      currentCompanyId,
+      companyCandidates,
+    };
+  }
+
+  const fallbackTopicLabel =
+    (toSafeString(context.currentCompanyName) &&
+    !looksLikeInternalId(context.currentCompanyName)
+      ? toSafeString(context.currentCompanyName)
+      : "") || getDefaultTopicLabelByCompanyId(currentCompanyId);
+
+  const fallbackCandidate = {
+    company_id: currentCompanyId,
+    topic_label: fallbackTopicLabel,
+    company_name: fallbackTopicLabel,
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true,
+  };
+
+  return {
+    ...context,
+    currentCompanyId,
+    companyCandidates: [...companyCandidates, fallbackCandidate],
+  };
+}
+
 async function runJudgeAI(input = {}) {
   const prepared = prepareCompanyJudge(input);
 
@@ -87,7 +180,6 @@ async function runJudgeAI(input = {}) {
     throw new Error(aiResult.message);
   }
 
-  // ✅ 修正ポイント①
   const parsedResult = parseV35Response({
     rid: input.rid,
     aiRawText: aiResult.data.aiRawText,
@@ -109,9 +201,6 @@ async function runJudgeAI(input = {}) {
   };
 }
 
-/**
- * 回答AI
- */
 async function runAnswerAI(input = {}) {
   const built = buildV35Prompt(input);
 
@@ -129,7 +218,6 @@ async function runAnswerAI(input = {}) {
     throw new Error(aiResult.message);
   }
 
-  // ✅ 修正ポイント②
   const parsedResult = parseV35Response({
     rid: input.rid,
     aiRawText: aiResult.data.aiRawText,
@@ -180,24 +268,184 @@ function mergeJudgeIntoContext(context = {}, judgeResult = {}) {
   if (shouldUseCompany && companyId) {
     merged.currentCompanyId = companyId;
     merged.isConversationContinuing = true;
+
+    const existingCandidates = toSafeArray(merged.companyCandidates);
+    const exists = existingCandidates.some((item) => {
+      return normalizeCompanyId(item.company_id) === companyId;
+    });
+
+    if (!exists) {
+      const judgeLabel = toSafeString(judgeResult.topicLabel);
+      const safeJudgeLabel =
+        judgeLabel &&
+        judgeLabel !== DEFAULT_TOPIC_LABEL &&
+        !looksLikeInternalId(judgeLabel)
+          ? judgeLabel
+          : getDefaultTopicLabelByCompanyId(companyId);
+
+      merged.companyCandidates = [
+        {
+          company_id: companyId,
+          topic_label: safeJudgeLabel,
+          company_name: safeJudgeLabel,
+          keywords: [],
+          score: 1,
+          strongHitCount: 0,
+          weakHitCount: 0,
+          matchedTerms: [],
+          priority: 999,
+          sort_order: 9999,
+          byJudgeResult: true,
+        },
+        ...existingCandidates,
+      ];
+    }
   }
 
   return merged;
 }
 
-function resolveFinalTopicLabel(answerResult = {}, judgeResult = {}) {
-  const answerLabel = toSafeString(answerResult.topicLabel);
-  const judgeLabel = toSafeString(judgeResult.topicLabel);
+/**
+ * 継続文脈からの補完は最小限にする
+ * - no_topic では補完しない
+ * - 今回メッセージ由来の候補があるなら補完しない
+ * - 本当に候補ゼロの follow-up だけ currentCompanyId を使う
+ */
+function fillAnswerFromContinuingContext(answerResult = {}, context = {}) {
+  const currentCompanyId = normalizeCompanyId(context.currentCompanyId);
+  const isConversationContinuing = Boolean(context.isConversationContinuing);
+  const companyCandidates = toSafeArray(context.companyCandidates);
 
-  if (answerLabel) return answerLabel;
-  if (judgeLabel) return judgeLabel;
+  if (!isConversationContinuing || !currentCompanyId) {
+    return answerResult;
+  }
+
+  if (answerResult.companyId) {
+    return answerResult;
+  }
+
+  if (toSafeString(answerResult.judgement) === "no_topic") {
+    return answerResult;
+  }
+
+  const hasFreshCandidate = companyCandidates.some((item) => {
+    return !item.byConversationContext;
+  });
+
+  if (hasFreshCandidate) {
+    return answerResult;
+  }
+
+  return {
+    ...answerResult,
+    companyId: currentCompanyId,
+    matchedCompanyId: currentCompanyId,
+  };
+}
+
+/**
+ * 今回メッセージで拾えた候補の最上位 companyId
+ * byConversationContext だけの候補は除外
+ */
+function getTopFreshCompanyId(context = {}) {
+  const companyCandidates = toSafeArray(context.companyCandidates);
+
+  const fresh = companyCandidates.filter((item) => !item.byConversationContext);
+
+  if (fresh.length === 0) {
+    return "";
+  }
+
+  return normalizeCompanyId(fresh[0].company_id);
+}
+
+/**
+ * 最終 companyId 決定
+ *
+ * 優先順位:
+ * 1. no_topic なら空
+ * 2. answerResult の companyId / matchedCompanyId
+ * 3. 今回メッセージ由来の top candidate
+ * 4. 候補が本当にゼロのときだけ currentCompanyId
+ */
+function resolveFinalCompanyId(answerResult = {}, context = {}) {
+  const judgement = toSafeString(answerResult.judgement);
+
+  if (judgement === "no_topic") {
+    return "";
+  }
+
+  const answerId = normalizeCompanyId(
+    answerResult.companyId || answerResult.matchedCompanyId
+  );
+  if (answerId) return answerId;
+
+  const topFreshCompanyId = getTopFreshCompanyId(context);
+  if (topFreshCompanyId) return topFreshCompanyId;
+
+  const companyCandidates = toSafeArray(context.companyCandidates);
+  const hasFreshCandidate = companyCandidates.some((item) => !item.byConversationContext);
+
+  if (!hasFreshCandidate) {
+    return normalizeCompanyId(context.currentCompanyId);
+  }
+
+  return "";
+}
+
+/**
+ * 最終 topicLabel 決定
+ *
+ * 優先順位:
+ * 1. no_topic ならテーマ無し
+ * 2. answerResult.topicLabel
+ * 3. judgeResult.topicLabel
+ * 4. finalCompanyId に対応する label
+ * 5. DEFAULT_TOPIC_LABEL
+ */
+function resolveFinalTopicLabel(
+  answerResult = {},
+  judgeResult = {},
+  context = {},
+  finalCompanyId = ""
+) {
+  const judgement = toSafeString(answerResult.judgement);
+
+  if (judgement === "no_topic") {
+    return DEFAULT_TOPIC_LABEL;
+  }
+
+  const answerLabel = toSafeString(answerResult.topicLabel);
+  if (
+    answerLabel &&
+    answerLabel !== DEFAULT_TOPIC_LABEL &&
+    !looksLikeInternalId(answerLabel)
+  ) {
+    return answerLabel;
+  }
+
+  const judgeLabel = toSafeString(judgeResult.topicLabel);
+  if (
+    judgeLabel &&
+    judgeLabel !== DEFAULT_TOPIC_LABEL &&
+    !looksLikeInternalId(judgeLabel)
+  ) {
+    return judgeLabel;
+  }
+
+  if (finalCompanyId) {
+    const labelFromFinalCompany = findTopicLabelByCompanyId(
+      finalCompanyId,
+      context.companyCandidates
+    );
+    if (labelFromFinalCompany) {
+      return labelFromFinalCompany;
+    }
+  }
 
   return DEFAULT_TOPIC_LABEL;
 }
 
-/**
- * メイン
- */
 async function runV35(input = {}) {
   const rid = toSafeString(input.rid) || "no_rid";
   const bot_id = toSafeString(input.bot_id) || "voice-ai-dashboard";
@@ -213,7 +461,8 @@ async function runV35(input = {}) {
 
     if (!contextResult.success) throw new Error(contextResult.message);
 
-    const context = contextResult.data;
+    const rawContext = contextResult.data;
+    const context = ensureContinuingCompanyCandidate(rawContext);
 
     const judgePhase = await runJudgeAI({
       rid,
@@ -226,6 +475,14 @@ async function runV35(input = {}) {
     const judgeResult = judgePhase.data.judgeResult;
 
     if (judgeResult.needsClarification) {
+      const debugData = {
+        rid,
+        stage: "needsClarification",
+        companyCandidates: context.companyCandidates,
+        currentCompanyId: normalizeCompanyId(context.currentCompanyId),
+      };
+      console.log("### V35 DEBUG NEEDS_CLARIFICATION ###", debugData);
+
       return {
         success: true,
         data: {
@@ -233,6 +490,11 @@ async function runV35(input = {}) {
             DEFAULT_TOPIC_LABEL,
             buildClarificationReply(context.companyCandidates)
           ),
+          topicLabel: DEFAULT_TOPIC_LABEL,
+          companyId: "",
+          matchedCompanyId: "",
+          isConversationContinuing: Boolean(context.isConversationContinuing),
+          currentCompanyId: normalizeCompanyId(context.currentCompanyId),
         },
       };
     }
@@ -247,11 +509,19 @@ async function runV35(input = {}) {
 
     if (!answerPhase.success) throw new Error("answer failed");
 
-    const answerResult = normalizeAnswerResult(answerPhase.data.parsed);
+    let answerResult = normalizeAnswerResult(answerPhase.data.parsed);
+    answerResult = fillAnswerFromContinuingContext(answerResult, mergedContext);
+
+    const finalCompanyId = resolveFinalCompanyId(
+      answerResult,
+      mergedContext
+    );
 
     const finalTopicLabel = resolveFinalTopicLabel(
       answerResult,
-      judgeResult
+      judgeResult,
+      mergedContext,
+      finalCompanyId
     );
 
     const replyText = buildFinalReplyText(
@@ -259,20 +529,69 @@ async function runV35(input = {}) {
       answerResult.replyMessage
     );
 
+    // ===== DEBUG LOGS START =====
+    console.log("### V35 DEBUG INPUT ###", {
+      rid,
+      userMessage,
+      rawCurrentCompanyId: rawContext.currentCompanyId || "",
+      mergedCurrentCompanyId: mergedContext.currentCompanyId || "",
+      isConversationContinuing: Boolean(mergedContext.isConversationContinuing),
+    });
+
+    console.log("### V35 DEBUG CANDIDATES ###", {
+      rid,
+      companyCandidates: (mergedContext.companyCandidates || []).map((item) => ({
+        company_id: item.company_id || "",
+        topic_label: item.topic_label || "",
+        company_name: item.company_name || "",
+        score: item.score ?? null,
+        byConversationContext: Boolean(item.byConversationContext),
+        byJudgeResult: Boolean(item.byJudgeResult),
+      })),
+    });
+
+    console.log("### V35 DEBUG ANSWER_RESULT ###", {
+      rid,
+      answerResult,
+      judgeResult,
+    });
+
+    console.log("### V35 FINAL OUT ###", {
+      rid,
+      judgement: answerResult?.judgement || "",
+      parsedCompanyId: answerResult?.companyId || "",
+      parsedMatchedCompanyId: answerResult?.matchedCompanyId || "",
+      finalCompanyId,
+      finalTopicLabel,
+      currentCompanyId: normalizeCompanyId(mergedContext.currentCompanyId),
+      replyText,
+    });
+    // ===== DEBUG LOGS END =====
+
     return {
-     success: true,
+      success: true,
       data: {
         replyText,
-         topicLabel: finalTopicLabel,
-          companyId: answerResult.companyId,
-         matchedCompanyId: answerResult.companyId,
+        topicLabel: finalTopicLabel,
+        companyId: finalCompanyId,
+        matchedCompanyId: finalCompanyId,
+        isConversationContinuing: Boolean(mergedContext.isConversationContinuing),
+        currentCompanyId: normalizeCompanyId(mergedContext.currentCompanyId),
       },
     };
   } catch (error) {
+    console.log("### V35 DEBUG ERROR ###", {
+      rid,
+      bot_id,
+      userId,
+      userMessage,
+      error: error?.message || String(error),
+    });
+
     return {
       success: false,
       message: error.message,
-      data: { rid },
+      data: { rid, bot_id, userId, userMessage },
     };
   }
 }

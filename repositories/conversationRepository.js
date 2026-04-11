@@ -23,6 +23,8 @@
  * それらは service 層の責務。
  */
 
+const fs = require("fs");
+const path = require("path");
 const { google } = require("googleapis");
 const { appendRowToSheet } = require("../sheet/saver");
 const { success, fail } = require("../utils/serviceResponse");
@@ -77,24 +79,51 @@ function buildConversationRow(input = {}) {
 /**
  * Google Sheets 読み取り用 client を作る
  *
+ * 対応:
+ * - GOOGLE_SERVICE_ACCOUNT_JSON
+ * - GOOGLE_SERVICE_ACCOUNT_FILE
+ *
  * @returns {import("googleapis").sheets_v4.Sheets}
  */
 function createSheetsClient() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const rawJson = String(process.env.GOOGLE_SERVICE_ACCOUNT_JSON || "").trim();
+  const filePath = String(process.env.GOOGLE_SERVICE_ACCOUNT_FILE || "").trim();
 
-  if (!raw) {
+  let credentials = null;
+
+  if (rawJson) {
+    try {
+      credentials = JSON.parse(rawJson);
+    } catch (error) {
+      throw new Error(
+        `conversationRepository.createSheetsClient: invalid GOOGLE_SERVICE_ACCOUNT_JSON: ${error.message}`
+      );
+    }
+  } else if (filePath) {
+    const resolvedPath = path.resolve(process.cwd(), filePath);
+
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(
+        `conversationRepository.createSheetsClient: service account file not found: ${resolvedPath}`
+      );
+    }
+
+    try {
+      const fileRaw = fs.readFileSync(resolvedPath, "utf8");
+      credentials = JSON.parse(fileRaw);
+    } catch (error) {
+      throw new Error(
+        `conversationRepository.createSheetsClient: invalid GOOGLE_SERVICE_ACCOUNT_FILE: ${error.message}`
+      );
+    }
+  } else {
     throw new Error(
-      "conversationRepository.createSheetsClient: GOOGLE_SERVICE_ACCOUNT_JSON is required"
+      "conversationRepository.createSheetsClient: GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE is required"
     );
   }
 
-  let credentials;
-  try {
-    credentials = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(
-      `conversationRepository.createSheetsClient: invalid GOOGLE_SERVICE_ACCOUNT_JSON: ${error.message}`
-    );
+  if (credentials && credentials.private_key) {
+    credentials.private_key = String(credentials.private_key).replace(/\\n/g, "\n");
   }
 
   const auth = new google.auth.GoogleAuth({
@@ -281,6 +310,7 @@ async function getConversationHistory(input = {}) {
 module.exports = {
   CONVERSATION_SHEET_NAME,
   buildConversationRow,
+  createSheetsClient,
   mapRowToConversation,
   appendConversationRow,
   getConversationHistory,

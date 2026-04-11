@@ -9,7 +9,7 @@
  *
  * このファイルでやること:
  * - replyText の安全化
- * - parsed から summary / category / urgency_score を安全に取り出す
+ * - parsed から必要項目を安全に取り出す
  *
  * このファイルでやらないこと:
  * - OpenAI 呼び出し
@@ -54,9 +54,27 @@ function buildProcessMessageSuccessData(input = {}) {
 
   return {
     replyText: finalReply,
-    summary: parsed?.summary || "",
-    category: parsed?.category ?? null,
-    urgency_score: parsed?.urgency_score ?? null,
+
+    // V3.6 会話継続で必要な返却値
+    topicLabel: String(parsed.topicLabel || "").trim(),
+    companyId: String(parsed.companyId || "").trim(),
+    matchedCompanyId: String(
+      parsed.matchedCompanyId || parsed.companyId || ""
+    ).trim(),
+
+    isConversationContinuing: Boolean(parsed.isConversationContinuing),
+    currentCompanyId: String(parsed.currentCompanyId || "").trim(),
+
+    conversationHistoryCount:
+      Number.isFinite(Number(parsed.conversationHistoryCount))
+        ? Number(parsed.conversationHistoryCount)
+        : null,
+
+    // 既存の返却値
+    summary: parsed.summary || "",
+    category: parsed.category ?? null,
+    urgency_score: parsed.urgency_score ?? null,
+
     userId,
     bot_id,
     rid,
