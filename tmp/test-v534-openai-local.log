@@ -1,0 +1,114 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[36m============================================================[0m
+[36m V5.34 / V3.54 系 ローカル総合テスト（LINEなし・OpenAI込み）[0m
+[36m============================================================[0m
+[90mOPENAI_MODEL: gpt-4o-mini[0m
+[90mmessageService: FOUND[0m
+[90mpromptBuilder : NOT FOUND[0m
+[90mhistoryService: FOUND[0m
+[90mopenaiClient  : NOT FOUND[0m
+
+[36m
+--- FLOW01: 金井テーマ継続 ---[0m
+[33m
+[USER 1] スーツを作りたい[0m
+[90msource: openai-sdk-direct / 3413ms[0m
+[32m[AI] スーツを作るのはいいですね！どんなスタイルや素材を考えていますか？また、サイズや特にこだわりたいポイントはありますか？（現在テーマ: スーツ作り）[0m
+[31mFAIL: 期待テーマなし: スーツ金井 / 金井[0m
+[33m
+[USER 2] 駐車場は？[0m
+[90msource: exception / 972ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: スーツ金井 / 金井[0m
+[33m
+[USER 3] 納期は？[0m
+[90msource: exception / 173ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: スーツ金井 / 金井[0m
+[36m
+--- FLOW02: 法律テーマ継続 ---[0m
+[33m
+[USER 1] 法律相談をしたい[0m
+[90msource: openai-sdk-direct / 2981ms[0m
+[32m[AI] どのような法律に関する相談でしょうか？具体的な内容を教えていただければ、できる範囲でお手伝いします。現在のテーマ: 法律相談。[0m
+[31mFAIL: 期待テーマなし: 法律池田 / 池田[0m
+[33m
+[USER 2] 初回相談は無料？[0m
+[90msource: exception / 206ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: 法律池田 / 池田[0m
+[33m
+[USER 3] 予約方法は？[0m
+[90msource: exception / 211ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: 法律池田 / 池田[0m
+[36m
+--- FLOW03: テーマ無しからAI系へ ---[0m
+[33m
+[USER 1] AI活用を相談したい[0m
+[90msource: openai-sdk-direct / 4374ms[0m
+[32m[AI] どのような分野や目的でAIを活用したいと考えていますか？具体的なニーズを教えていただければ、アドバイスしやすいです。[0m
+[32mPASS[0m
+[33m
+[USER 2] 導入の流れは？[0m
+[90msource: exception / 216ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: 高村AI / AI / takamura[0m
+[36m
+--- FLOW04: テーマ解除確認 ---[0m
+[33m
+[USER 1] スーツを作りたい[0m
+[90msource: openai-sdk-direct / 2502ms[0m
+[32m[AI] スーツを作るのは楽しいですね！どのようなスタイルや色を考えていますか？また、予算や用途も教えていただければ、さらにアドバイスできますよ。 【テーマ: スーツ】[0m
+[31mFAIL: 期待テーマなし: スーツ金井 / 金井[0m
+[33m
+[USER 2] 駐車場は？[0m
+[90msource: exception / 255ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: スーツ金井 / 金井[0m
+[33m
+[USER 3] 今日は天気どう？[0m
+[90msource: exception / 202ms[0m
+[31m[AI] 返答取得失敗[0m
+[32mPASS[0m
+[36m
+--- FLOW05: 相続テーマ継続 ---[0m
+[33m
+[USER 1] 相続の相談をしたい[0m
+[90msource: openai-sdk-direct / 2374ms[0m
+[32m[AI] 相続についての相談ですね。具体的にどのようなことをお考えですか？例えば、財産の分配や遺言書についてなど、詳しくお聞かせいただければと思います。[0m
+[32mPASS[0m
+[33m
+[USER 2] 家族信託も聞けますか？[0m
+[90msource: exception / 194ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: 相続 / 尾形 / ogata[0m
+[36m
+--- FLOW06: ワインテーマ継続 ---[0m
+[33m
+[USER 1] ワインを楽しみたい[0m
+[90msource: openai-sdk-direct / 1466ms[0m
+[32m[AI] どんなワインをお探しですか？赤、白、ロゼ、それともスパークリング？おすすめの食事とのペアリングも考えられますよ。現在テーマ: ワイン選び[0m
+[32mPASS[0m
+[33m
+[USER 2] 初心者でも大丈夫？[0m
+[90msource: exception / 204ms[0m
+[31m[AI] 返答取得失敗[0m
+[31mFAIL: 期待テーマなし: ワイン / 小澤 / ozawa[0m
+[36m
+============================================================[0m
+[36m 集計[0m
+[36m============================================================[0m
+総ステップ   : 15
+[32mPASS         : 4[0m
+[31mFAIL         : 11[0m
+
+input_tokens : 619
+output_tokens: 289
+total_tokens : 908
+概算USD      : $0.000266
+概算JPY      : ¥0
+
+[36mレポート保存: C:\Users\taro\Desktop\dev\voice-ai-dashboard\tmp\test-v534-openai-local-report.json[0m
+[31m
+NGあり。現コミットに改善余地があります。[0m

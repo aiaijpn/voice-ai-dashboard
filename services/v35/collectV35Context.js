@@ -150,6 +150,8 @@ function pickCurrentCompanyFromHistory(conversationHistory = []) {
       row.matchedCompanyName || row.matched_company_name || row.company_name
     );
 
+    const content = toSafeString(row.content || row.replyText || row.aiReply);
+
     if (matchedCompanyId) {
       return {
         currentCompanyId: matchedCompanyId,

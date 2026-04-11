@@ -1,0 +1,289 @@
+{
+  "executedAt": "2026-04-11T02:55:46.222Z",
+  "model": "gpt-4o-mini",
+  "moduleDetection": {
+    "messageService": {
+      "found": true,
+      "resolved": "C:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\services\\messageService"
+    },
+    "promptBuilder": {
+      "found": false,
+      "resolved": null
+    },
+    "historyService": {
+      "found": true,
+      "resolved": "C:\\Users\\taro\\Desktop\\dev\\voice-ai-dashboard\\services\\historyService"
+    },
+    "openaiClient": {
+      "found": false,
+      "resolved": null
+    }
+  },
+  "summary": {
+    "totalSteps": 15,
+    "passedSteps": 4,
+    "failedSteps": 11,
+    "flowResults": [
+      {
+        "id": "FLOW01",
+        "title": "金井テーマ継続",
+        "steps": [
+          {
+            "user": "スーツを作りたい",
+            "reply": "スーツを作るのはいいですね！どんなスタイルや素材を考えていますか？また、サイズや特にこだわりたいポイントはありますか？（現在テーマ: スーツ作り）",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: スーツ金井 / 金井"
+            ],
+            "elapsedMs": 3413,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 103,
+              "output_tokens": 48,
+              "total_tokens": 151
+            }
+          },
+          {
+            "user": "駐車場は？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: スーツ金井 / 金井"
+            ],
+            "elapsedMs": 972,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          },
+          {
+            "user": "納期は？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: スーツ金井 / 金井"
+            ],
+            "elapsedMs": 173,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "FLOW02",
+        "title": "法律テーマ継続",
+        "steps": [
+          {
+            "user": "法律相談をしたい",
+            "reply": "どのような法律に関する相談でしょうか？具体的な内容を教えていただければ、できる範囲でお手伝いします。現在のテーマ: 法律相談。",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: 法律池田 / 池田"
+            ],
+            "elapsedMs": 2981,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 102,
+              "output_tokens": 44,
+              "total_tokens": 146
+            }
+          },
+          {
+            "user": "初回相談は無料？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: 法律池田 / 池田"
+            ],
+            "elapsedMs": 206,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          },
+          {
+            "user": "予約方法は？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: 法律池田 / 池田"
+            ],
+            "elapsedMs": 211,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "FLOW03",
+        "title": "テーマ無しからAI系へ",
+        "steps": [
+          {
+            "user": "AI活用を相談したい",
+            "reply": "どのような分野や目的でAIを活用したいと考えていますか？具体的なニーズを教えていただければ、アドバイスしやすいです。",
+            "pass": true,
+            "reasons": [],
+            "elapsedMs": 4374,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 104,
+              "output_tokens": 44,
+              "total_tokens": 148
+            }
+          },
+          {
+            "user": "導入の流れは？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: 高村AI / AI / takamura"
+            ],
+            "elapsedMs": 216,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "FLOW04",
+        "title": "テーマ解除確認",
+        "steps": [
+          {
+            "user": "スーツを作りたい",
+            "reply": "スーツを作るのは楽しいですね！どのようなスタイルや色を考えていますか？また、予算や用途も教えていただければ、さらにアドバイスできますよ。 【テーマ: スーツ】",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: スーツ金井 / 金井"
+            ],
+            "elapsedMs": 2502,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 103,
+              "output_tokens": 54,
+              "total_tokens": 157
+            }
+          },
+          {
+            "user": "駐車場は？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: スーツ金井 / 金井"
+            ],
+            "elapsedMs": 255,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          },
+          {
+            "user": "今日は天気どう？",
+            "reply": "",
+            "pass": true,
+            "reasons": [],
+            "elapsedMs": 202,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "FLOW05",
+        "title": "相続テーマ継続",
+        "steps": [
+          {
+            "user": "相続の相談をしたい",
+            "reply": "相続についての相談ですね。具体的にどのようなことをお考えですか？例えば、財産の分配や遺言書についてなど、詳しくお聞かせいただければと思います。",
+            "pass": true,
+            "reasons": [],
+            "elapsedMs": 2374,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 104,
+              "output_tokens": 50,
+              "total_tokens": 154
+            }
+          },
+          {
+            "user": "家族信託も聞けますか？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: 相続 / 尾形 / ogata"
+            ],
+            "elapsedMs": 194,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      },
+      {
+        "id": "FLOW06",
+        "title": "ワインテーマ継続",
+        "steps": [
+          {
+            "user": "ワインを楽しみたい",
+            "reply": "どんなワインをお探しですか？赤、白、ロゼ、それともスパークリング？おすすめの食事とのペアリングも考えられますよ。現在テーマ: ワイン選び",
+            "pass": true,
+            "reasons": [],
+            "elapsedMs": 1466,
+            "source": "openai-sdk-direct",
+            "usage": {
+              "input_tokens": 103,
+              "output_tokens": 49,
+              "total_tokens": 152
+            }
+          },
+          {
+            "user": "初心者でも大丈夫？",
+            "reply": "",
+            "pass": false,
+            "reasons": [
+              "期待テーマなし: ワイン / 小澤 / ozawa"
+            ],
+            "elapsedMs": 204,
+            "source": "exception",
+            "usage": {
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0
+            }
+          }
+        ]
+      }
+    ],
+    "usage": {
+      "input_tokens": 619,
+      "output_tokens": 289,
+      "total_tokens": 908
+    },
+    "costUsd": 0.00026625,
+    "costJpy": 0.047924999999999995
+  }
+}
