@@ -142,20 +142,24 @@ function pickCurrentCompanyFromHistory(conversationHistory = []) {
   for (let i = conversationHistory.length - 1; i >= 0; i -= 1) {
     const row = conversationHistory[i] || {};
 
-    const matchedCompanyId = toSafeString(
-      row.matchedCompanyId || row.matched_company_id || row.company_id
+    const currentCompanyId = toSafeString(
+      row.companyId ||
+      row.matchedCompanyId ||
+      row.matched_company_id ||
+      row.company_id
     );
 
-    const matchedCompanyName = toSafeString(
-      row.matchedCompanyName || row.matched_company_name || row.company_name
+    const currentCompanyName = toSafeString(
+      row.companyName ||
+      row.matchedCompanyName ||
+      row.matched_company_name ||
+      row.company_name
     );
 
-    const content = toSafeString(row.content || row.replyText || row.aiReply);
-
-    if (matchedCompanyId) {
+    if (currentCompanyId) {
       return {
-        currentCompanyId: matchedCompanyId,
-        currentCompanyName: matchedCompanyName,
+        currentCompanyId,
+        currentCompanyName,
         isConversationContinuing: true,
       };
     }
@@ -168,6 +172,7 @@ function pickCurrentCompanyFromHistory(conversationHistory = []) {
   };
 }
 
+
 function slimWikiCandidates(items = []) {
   if (!Array.isArray(items)) {
     return [];
@@ -175,11 +180,9 @@ function slimWikiCandidates(items = []) {
 
   return items.map((item) => ({
     company_id: toSafeString(item.company_id),
-    company_name: toSafeString(item.company_name),
     question_pattern: toSafeString(item.question_pattern),
     normalized_question: toSafeString(item.normalized_question),
     answer_text: toSafeString(item.answer_text),
-    status: toSafeString(item.status),
   }));
 }
 

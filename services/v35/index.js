@@ -151,10 +151,15 @@ async function runAnswerAI(input = {}) {
 }
 
 function normalizeAnswerResult(parsed = {}) {
+  const companyId = normalizeCompanyId(
+    parsed.companyId || parsed.matchedCompanyId
+  );
+
   return {
     topicLabel: toSafeString(parsed.topicLabel) || DEFAULT_TOPIC_LABEL,
     replyMessage: toSafeString(parsed.replyMessage) || "確認しました。",
-    matchedCompanyId: normalizeCompanyId(parsed.matchedCompanyId),
+    companyId,
+    matchedCompanyId: companyId,
     usedWiki: Boolean(parsed.usedWiki),
     wikiAction: toSafeString(parsed.wikiAction) || "none",
     wikiDraft: parsed.wikiDraft || null,
@@ -168,10 +173,12 @@ function mergeJudgeIntoContext(context = {}, judgeResult = {}) {
   const merged = { ...context };
 
   const shouldUseCompany = Boolean(judgeResult.shouldUseCompany);
-  const matchedCompanyId = normalizeCompanyId(judgeResult.matchedCompanyId);
+  const companyId = normalizeCompanyId(
+    judgeResult.companyId || judgeResult.matchedCompanyId
+  );
 
-  if (shouldUseCompany && matchedCompanyId) {
-    merged.currentCompanyId = matchedCompanyId;
+  if (shouldUseCompany && companyId) {
+    merged.currentCompanyId = companyId;
     merged.isConversationContinuing = true;
   }
 
@@ -253,11 +260,12 @@ async function runV35(input = {}) {
     );
 
     return {
-      success: true,
+     success: true,
       data: {
         replyText,
-        topicLabel: finalTopicLabel,
-        matchedCompanyId: answerResult.matchedCompanyId,
+         topicLabel: finalTopicLabel,
+          companyId: answerResult.companyId,
+         matchedCompanyId: answerResult.companyId,
       },
     };
   } catch (error) {
