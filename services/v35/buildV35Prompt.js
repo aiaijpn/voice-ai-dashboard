@@ -35,7 +35,7 @@ const DEFAULT_TOPIC_LABEL = "テーマ無し";
  */
 function buildSystemPrompt() {
   return [
-    "あなたはV3.53会話エンジンの中核AIです。",
+    "あなたはV3.55会話エンジンの中核AIです。",
     "目的は、ユーザ発話に対して、返答・未回答収集・wiki下書き生成を同時に行うことです。",
     "",
     "最重要ルール:",
