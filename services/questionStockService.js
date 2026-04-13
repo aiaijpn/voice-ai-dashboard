@@ -20,7 +20,6 @@
  * }
  */
 
-
 const { google } = require("googleapis");
 
 const SPREADSHEET_ID = String(process.env.SPREADSHEET_ID || "").trim();
@@ -38,12 +37,9 @@ function createSheetsClient() {
 
   let credentials = null;
 
-  // ① 実機 / 本番: JSON優先
   if (rawJson) {
     credentials = JSON.parse(rawJson);
-  }
-  // ② ローカル: ファイル
-  else if (filePath) {
+  } else if (filePath) {
     const resolvedPath = path.resolve(process.cwd(), filePath);
 
     if (!fs.existsSync(resolvedPath)) {
@@ -51,9 +47,7 @@ function createSheetsClient() {
     }
 
     credentials = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
-  }
-  // ③ どちらも無い
-  else {
+  } else {
     throw new Error("Google service account credentials are missing");
   }
 
@@ -144,7 +138,7 @@ async function getAllQuestionStockRows(sheets) {
   const dataRows = rows.slice(1);
 
   return dataRows.map((row, index) => {
-    const sheetRowNumber = index + 2; // シート実行行番号（ヘッダが1行目）
+    const sheetRowNumber = index + 2;
     return mapRowToStockObject(row, sheetRowNumber);
   });
 }
@@ -174,8 +168,6 @@ function findExistingStockRow(stockRows, companyId, normalizedQuestion) {
 
 /**
  * 既存行の asked_count / last_asked_at を更新
- * first_asked_at は保持
- * stock_status は現状維持
  */
 async function updateExistingStockRow(sheets, existingRow, now) {
   const nextAskedCount = Number(existingRow.asked_count || 0) + 1;
@@ -204,28 +196,30 @@ async function updateExistingStockRow(sheets, existingRow, now) {
  */
 async function appendNewStockRow(sheets, payload, now) {
   const row = [
-    now, // A: timestamp
-    payload.user_id, // B: user_id
-    payload.bot_id, // C: bot_id
-    payload.question, // D: question
-    payload.normalized_question, // E: normalized_question
-    payload.company_id, // F: company_id
-    payload.user_question, // G: user_question
-    1, // H: asked_count
-    now, // I: first_asked_at
-    now, // J: last_asked_at
-    "new", // K: stock_status
-    payload.wiki_answer, // L: wiki_answer
-    payload.review_note, // M: review_note
-    payload.question_category, // N: question_category
-    payload.group_key, // O: group_key
-    payload.canonical_question, // P: canonical_question
-    payload.draft_answer, // Q: draft_answer
-    payload.draft_answer_source, // R: draft_answer_source
-    payload.adopted_at, // S: adopted_at
+    now,
+    payload.user_id,
+    payload.bot_id,
+    payload.question,
+    payload.normalized_question,
+    payload.company_id,
+    payload.user_question,
+    1,
+    now,
+    now,
+    "new",
+    payload.wiki_answer,
+    payload.review_note,
+    payload.question_category,
+    payload.group_key,
+    payload.canonical_question,
+    payload.draft_answer,
+    payload.draft_answer_source,
+    payload.adopted_at,
   ];
 
-  await sheets.spreadsheets.values.append({
+  console.log("[questionStockService] APPEND ROW", row);
+
+  const appendRes = await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A:S`,
     valueInputOption: "USER_ENTERED",
@@ -233,6 +227,13 @@ async function appendNewStockRow(sheets, payload, now) {
     requestBody: {
       values: [row],
     },
+  });
+
+  console.log("[questionStockService] APPEND RESPONSE", {
+    updatedRange: appendRes?.data?.updates?.updatedRange,
+    updatedRows: appendRes?.data?.updates?.updatedRows,
+    updatedColumns: appendRes?.data?.updates?.updatedColumns,
+    updatedCells: appendRes?.data?.updates?.updatedCells,
   });
 
   return {
@@ -244,27 +245,16 @@ async function appendNewStockRow(sheets, payload, now) {
 
 /**
  * メイン保存関数
- *
- * 想定呼び出し:
- * await saveQuestionStock({
- *   user_id,
- *   bot_id,
- *   question,
- *   normalized_question,
- *   company_id,
- *   user_question,
- *   wiki_answer,
- *   review_note,
- *   question_category,
- *   group_key,
- *   canonical_question,
- *   draft_answer,
- *   draft_answer_source,
- *   adopted_at,
- * });
  */
 async function saveQuestionStock(input = {}) {
   try {
+    console.log("[questionStockService] DEBUG TARGET", {
+      SPREADSHEET_ID,
+      SHEET_NAME,
+    });
+
+    console.log("[questionStockService.saveQuestionStock] INPUT", input);
+
     if (!SPREADSHEET_ID) {
       throw new Error("SPREADSHEET_ID is missing");
     }
@@ -285,6 +275,8 @@ async function saveQuestionStock(input = {}) {
       draft_answer_source: toSafeString(input.draft_answer_source),
       adopted_at: toSafeString(input.adopted_at),
     };
+
+    console.log("[questionStockService.saveQuestionStock] PAYLOAD", payload);
 
     if (!payload.question) {
       return {
@@ -312,7 +304,15 @@ async function saveQuestionStock(input = {}) {
       payload.normalized_question
     );
 
+    console.log("[questionStockService.saveQuestionStock] EXISTING ROW", existingRow);
+
     if (existingRow) {
+      console.log("[questionStockService.saveQuestionStock] ACTION", {
+        type: "update",
+        company_id: payload.company_id,
+        normalized_question: payload.normalized_question,
+      });
+
       const updated = await updateExistingStockRow(sheets, existingRow, now);
 
       return {
@@ -329,6 +329,12 @@ async function saveQuestionStock(input = {}) {
         },
       };
     }
+
+    console.log("[questionStockService.saveQuestionStock] ACTION", {
+      type: "append",
+      company_id: payload.company_id,
+      normalized_question: payload.normalized_question,
+    });
 
     const appended = await appendNewStockRow(sheets, payload, now);
 

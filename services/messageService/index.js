@@ -2,7 +2,7 @@
 
 /**
  * ============================================
- * 🔒 messageService/index.js 契約（V3.6+固定）
+ * 🔒 messageService/index.js 契約（V3.7+固定）
  * ============================================
  *
  * 【役割（絶対遵守）】
@@ -22,13 +22,14 @@
  *    - normalizeConversationHistory を呼ぶ
  *    - 自分では normalize ルールを持たない
  *
- * 4. AIコア呼び出し
- *    - runV35 を呼ぶ
- *    - 会話の最終判断は V35 に委譲する
+ * 4. 会話エンジン呼び出し
+ *    - runConversationEngine を呼ぶ
+ *    - 実際に v35 / v37 のどちらを使うかは conversationEngine に委譲する
+ *    - 会話の最終判断は conversationEngine 配下へ委譲する
  *
  * 5. 結果保存
  *    - conversation_history へ user_message / ai_reply を保存する
- *    - 保存値は V35 の最終結果をそのまま使う
+ *    - 保存値は conversationEngine の最終結果をそのまま使う
  *
  * 6. handler返却形式へ整形
  *    - buildReply を使って返却データを組み立てる
@@ -46,7 +47,7 @@
  * ❌ topicLabel 決定ロジックの実装
  * ❌ 会話継続ロジックの実装
  * ❌ prompt生成ロジックの実装
- * ❌ V35結果の補正・上書き
+ * ❌ 会話エンジン結果の補正・上書き
  * ❌ currentCompanyId / matchedCompanyId の再解釈
  *
  * ❌ 会話意味に関わるデータ変換ロジックの新規追加
@@ -64,7 +65,9 @@
  * 【責務境界（どこに書くべきか）】
  *
  * - AI判断 / 分類 / 会話ロジック / 最終意思決定
+ *   → services/conversationEngine/
  *   → services/v35/
+ *   → services/v37/
  *
  * - 履歴取得 / 保存
  *   → services/historyService
@@ -81,23 +84,23 @@
  * - このファイルは「薄く保つ」ことが最重要
  * - 1ファイル1責務（司令塔のみ）
  * - ここは「考える場所」ではなく「流す場所」
- * - 変更理由の大半は runV35 側で解決する
+ * - 変更理由の大半は conversationEngine 側で解決する
  * - index.js に判断ロジックを足す = 設計負債
  *
  * --------------------------------------------
  * 【正本ルール】
  *
  * - companyId の正本
- *   → runV35().data.companyId
+ *   → runConversationEngine().data.companyId
  *
  * - matchedCompanyId の正本
- *   → runV35().data.matchedCompanyId
+ *   → runConversationEngine().data.matchedCompanyId
  *
  * - topicLabel の正本
- *   → runV35().data.topicLabel
+ *   → runConversationEngine().data.topicLabel
  *
  * - replyText の正本
- *   → runV35().data.replyText
+ *   → runConversationEngine().data.replyText
  *
  * このファイルは上記を再決定しない。
  * 再注入しない。
@@ -109,7 +112,7 @@
  * ✅ 入力チェック
  * ✅ 履歴取得
  * ✅ normalizeConversationHistory の呼び出し
- * ✅ runV35 の呼び出し
+ * ✅ runConversationEngine の呼び出し
  * ✅ 保存
  * ✅ ログ出力
  * ✅ handler返却用データ整形
@@ -125,11 +128,11 @@
  * - if文 / switch文 が増え続ける
  * - 100行以上のロジック追加が必要になる
  * - 「ここで少し判定した方が早い」が出てくる
- * - V35の結果をここで補正したくなる
+ * - 会話エンジンの結果をここで補正したくなる
  * - normalizeConversationHistory に無い変換をここへ足したくなる
  *
  * → その変更はこのファイルではなく、
- *   v35 / conversationContext / 専用サービスへ切り出すこと。
+ *   conversationEngine / v35 / v37 / conversationContext / 専用サービスへ切り出すこと。
  *
  * --------------------------------------------
  * 【最重要メッセージ】
@@ -139,6 +142,7 @@
  *
  * ============================================
  */
+
 const { log, error: logError } = require("../../utils/logger");
 const { success, fail } = require("../../utils/serviceResponse");
 const {
@@ -150,7 +154,7 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
-const { runV35 } = require("../v35");
+const { runConversationEngine } = require("../conversationEngine");
 
 const {
   buildProcessMessageSuccessData,
@@ -159,7 +163,6 @@ const {
 log("📦 messageService/index.js loaded:", new Date().toISOString());
 
 const DEFAULT_HISTORY_LIMIT = 8;
-
 
 /**
  * 会話履歴を取得する
@@ -225,7 +228,7 @@ async function loadConversationHistory({ bot_id, userId, rid }) {
 }
 
 /**
- * V3.6 会話処理
+ * V3.7 会話処理
  *
  * @param {Object} context
  * @param {string} context.rid
@@ -263,7 +266,7 @@ async function processMessage(context = {}) {
       });
     }
 
-    log(`🧠 [${rid}] V3.6 start`, {
+    log(`🧠 [${rid}] V3.7 start`, {
       bot_id,
       userId,
       userMessage,
@@ -272,7 +275,7 @@ async function processMessage(context = {}) {
     /**
      * 0. 会話履歴取得
      * - 今回の userMessage 保存前の履歴を取得する
-     * - これを V35 へ渡して継続判定に使う
+     * - これを conversationEngine へ渡して継続判定に使う
      */
     const historyResult = await loadConversationHistory({
       bot_id,
@@ -285,9 +288,10 @@ async function processMessage(context = {}) {
       : [];
 
     /**
-     * 1. V3.6 実行
+     * 1. 会話エンジン実行
+     * - 実際に v35 / v37 のどちらを呼ぶかは conversationEngine に委譲する
      */
-    const v35Result = await runV35({
+    const engineResult = await runConversationEngine({
       rid,
       bot_id,
       userId,
@@ -295,41 +299,44 @@ async function processMessage(context = {}) {
       conversationHistory,
     });
 
-    if (!v35Result?.success) {
-      logError(`❌ [${rid}] runV35 failed:`, v35Result?.message || "unknown");
+    if (!engineResult?.success) {
+      logError(
+        `❌ [${rid}] runConversationEngine failed:`,
+        engineResult?.message || "unknown"
+      );
 
-      console.log("### MESSAGE SERVICE DEBUG RUNV35_FAIL ###", {
+      console.log("### MESSAGE SERVICE DEBUG ENGINE_FAIL ###", {
         rid,
         bot_id,
         userId,
         userMessage,
-        v35Result: v35Result?.data || null,
+        engineResult: engineResult?.data || null,
       });
 
-      return fail(v35Result?.message || "runV35 failed", {
+      return fail(engineResult?.message || "runConversationEngine failed", {
         replyText: "",
         userId,
         bot_id,
         rid,
-        v35Result: v35Result?.data || null,
+        engineResult: engineResult?.data || null,
       });
     }
 
     /**
-     * 2. V3.6 結果取得
-     * - V35が返した最終結果をそのまま尊重する
+     * 2. 会話エンジン結果取得
+     * - engine が返した最終結果をそのまま尊重する
      * - ここで companyId を再注入しない
      */
     const replyText =
-      String(v35Result.data?.replyText || "").trim() || "確認しました。";
+      String(engineResult.data?.replyText || "").trim() || "確認しました。";
 
-    const finalCompanyId = String(v35Result.data?.companyId || "").trim();
+    const finalCompanyId = String(engineResult.data?.companyId || "").trim();
     const finalMatchedCompanyId = String(
-      v35Result.data?.matchedCompanyId || ""
+      engineResult.data?.matchedCompanyId || ""
     ).trim();
-    const topicLabel = String(v35Result.data?.topicLabel || "").trim();
+    const topicLabel = String(engineResult.data?.topicLabel || "").trim();
 
-    log(`🧩 [${rid}] V3.6 result`, {
+    log(`🧩 [${rid}] V3.7 result`, {
       topicLabel,
       companyId: finalCompanyId,
       matchedCompanyId: finalMatchedCompanyId,
@@ -339,11 +346,13 @@ async function processMessage(context = {}) {
     // ===== DEBUG LOGS START =====
     console.log("### MESSAGE SERVICE IN ###", {
       rid,
-      v35CompanyId: v35Result?.data?.companyId || "",
-      v35MatchedCompanyId: v35Result?.data?.matchedCompanyId || "",
-      v35TopicLabel: v35Result?.data?.topicLabel || "",
-      v35CurrentCompanyId: v35Result?.data?.currentCompanyId || "",
-      v35IsConversationContinuing: Boolean(v35Result?.data?.isConversationContinuing),
+      engineCompanyId: engineResult?.data?.companyId || "",
+      engineMatchedCompanyId: engineResult?.data?.matchedCompanyId || "",
+      engineTopicLabel: engineResult?.data?.topicLabel || "",
+      engineCurrentCompanyId: engineResult?.data?.currentCompanyId || "",
+      engineIsConversationContinuing: Boolean(
+        engineResult?.data?.isConversationContinuing
+      ),
     });
 
     console.log("### MESSAGE SERVICE NORMALIZED ###", {
@@ -381,7 +390,7 @@ async function processMessage(context = {}) {
     const successData = buildProcessMessageSuccessData({
       finalReply: replyText,
       parsed: {
-        ...(v35Result.data || {}),
+        ...(engineResult.data || {}),
         topicLabel,
         matchedCompanyId: finalMatchedCompanyId,
         companyId: finalCompanyId,
@@ -403,9 +412,9 @@ async function processMessage(context = {}) {
     /**
      * 4. handler 返却形式へ整形
      * - companyId / matchedCompanyId を再注入しない
-     * - V35最終結果をそのまま反映
+     * - engine最終結果をそのまま反映
      */
-    return success(successData, "v36 reply");
+    return success(successData, "v37 reply");
   } catch (error) {
     logError(`❌ [${rid}] processMessage failed:`, error?.message || error);
 

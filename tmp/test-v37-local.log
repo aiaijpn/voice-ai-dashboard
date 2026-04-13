@@ -1,0 +1,154 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: ⚙️  override existing env vars with { override: true }
+V37 local test start: 2026-04-13T11:46:24.952Z
+
+==================================================
+START CASE-1 wiki_hit
+==================================================
+time: 2026-04-13T11:46:24.953Z
+### COLLECT V3.54 ### {
+  rid: 'v37-test-001',
+  userMessage: 'スーツ金井の駐車場はありますか？',
+  wikiCount: 1,
+  stockCount: 0,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+
+[CASE-1 wiki_hit] success: true
+[CASE-1 wiki_hit] message: v37 reply
+[CASE-1 wiki_hit] data: {
+  "replyText": "そのご質問についての情報は現在登録されておりません。\nお時間いただきますが、お調べいたします。\n【オーダースーツ金井】",
+  "topicLabel": "【オーダースーツ金井】",
+  "companyId": "kanai_suit",
+  "matchedCompanyId": "kanai_suit",
+  "currentCompanyId": "kanai_suit",
+  "isConversationContinuing": false
+}
+
+[CASE-1 wiki_hit] EXPECTATION
+company確定 + wikiヒット の場合、固定回答で reply されること。
+
+[CASE-1 wiki_hit] QUICK CHECK
+- success: true
+- replyText exists: true
+- topicLabel: 【オーダースーツ金井】
+- companyId: kanai_suit
+- currentCompanyId: kanai_suit
+- reply includes "【": true
+- reply includes "】": true
+- reply NOT includes "どの内容についてのご質問でしょうか？": true
+- reply NOT includes "情報は現在登録されておりません": false
+time: 2026-04-13T11:46:27.888Z
+
+==================================================
+END CASE-1 wiki_hit
+==================================================
+
+==================================================
+START CASE-2 wiki_miss
+==================================================
+time: 2026-04-13T11:46:27.888Z
+### COLLECT V3.54 ### {
+  rid: 'v37-test-002',
+  userMessage: 'スーツ金井の納期短縮オプションはありますか？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+
+[CASE-2 wiki_miss] success: true
+[CASE-2 wiki_miss] message: v37 reply
+[CASE-2 wiki_miss] data: {
+  "replyText": "そのご質問についての情報は現在登録されておりません。\nお時間いただきますが、お調べいたします。\n【オーダースーツ金井】",
+  "topicLabel": "【オーダースーツ金井】",
+  "companyId": "kanai_suit",
+  "matchedCompanyId": "kanai_suit",
+  "currentCompanyId": "kanai_suit",
+  "isConversationContinuing": false
+}
+
+[CASE-2 wiki_miss] EXPECTATION
+company確定 + wiki無し の場合、未回答テンプレが返り、question_stock保存へ進むこと。
+
+[CASE-2 wiki_miss] QUICK CHECK
+- success: true
+- replyText exists: true
+- topicLabel: 【オーダースーツ金井】
+- companyId: kanai_suit
+- currentCompanyId: kanai_suit
+- reply includes "そのご質問についての情報は現在登録されておりません。": true
+- reply includes "お時間いただきますが、お調べいたします。": true
+- reply includes "【": true
+- reply includes "】": true
+- reply NOT includes "どの内容についてのご質問でしょうか？": true
+time: 2026-04-13T11:46:30.295Z
+
+==================================================
+END CASE-2 wiki_miss
+==================================================
+
+==================================================
+START CASE-3 clarification
+==================================================
+time: 2026-04-13T11:46:30.295Z
+### COLLECT V3.54 ### {
+  rid: 'v37-test-003',
+  userMessage: '駐車場はありますか？',
+  wikiCount: 1,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: null
+}
+
+[CASE-3 clarification] success: true
+[CASE-3 clarification] message: v37 reply
+[CASE-3 clarification] data: {
+  "replyText": "どの内容についてのご質問でしょうか？\n会社名やテーマをもう少しだけ具体的に教えてください。\n【テーマ無し】",
+  "topicLabel": "【テーマ無し】",
+  "companyId": null,
+  "matchedCompanyId": null,
+  "currentCompanyId": null,
+  "isConversationContinuing": false
+}
+
+[CASE-3 clarification] EXPECTATION
+company不明 の場合、必ず clarification 固定文になること。
+
+[CASE-3 clarification] QUICK CHECK
+- success: true
+- replyText exists: true
+- topicLabel: 【テーマ無し】
+- companyId: 
+- currentCompanyId: 
+- reply includes "どの内容についてのご質問でしょうか？": true
+- reply includes "会社名やテーマをもう少しだけ具体的に教えてください。": true
+- reply includes "【テーマ無し】": true
+- reply NOT includes "そのご質問についての情報は現在登録されておりません。": true
+time: 2026-04-13T11:46:31.534Z
+
+==================================================
+END CASE-3 clarification
+==================================================
+
+V37 local test end: 2026-04-13T11:46:31.534Z

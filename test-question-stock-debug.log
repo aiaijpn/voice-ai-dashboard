@@ -1,0 +1,449 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+=== QUESTION STOCK TEST START ===
+
+========================================
+CASE: stock-hit-1
+MESSAGE: スーツ金井の納期短縮オプションはありますか？
+### COLLECT V3.54 ### {
+  rid: 'stock-test-1776082364950',
+  userMessage: 'スーツ金井の納期短縮オプションはありますか？',
+  wikiCount: 0,
+  stockCount: 1,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+[V37][questionStockBridge] ENTER {
+  replyMode: 'wiki_miss',
+  bot_id: 1,
+  userId: 999,
+  userMessage: 'スーツ金井の納期短縮オプションはありますか？',
+  companyId: 'kanai_suit'
+}
+[V37][questionStockBridge] NORMALIZED {
+  userMessage: 'スーツ金井の納期短縮オプションはありますか？',
+  normalizedQuestion: 'スーツ金井の納期短縮オプションはありますか？'
+}
+[questionStockService] DEBUG TARGET {
+  SPREADSHEET_ID: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  SHEET_NAME: 'question_stock'
+}
+[questionStockService.saveQuestionStock] INPUT {
+  user_id: 999,
+  bot_id: 1,
+  question: 'スーツ金井の納期短縮オプションはありますか？',
+  normalized_question: 'スーツ金井の納期短縮オプションはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の納期短縮オプションはありますか？'
+}
+[questionStockService.saveQuestionStock] PAYLOAD {
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井の納期短縮オプションはありますか？',
+  normalized_question: 'スーツ金井の納期短縮オプションはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の納期短縮オプションはありますか？',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] EXISTING ROW {
+  sheetRowNumber: 2,
+  timestamp: '2026-04-13T12:08:08.472Z',
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井の納期短縮オプションはありますか？',
+  normalized_question: 'スーツ金井の納期短縮オプションはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の納期短縮オプションはありますか？',
+  asked_count: 1,
+  first_asked_at: '2026-04-13T12:08:08.472Z',
+  last_asked_at: '2026-04-13T12:08:08.472Z',
+  stock_status: 'new',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] ACTION {
+  type: 'update',
+  company_id: 'kanai_suit',
+  normalized_question: 'スーツ金井の納期短縮オプションはありますか？'
+}
+[V37][questionStockBridge] SAVE RESULT {
+  success: true,
+  message: 'question_stock updated',
+  data: {
+    action: 'update',
+    company_id: 'kanai_suit',
+    normalized_question: 'スーツ金井の納期短縮オプションはありますか？',
+    asked_count: 2,
+    first_asked_at: '2026-04-13T12:08:08.472Z',
+    last_asked_at: '2026-04-13T12:12:47.117Z',
+    sheetRowNumber: 2
+  }
+}
+
+RESULT:
+success: true
+replyText: そのご質問についての情報は現在登録されておりません。
+お時間いただきますが、お調べいたします。
+【オーダースーツ金井】
+companyId: kanai_suit
+
+CHECK:
+shouldStock (wiki_miss): true
+👉 EXPECT: question_stock に保存される
+
+
+========================================
+CASE: stock-hit-2
+MESSAGE: オーダースーツ金井で当日仕上げは可能ですか？
+### COLLECT V3.54 ### {
+  rid: 'stock-test-1776082367885',
+  userMessage: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  wikiCount: 0,
+  stockCount: 1,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 41,
+    strongHitCount: 6,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ', 'オーダー' ]
+  }
+}
+[V37][questionStockBridge] ENTER {
+  replyMode: 'wiki_miss',
+  bot_id: 1,
+  userId: 999,
+  userMessage: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  companyId: 'kanai_suit'
+}
+[V37][questionStockBridge] NORMALIZED {
+  userMessage: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  normalizedQuestion: 'オーダースーツ金井で当日仕上げは可能ですか？'
+}
+[questionStockService] DEBUG TARGET {
+  SPREADSHEET_ID: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  SHEET_NAME: 'question_stock'
+}
+[questionStockService.saveQuestionStock] INPUT {
+  user_id: 999,
+  bot_id: 1,
+  question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  normalized_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  company_id: 'kanai_suit',
+  user_question: 'オーダースーツ金井で当日仕上げは可能ですか？'
+}
+[questionStockService.saveQuestionStock] PAYLOAD {
+  user_id: '999',
+  bot_id: '1',
+  question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  normalized_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  company_id: 'kanai_suit',
+  user_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] EXISTING ROW {
+  sheetRowNumber: 3,
+  timestamp: '2026-04-13T12:08:11.343Z',
+  user_id: '999',
+  bot_id: '1',
+  question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  normalized_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  company_id: 'kanai_suit',
+  user_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+  asked_count: 1,
+  first_asked_at: '2026-04-13T12:08:11.343Z',
+  last_asked_at: '2026-04-13T12:08:11.343Z',
+  stock_status: 'new',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] ACTION {
+  type: 'update',
+  company_id: 'kanai_suit',
+  normalized_question: 'オーダースーツ金井で当日仕上げは可能ですか？'
+}
+[V37][questionStockBridge] SAVE RESULT {
+  success: true,
+  message: 'question_stock updated',
+  data: {
+    action: 'update',
+    company_id: 'kanai_suit',
+    normalized_question: 'オーダースーツ金井で当日仕上げは可能ですか？',
+    asked_count: 2,
+    first_asked_at: '2026-04-13T12:08:11.343Z',
+    last_asked_at: '2026-04-13T12:12:49.359Z',
+    sheetRowNumber: 3
+  }
+}
+
+RESULT:
+success: true
+replyText: そのご質問についての情報は現在登録されておりません。
+お時間いただきますが、お調べいたします。
+【オーダースーツ金井】
+companyId: kanai_suit
+
+CHECK:
+shouldStock (wiki_miss): true
+👉 EXPECT: question_stock に保存される
+
+
+========================================
+CASE: stock-hit-3
+MESSAGE: スーツ金井でサブスクプランはありますか？
+### COLLECT V3.54 ### {
+  rid: 'stock-test-1776082370050',
+  userMessage: 'スーツ金井でサブスクプランはありますか？',
+  wikiCount: 0,
+  stockCount: 1,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+[V37][questionStockBridge] ENTER {
+  replyMode: 'wiki_miss',
+  bot_id: 1,
+  userId: 999,
+  userMessage: 'スーツ金井でサブスクプランはありますか？',
+  companyId: 'kanai_suit'
+}
+[V37][questionStockBridge] NORMALIZED {
+  userMessage: 'スーツ金井でサブスクプランはありますか？',
+  normalizedQuestion: 'スーツ金井でサブスクプランはありますか？'
+}
+[questionStockService] DEBUG TARGET {
+  SPREADSHEET_ID: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  SHEET_NAME: 'question_stock'
+}
+[questionStockService.saveQuestionStock] INPUT {
+  user_id: 999,
+  bot_id: 1,
+  question: 'スーツ金井でサブスクプランはありますか？',
+  normalized_question: 'スーツ金井でサブスクプランはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井でサブスクプランはありますか？'
+}
+[questionStockService.saveQuestionStock] PAYLOAD {
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井でサブスクプランはありますか？',
+  normalized_question: 'スーツ金井でサブスクプランはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井でサブスクプランはありますか？',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] EXISTING ROW {
+  sheetRowNumber: 4,
+  timestamp: '2026-04-13T12:08:14.069Z',
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井でサブスクプランはありますか？',
+  normalized_question: 'スーツ金井でサブスクプランはありますか？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井でサブスクプランはありますか？',
+  asked_count: 1,
+  first_asked_at: '2026-04-13T12:08:14.069Z',
+  last_asked_at: '2026-04-13T12:08:14.069Z',
+  stock_status: 'new',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] ACTION {
+  type: 'update',
+  company_id: 'kanai_suit',
+  normalized_question: 'スーツ金井でサブスクプランはありますか？'
+}
+[V37][questionStockBridge] SAVE RESULT {
+  success: true,
+  message: 'question_stock updated',
+  data: {
+    action: 'update',
+    company_id: 'kanai_suit',
+    normalized_question: 'スーツ金井でサブスクプランはありますか？',
+    asked_count: 2,
+    first_asked_at: '2026-04-13T12:08:14.069Z',
+    last_asked_at: '2026-04-13T12:12:51.556Z',
+    sheetRowNumber: 4
+  }
+}
+
+RESULT:
+success: true
+replyText: そのご質問についての情報は現在登録されておりません。
+お時間いただきますが、お調べいたします。
+【オーダースーツ金井】
+companyId: kanai_suit
+
+CHECK:
+shouldStock (wiki_miss): true
+👉 EXPECT: question_stock に保存される
+
+
+========================================
+CASE: stock-hit-4
+MESSAGE: スーツ金井の保証内容は？
+### COLLECT V3.54 ### {
+  rid: 'stock-test-1776082372222',
+  userMessage: 'スーツ金井の保証内容は？',
+  wikiCount: 0,
+  stockCount: 1,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+[V37][questionStockBridge] ENTER {
+  replyMode: 'wiki_miss',
+  bot_id: 1,
+  userId: 999,
+  userMessage: 'スーツ金井の保証内容は？',
+  companyId: 'kanai_suit'
+}
+[V37][questionStockBridge] NORMALIZED { userMessage: 'スーツ金井の保証内容は？', normalizedQuestion: 'スーツ金井の保証内容は？' }
+[questionStockService] DEBUG TARGET {
+  SPREADSHEET_ID: '1sjRhPppi-6KlfGO8vjxGjJIf2LgiD_y7rqugbEjtN2k',
+  SHEET_NAME: 'question_stock'
+}
+[questionStockService.saveQuestionStock] INPUT {
+  user_id: 999,
+  bot_id: 1,
+  question: 'スーツ金井の保証内容は？',
+  normalized_question: 'スーツ金井の保証内容は？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の保証内容は？'
+}
+[questionStockService.saveQuestionStock] PAYLOAD {
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井の保証内容は？',
+  normalized_question: 'スーツ金井の保証内容は？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の保証内容は？',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] EXISTING ROW {
+  sheetRowNumber: 5,
+  timestamp: '2026-04-13T12:08:16.629Z',
+  user_id: '999',
+  bot_id: '1',
+  question: 'スーツ金井の保証内容は？',
+  normalized_question: 'スーツ金井の保証内容は？',
+  company_id: 'kanai_suit',
+  user_question: 'スーツ金井の保証内容は？',
+  asked_count: 1,
+  first_asked_at: '2026-04-13T12:08:16.629Z',
+  last_asked_at: '2026-04-13T12:08:16.629Z',
+  stock_status: 'new',
+  wiki_answer: '',
+  review_note: '',
+  question_category: '',
+  group_key: '',
+  canonical_question: '',
+  draft_answer: '',
+  draft_answer_source: '',
+  adopted_at: ''
+}
+[questionStockService.saveQuestionStock] ACTION {
+  type: 'update',
+  company_id: 'kanai_suit',
+  normalized_question: 'スーツ金井の保証内容は？'
+}
+[V37][questionStockBridge] SAVE RESULT {
+  success: true,
+  message: 'question_stock updated',
+  data: {
+    action: 'update',
+    company_id: 'kanai_suit',
+    normalized_question: 'スーツ金井の保証内容は？',
+    asked_count: 2,
+    first_asked_at: '2026-04-13T12:08:16.629Z',
+    last_asked_at: '2026-04-13T12:12:53.725Z',
+    sheetRowNumber: 5
+  }
+}
+
+RESULT:
+success: true
+replyText: そのご質問についての情報は現在登録されておりません。
+お時間いただきますが、お調べいたします。
+【オーダースーツ金井】
+companyId: kanai_suit
+
+CHECK:
+shouldStock (wiki_miss): true
+👉 EXPECT: question_stock に保存される
+
+
+=== QUESTION STOCK TEST END ===
