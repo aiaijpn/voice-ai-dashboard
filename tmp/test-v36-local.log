@@ -1,0 +1,2461 @@
+[dotenv@17.3.1] injecting env (9) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+
+================================================================================
+V3.6 LOCAL TEST START
+================================================================================
+START: 2026-04-11T13:14:45.114Z
+[ENV] OPENAI_API_KEY: OK
+[ENV] SPREADSHEET_ID: OK
+messageService callable export: processMessage
+
+================================================================================
+SCENARIO: テーマ無し -> スーツ金井 -> 駐車場 継続
+================================================================================
+
+[1] USER > スーツを作りたい
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: 'スーツを作りたい',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ]
+  }
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "オーダースーツ金井",
+  "replyMessage": "スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。",
+  "matchedCompanyId": "kanai_suit",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    company_name: 'オーダースーツの金井',
+    keywords: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'テーラー',
+      '礼服',
+      'ビジネススーツ',
+      '成人式',
+      'オーダー',
+      '来店'
+    ],
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: kanai_suit
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'kanai_suit' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: 'スーツを作りたい',
+  rawCurrentCompanyId: '',
+  mergedCurrentCompanyId: 'kanai_suit',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'kanai_suit',
+      topic_label: 'オーダースーツ金井',
+      company_name: 'オーダースーツの金井',
+      score: 34,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'オーダースーツ金井',
+    replyMessage: 'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。',
+    companyId: 'kanai_suit',
+    matchedCompanyId: 'kanai_suit',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: 'kanai_suit',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'top_candidate_strong_enough'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'kanai_suit',
+  parsedMatchedCompanyId: 'kanai_suit',
+  finalCompanyId: 'kanai_suit',
+  finalTopicLabel: 'オーダースーツ金井',
+  currentCompanyId: 'kanai_suit',
+  replyText: '【オーダースーツ金井】\n' +
+    'スーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'kanai_suit',
+  v35MatchedCompanyId: 'kanai_suit',
+  v35TopicLabel: 'オーダースーツ金井',
+  v35CurrentCompanyId: 'kanai_suit',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'kanai_suit',
+  finalMatchedCompanyId: 'kanai_suit',
+  topicLabel: 'オーダースーツ金井',
+  historyCount: 0
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'kanai_suit',
+  successMatchedCompanyId: 'kanai_suit',
+  successTopicLabel: 'オーダースーツ金井',
+  successCurrentCompanyId: 'kanai_suit'
+}
+[1] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-001",
+  "text": "スーツを作りたい",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[1] AI   > v36 reply
+[1] RESULT > FAIL
+[1] EXPECT includes > [
+  "金井"
+]
+[1] EXPECT excludes > []
+[1] RAW RESULT > {
+  "success": true,
+  "message": "v36 reply",
+  "data": {
+    "replyText": "【オーダースーツ金井】\nスーツ作りのご相談ですね。オーダースーツ金井では、お客様の体型に合わせたスーツをお作りします。採寸やデザインのご相談も承っておりますので、ぜひご来店ください。",
+    "topicLabel": "オーダースーツ金井",
+    "companyId": "kanai_suit",
+    "matchedCompanyId": "kanai_suit",
+    "isConversationContinuing": true,
+    "currentCompanyId": "kanai_suit",
+    "conversationHistoryCount": 0,
+    "summary": "",
+    "category": null,
+    "urgency_score": null,
+    "userId": "user-v36-001",
+    "bot_id": "voice-ai-dashboard",
+    "rid": "no_rid"
+  }
+}
+
+[2] USER > 駐車場は？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '駐車場は？',
+  wikiCount: 1,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: 'kanai_suit',
+  isConversationContinuing: true,
+  companyTop: null
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "オーダースーツ金井",
+  "replyMessage": "駐車場はありません",
+  "matchedCompanyId": "kanai_suit",
+  "usedWiki": true,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "wiki_answer"
+}
+rawObject: {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '駐車場はありません',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: true,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    company_name: 'オーダースーツ金井',
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true
+  }
+]
+context.currentCompanyId: kanai_suit
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '駐車場はありません',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: true,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '駐車場はありません',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: true,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'kanai_suit' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '駐車場はありません',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: true,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '駐車場は？',
+  rawCurrentCompanyId: 'kanai_suit',
+  mergedCurrentCompanyId: 'kanai_suit',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'kanai_suit',
+      topic_label: 'オーダースーツ金井',
+      company_name: 'オーダースーツ金井',
+      score: 0,
+      byConversationContext: true,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'オーダースーツ金井',
+    replyMessage: '駐車場はありません',
+    companyId: 'kanai_suit',
+    matchedCompanyId: 'kanai_suit',
+    usedWiki: true,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'wiki_answer'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: 'kanai_suit',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'wiki_candidate_exists'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'wiki_answer',
+  parsedCompanyId: 'kanai_suit',
+  parsedMatchedCompanyId: 'kanai_suit',
+  finalCompanyId: 'kanai_suit',
+  finalTopicLabel: 'オーダースーツ金井',
+  currentCompanyId: 'kanai_suit',
+  replyText: '【オーダースーツ金井】\n駐車場はありません'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'kanai_suit',
+  v35MatchedCompanyId: 'kanai_suit',
+  v35TopicLabel: 'オーダースーツ金井',
+  v35CurrentCompanyId: 'kanai_suit',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'kanai_suit',
+  finalMatchedCompanyId: 'kanai_suit',
+  topicLabel: 'オーダースーツ金井',
+  historyCount: 2
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'kanai_suit',
+  successMatchedCompanyId: 'kanai_suit',
+  successTopicLabel: 'オーダースーツ金井',
+  successCurrentCompanyId: 'kanai_suit'
+}
+[2] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-001",
+  "text": "駐車場は？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[2] AI   > v36 reply
+[2] RESULT > PASS
+
+--- scenario summary ---
+name   : テーマ無し -> スーツ金井 -> 駐車場 継続
+passed : 1
+failed : 1
+
+================================================================================
+SCENARIO: 法律へ遷移 -> 継続確認
+================================================================================
+
+[1] USER > 法律相談したい
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '法律相談したい',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 3,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'ikeda_law',
+    topic_label: '池田法律相談',
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ '池田法律相談', '池田法律相談室', '法律', '法律相談', '法的相談' ]
+  }
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "池田法律相談",
+  "replyMessage": "法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。",
+  "matchedCompanyId": "ikeda_law",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: '池田法律相談',
+  replyMessage: '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。',
+  matchedCompanyId: 'ikeda_law',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ikeda_law',
+    topic_label: '池田法律相談',
+    company_name: '池田法律相談室',
+    keywords: [
+      '法律',     '法律相談',
+      '弁護士',   '法務',
+      '企業法務', '契約',
+      '離婚',     'トラブル',
+      '顧問',     '法的相談'
+    ],
+    score: 34,
+    strongHitCount: 5,
+    weakHitCount: 0,
+    matchedTerms: [ '池田法律相談', '池田法律相談室', '法律', '法律相談', '法的相談' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'nishikawa_beauty',
+    topic_label: '美容西川',
+    company_name: '西川ヘレン美容医療院',
+    keywords: [
+      '美容医療',
+      '美容',
+      '美肌',
+      '肌ケア',
+      'アンチエイジング',
+      'エイジングケア',
+      '施術',
+      'カウンセリング',
+      '美容相談'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ '美容相談' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'ogata_souzoku',
+    topic_label: '相続の尾形',
+    company_name: '相続対策なら尾形',
+    keywords: [
+      '相続',     '相続相談',
+      '遺産',     '遺言',
+      '相続税',   '家族信託',
+      '相続対策', '生前対策',
+      '終活'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ '相続相談' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: ikeda_law
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: '池田法律相談',
+  replyMessage: '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。',
+  matchedCompanyId: 'ikeda_law',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: '池田法律相談',
+  replyMessage: '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。',
+  matchedCompanyId: 'ikeda_law',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ikeda_law', 'nishikawa_beauty', 'ogata_souzoku' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: '池田法律相談',
+  replyMessage: '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。',
+  matchedCompanyId: 'ikeda_law',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '法律相談したい',
+  rawCurrentCompanyId: '',
+  mergedCurrentCompanyId: 'ikeda_law',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ikeda_law',
+      topic_label: '池田法律相談',
+      company_name: '池田法律相談室',
+      score: 34,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'nishikawa_beauty',
+      topic_label: '美容西川',
+      company_name: '西川ヘレン美容医療院',
+      score: 7,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'ogata_souzoku',
+      topic_label: '相続の尾形',
+      company_name: '相続対策なら尾形',
+      score: 7,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: '池田法律相談',
+    replyMessage: '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。',
+    companyId: 'ikeda_law',
+    matchedCompanyId: 'ikeda_law',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: 'ikeda_law',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'top_candidate_strong_enough'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'ikeda_law',
+  parsedMatchedCompanyId: 'ikeda_law',
+  finalCompanyId: 'ikeda_law',
+  finalTopicLabel: '池田法律相談',
+  currentCompanyId: 'ikeda_law',
+  replyText: '【池田法律相談】\n' +
+    '法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'ikeda_law',
+  v35MatchedCompanyId: 'ikeda_law',
+  v35TopicLabel: '池田法律相談',
+  v35CurrentCompanyId: 'ikeda_law',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'ikeda_law',
+  finalMatchedCompanyId: 'ikeda_law',
+  topicLabel: '池田法律相談',
+  historyCount: 0
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'ikeda_law',
+  successMatchedCompanyId: 'ikeda_law',
+  successTopicLabel: '池田法律相談',
+  successCurrentCompanyId: 'ikeda_law'
+}
+[1] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-002",
+  "text": "法律相談したい",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[1] AI   > v36 reply
+[1] RESULT > FAIL
+[1] EXPECT includes > [
+  "法律"
+]
+[1] EXPECT excludes > []
+[1] RAW RESULT > {
+  "success": true,
+  "message": "v36 reply",
+  "data": {
+    "replyText": "【池田法律相談】\n法律相談のご希望ですね。池田法律相談室では、様々な法律問題に対応しています。具体的に相談されたい内容がございましたら、お知らせください。",
+    "topicLabel": "池田法律相談",
+    "companyId": "ikeda_law",
+    "matchedCompanyId": "ikeda_law",
+    "isConversationContinuing": true,
+    "currentCompanyId": "ikeda_law",
+    "conversationHistoryCount": 0,
+    "summary": "",
+    "category": null,
+    "urgency_score": null,
+    "userId": "user-v36-002",
+    "bot_id": "voice-ai-dashboard",
+    "rid": "no_rid"
+  }
+}
+
+[2] USER > 相続も相談できますか？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '相続も相談できますか？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 3,
+  currentCompanyId: 'ikeda_law',
+  isConversationContinuing: true,
+  companyTop: {
+    company_id: 'ogata_souzoku',
+    topic_label: '相続の尾形',
+    score: 41,
+    strongHitCount: 6,
+    weakHitCount: 0,
+    matchedTerms: [ '相続の尾形', '相続対策なら尾形', '相続', '相続相談', '相続税', '相続対策' ]
+  }
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "相続の尾形",
+  "replyMessage": "はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。",
+  "matchedCompanyId": "ogata_souzoku",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: '相続の尾形',
+  replyMessage: 'はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。',
+  matchedCompanyId: 'ogata_souzoku',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ogata_souzoku',
+    topic_label: '相続の尾形',
+    company_name: '相続対策なら尾形',
+    keywords: [
+      '相続',     '相続相談',
+      '遺産',     '遺言',
+      '相続税',   '家族信託',
+      '相続対策', '生前対策',
+      '終活'
+    ],
+    score: 41,
+    strongHitCount: 6,
+    weakHitCount: 0,
+    matchedTerms: [ '相続の尾形', '相続対策なら尾形', '相続', '相続相談', '相続税', '相続対策' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'ikeda_law',
+    topic_label: '池田法律相談',
+    company_name: '池田法律相談室',
+    keywords: [
+      '法律',     '法律相談',
+      '弁護士',   '法務',
+      '企業法務', '契約',
+      '離婚',     'トラブル',
+      '顧問',     '法的相談'
+    ],
+    score: 22,
+    strongHitCount: 4,
+    weakHitCount: 0,
+    matchedTerms: [ '池田法律相談', '池田法律相談室', '法律相談', '法的相談' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'nishikawa_beauty',
+    topic_label: '美容西川',
+    company_name: '西川ヘレン美容医療院',
+    keywords: [
+      '美容医療',
+      '美容',
+      '美肌',
+      '肌ケア',
+      'アンチエイジング',
+      'エイジングケア',
+      '施術',
+      'カウンセリング',
+      '美容相談'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ '美容相談' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: ikeda_law
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: '相続の尾形',
+  replyMessage: 'はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。',
+  matchedCompanyId: 'ogata_souzoku',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: '相続の尾形',
+  replyMessage: 'はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。',
+  matchedCompanyId: 'ogata_souzoku',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ogata_souzoku', 'ikeda_law', 'nishikawa_beauty' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: '相続の尾形',
+  replyMessage: 'はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。',
+  matchedCompanyId: 'ogata_souzoku',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '相続も相談できますか？',
+  rawCurrentCompanyId: 'ikeda_law',
+  mergedCurrentCompanyId: 'ikeda_law',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ogata_souzoku',
+      topic_label: '相続の尾形',
+      company_name: '相続対策なら尾形',
+      score: 41,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'ikeda_law',
+      topic_label: '池田法律相談',
+      company_name: '池田法律相談室',
+      score: 22,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'nishikawa_beauty',
+      topic_label: '美容西川',
+      company_name: '西川ヘレン美容医療院',
+      score: 7,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: '相続の尾形',
+    replyMessage: 'はい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。',
+    companyId: 'ogata_souzoku',
+    matchedCompanyId: 'ogata_souzoku',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: '',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'conversation_continuing'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'ogata_souzoku',
+  parsedMatchedCompanyId: 'ogata_souzoku',
+  finalCompanyId: 'ogata_souzoku',
+  finalTopicLabel: '相続の尾形',
+  currentCompanyId: 'ikeda_law',
+  replyText: '【相続の尾形】\nはい、相続に関する相談が可能です。具体的な内容についてお話ししましょうか。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'ogata_souzoku',
+  v35MatchedCompanyId: 'ogata_souzoku',
+  v35TopicLabel: '相続の尾形',
+  v35CurrentCompanyId: 'ikeda_law',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'ogata_souzoku',
+  finalMatchedCompanyId: 'ogata_souzoku',
+  topicLabel: '相続の尾形',
+  historyCount: 2
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'ogata_souzoku',
+  successMatchedCompanyId: 'ogata_souzoku',
+  successTopicLabel: '相続の尾形',
+  successCurrentCompanyId: 'ikeda_law'
+}
+[2] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-002",
+  "text": "相続も相談できますか？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[2] AI   > v36 reply
+[2] RESULT > PASS
+
+--- scenario summary ---
+name   : 法律へ遷移 -> 継続確認
+passed : 1
+failed : 1
+
+================================================================================
+SCENARIO: ワイン -> 継続 -> テーマ外で解除されるか
+================================================================================
+
+[1] USER > ワインに興味あります
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: 'ワインに興味あります',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'ozawa_wine',
+    topic_label: 'ワインベース銀座',
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ 'ワイン' ]
+  }
+}
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "shouldUseCompany": true,
+  "matchedCompanyId": "ozawa_wine",
+  "confidence": "medium",
+  "needsClarification": false,
+  "topicLabel": "ワインベース銀座",
+  "reason": "userMessage がワインに関心を示しており、候補が関連しているため"
+}
+rawObject: {
+  shouldUseCompany: true,
+  matchedCompanyId: 'ozawa_wine',
+  confidence: 'medium',
+  needsClarification: false,
+  topicLabel: 'ワインベース銀座',
+  reason: 'userMessage がワインに関心を示しており、候補が関連しているため'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ozawa_wine',
+    topic_label: 'ワインベース銀座',
+    company_name: 'ザ・ワインベース銀座',
+    keywords: [
+      'ワイン',
+      'ワインバー',
+      'グラスワイン',
+      'ボトルワイン',
+      'ペアリング',
+      '飲み比べ',
+      'ワイン初心者',
+      'デート'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ 'ワイン' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: 
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'ワインベース銀座',
+  replyMessage: '',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'ワインベース銀座',
+  replyMessage: '',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ozawa_wine' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'ワインベース銀座',
+  replyMessage: '',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "テーマ無し",
+  "replyMessage": "ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。",
+  "matchedCompanyId": "",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'テーマ無し',
+  replyMessage: 'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ozawa_wine',
+    topic_label: 'ワインベース銀座',
+    company_name: 'ザ・ワインベース銀座',
+    keywords: [
+      'ワイン',
+      'ワインバー',
+      'グラスワイン',
+      'ボトルワイン',
+      'ペアリング',
+      '飲み比べ',
+      'ワイン初心者',
+      'デート'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ 'ワイン' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: 
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'テーマ無し',
+  replyMessage: 'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'ワインベース銀座',
+  replyMessage: 'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ozawa_wine' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'ワインベース銀座',
+  replyMessage: 'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: 'ワインに興味あります',
+  rawCurrentCompanyId: '',
+  mergedCurrentCompanyId: '',
+  isConversationContinuing: false
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ozawa_wine',
+      topic_label: 'ワインベース銀座',
+      company_name: 'ザ・ワインベース銀座',
+      score: 7,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'ワインベース銀座',
+    replyMessage: 'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。',
+    companyId: 'ozawa_wine',
+    matchedCompanyId: 'ozawa_wine',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: false,
+    matchedCompanyId: 'ozawa_wine',
+    confidence: 'low',
+    needsClarification: false,
+    topicLabel: 'ワインベース銀座',
+    reason: ''
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'ozawa_wine',
+  parsedMatchedCompanyId: 'ozawa_wine',
+  finalCompanyId: 'ozawa_wine',
+  finalTopicLabel: 'ワインベース銀座',
+  currentCompanyId: '',
+  replyText: '【ワインベース銀座】\n' +
+    'ワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'ozawa_wine',
+  v35MatchedCompanyId: 'ozawa_wine',
+  v35TopicLabel: 'ワインベース銀座',
+  v35CurrentCompanyId: '',
+  v35IsConversationContinuing: false
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'ozawa_wine',
+  finalMatchedCompanyId: 'ozawa_wine',
+  topicLabel: 'ワインベース銀座',
+  historyCount: 0
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'ozawa_wine',
+  successMatchedCompanyId: 'ozawa_wine',
+  successTopicLabel: 'ワインベース銀座',
+  successCurrentCompanyId: ''
+}
+[1] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-003",
+  "text": "ワインに興味あります",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[1] AI   > v36 reply
+[1] RESULT > FAIL
+[1] EXPECT includes > [
+  "ワイン"
+]
+[1] EXPECT excludes > []
+[1] RAW RESULT > {
+  "success": true,
+  "message": "v36 reply",
+  "data": {
+    "replyText": "【ワインベース銀座】\nワインに関する興味をお持ちですね！ワインはさまざまな種類や地域があり、飲み比べやペアリングも楽しめます。具体的に知りたいことがあれば教えてください。",
+    "topicLabel": "ワインベース銀座",
+    "companyId": "ozawa_wine",
+    "matchedCompanyId": "ozawa_wine",
+    "isConversationContinuing": false,
+    "currentCompanyId": "",
+    "conversationHistoryCount": 0,
+    "summary": "",
+    "category": null,
+    "urgency_score": null,
+    "userId": "user-v36-003",
+    "bot_id": "voice-ai-dashboard",
+    "rid": "no_rid"
+  }
+}
+
+[2] USER > 初心者でも大丈夫？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '初心者でも大丈夫？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: 'ozawa_wine',
+  isConversationContinuing: true,
+  companyTop: null
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "テーマ無し",
+  "replyMessage": "初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。",
+  "matchedCompanyId": "ozawa_wine",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'テーマ無し',
+  replyMessage: '初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ozawa_wine',
+    topic_label: '',
+    company_name: '',
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true
+  }
+]
+context.currentCompanyId: ozawa_wine
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ozawa_wine' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。',
+  matchedCompanyId: 'ozawa_wine',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '初心者でも大丈夫？',
+  rawCurrentCompanyId: 'ozawa_wine',
+  mergedCurrentCompanyId: 'ozawa_wine',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ozawa_wine',
+      topic_label: '',
+      company_name: '',
+      score: 0,
+      byConversationContext: true,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'テーマ無し',
+    replyMessage: '初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。',
+    companyId: 'ozawa_wine',
+    matchedCompanyId: 'ozawa_wine',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: '',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'conversation_continuing'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'ozawa_wine',
+  parsedMatchedCompanyId: 'ozawa_wine',
+  finalCompanyId: 'ozawa_wine',
+  finalTopicLabel: 'テーマ無し',
+  currentCompanyId: 'ozawa_wine',
+  replyText: '【テーマ無し】⇒協賛企業から選択\n初心者の方でも安心してご利用いただけます。スタッフがしっかりサポートしますので、気軽にお越しください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'ozawa_wine',
+  v35MatchedCompanyId: 'ozawa_wine',
+  v35TopicLabel: 'テーマ無し',
+  v35CurrentCompanyId: 'ozawa_wine',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'ozawa_wine',
+  finalMatchedCompanyId: 'ozawa_wine',
+  topicLabel: 'テーマ無し',
+  historyCount: 2
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'ozawa_wine',
+  successMatchedCompanyId: 'ozawa_wine',
+  successTopicLabel: 'テーマ無し',
+  successCurrentCompanyId: 'ozawa_wine'
+}
+[2] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-003",
+  "text": "初心者でも大丈夫？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[2] AI   > v36 reply
+[2] RESULT > PASS
+
+[3] USER > 今日の天気は？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '今日の天気は？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: 'ozawa_wine',
+  isConversationContinuing: true,
+  companyTop: null
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "テーマ無し",
+  "replyMessage": "今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。",
+  "matchedCompanyId": "",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "no_topic"
+}
+rawObject: {
+  topicLabel: 'テーマ無し',
+  replyMessage: '今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'no_topic'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ozawa_wine',
+    topic_label: '',
+    company_name: '',
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true
+  }
+]
+context.currentCompanyId: ozawa_wine
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'no_topic'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'no_topic'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ozawa_wine' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'テーマ無し',
+  replyMessage: '今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。',
+  matchedCompanyId: '',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'no_topic'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '今日の天気は？',
+  rawCurrentCompanyId: 'ozawa_wine',
+  mergedCurrentCompanyId: 'ozawa_wine',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ozawa_wine',
+      topic_label: '',
+      company_name: '',
+      score: 0,
+      byConversationContext: true,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'テーマ無し',
+    replyMessage: '今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。',
+    companyId: '',
+    matchedCompanyId: '',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'no_topic'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: '',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'conversation_continuing'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'no_topic',
+  parsedCompanyId: '',
+  parsedMatchedCompanyId: '',
+  finalCompanyId: '',
+  finalTopicLabel: 'テーマ無し',
+  currentCompanyId: 'ozawa_wine',
+  replyText: '【テーマ無し】⇒協賛企業から選択\n今日の天気に関する情報は、天気予報のウェブサイトやアプリで確認できます。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: '',
+  v35MatchedCompanyId: '',
+  v35TopicLabel: 'テーマ無し',
+  v35CurrentCompanyId: 'ozawa_wine',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: '',
+  finalMatchedCompanyId: '',
+  topicLabel: 'テーマ無し',
+  historyCount: 4
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: '',
+  successMatchedCompanyId: '',
+  successTopicLabel: 'テーマ無し',
+  successCurrentCompanyId: 'ozawa_wine'
+}
+[3] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-003",
+  "text": "今日の天気は？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[3] AI   > v36 reply
+[3] RESULT > PASS
+
+--- scenario summary ---
+name   : ワイン -> 継続 -> テーマ外で解除されるか
+passed : 2
+failed : 1
+
+================================================================================
+SCENARIO: テーマ無し一般質問
+================================================================================
+
+[1] USER > AI活用の相談をしたい
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: 'AI活用の相談をしたい',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 3,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'ikeda_law',
+    topic_label: '池田法律相談',
+    score: 22,
+    strongHitCount: 4,
+    weakHitCount: 0,
+    matchedTerms: [ '池田法律相談', '池田法律相談室', '法律相談', '法的相談' ]
+  }
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "AIサービス高村",
+  "replyMessage": "AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。",
+  "matchedCompanyId": "takamura_ai",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "wiki_answer"
+}
+rawObject: {
+  topicLabel: 'AIサービス高村',
+  replyMessage: 'AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。',
+  matchedCompanyId: 'takamura_ai',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+context.companyCandidates: [
+  {
+    company_id: 'ikeda_law',
+    topic_label: '池田法律相談',
+    company_name: '池田法律相談室',
+    keywords: [
+      '法律',     '法律相談',
+      '弁護士',   '法務',
+      '企業法務', '契約',
+      '離婚',     'トラブル',
+      '顧問',     '法的相談'
+    ],
+    score: 22,
+    strongHitCount: 4,
+    weakHitCount: 0,
+    matchedTerms: [ '池田法律相談', '池田法律相談室', '法律相談', '法的相談' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'takamura_ai',
+    topic_label: 'AIサービス高村',
+    company_name: 'AIインテグレーションの高村',
+    keywords: [
+      'AI',             'LINE',
+      'AI受付',         'チャット対応',
+      '問い合わせ対応', '業務効率化',
+      '自動化',         '業務改善',
+      '業務自動化',     'AI活用',
+      'ヒアリング',     '導入支援',
+      '営業支援'
+    ],
+    score: 18,
+    strongHitCount: 3,
+    weakHitCount: 0,
+    matchedTerms: [ 'ai', 'AI', 'AI活用' ],
+    priority: 0,
+    sort_order: 9999
+  },
+  {
+    company_id: 'nishikawa_beauty',
+    topic_label: '美容西川',
+    company_name: '西川ヘレン美容医療院',
+    keywords: [
+      '美容医療',
+      '美容',
+      '美肌',
+      '肌ケア',
+      'アンチエイジング',
+      'エイジングケア',
+      '施術',
+      'カウンセリング',
+      '美容相談'
+    ],
+    score: 7,
+    strongHitCount: 1,
+    weakHitCount: 0,
+    matchedTerms: [ '美容相談' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: ikeda_law
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'AIサービス高村',
+  replyMessage: 'AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。',
+  matchedCompanyId: 'takamura_ai',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'AIサービス高村',
+  replyMessage: 'AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。',
+  matchedCompanyId: 'takamura_ai',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'ikeda_law', 'takamura_ai', 'nishikawa_beauty' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'AIサービス高村',
+  replyMessage: 'AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。',
+  matchedCompanyId: 'takamura_ai',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'wiki_answer'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: 'AI活用の相談をしたい',
+  rawCurrentCompanyId: '',
+  mergedCurrentCompanyId: 'ikeda_law',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'ikeda_law',
+      topic_label: '池田法律相談',
+      company_name: '池田法律相談室',
+      score: 22,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'takamura_ai',
+      topic_label: 'AIサービス高村',
+      company_name: 'AIインテグレーションの高村',
+      score: 18,
+      byConversationContext: false,
+      byJudgeResult: false
+    },
+    {
+      company_id: 'nishikawa_beauty',
+      topic_label: '美容西川',
+      company_name: '西川ヘレン美容医療院',
+      score: 7,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'AIサービス高村',
+    replyMessage: 'AIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。',
+    companyId: 'takamura_ai',
+    matchedCompanyId: 'takamura_ai',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'wiki_answer'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: 'ikeda_law',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'top_candidate_strong_enough'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'wiki_answer',
+  parsedCompanyId: 'takamura_ai',
+  parsedMatchedCompanyId: 'takamura_ai',
+  finalCompanyId: 'takamura_ai',
+  finalTopicLabel: 'AIサービス高村',
+  currentCompanyId: 'ikeda_law',
+  replyText: '【AIサービス高村】\nAIを活用することで業務の効率化や自動化が可能です。具体的な導入支援やヒアリングを行っていますので、ぜひご相談ください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'takamura_ai',
+  v35MatchedCompanyId: 'takamura_ai',
+  v35TopicLabel: 'AIサービス高村',
+  v35CurrentCompanyId: 'ikeda_law',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'takamura_ai',
+  finalMatchedCompanyId: 'takamura_ai',
+  topicLabel: 'AIサービス高村',
+  historyCount: 0
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'takamura_ai',
+  successMatchedCompanyId: 'takamura_ai',
+  successTopicLabel: 'AIサービス高村',
+  successCurrentCompanyId: 'ikeda_law'
+}
+[1] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-004",
+  "text": "AI活用の相談をしたい",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[1] AI   > v36 reply
+[1] RESULT > PASS
+
+--- scenario summary ---
+name   : テーマ無し一般質問
+passed : 1
+failed : 0
+
+================================================================================
+SCENARIO: 会話継続の最重要確認 3ターン
+================================================================================
+
+[1] USER > オーダースーツについて知りたい
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: 'オーダースーツについて知りたい',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 1,
+  currentCompanyId: '',
+  isConversationContinuing: false,
+  companyTop: {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    score: 41,
+    strongHitCount: 6,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ', 'オーダー' ]
+  }
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "オーダースーツ金井",
+  "replyMessage": "オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。",
+  "matchedCompanyId": "kanai_suit",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    company_name: 'オーダースーツの金井',
+    keywords: [
+      'オーダースーツ',
+      'スーツ',
+      '採寸',
+      '仕立て',
+      'テーラー',
+      '礼服',
+      'ビジネススーツ',
+      '成人式',
+      'オーダー',
+      '来店'
+    ],
+    score: 41,
+    strongHitCount: 6,
+    weakHitCount: 0,
+    matchedTerms: [ 'オーダースーツ金井', 'オーダースーツの金井', 'オーダースーツ', 'スーツ', 'ビジネススーツ', 'オーダー' ],
+    priority: 0,
+    sort_order: 9999
+  }
+]
+context.currentCompanyId: kanai_suit
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'kanai_suit' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: 'オーダースーツについて知りたい',
+  rawCurrentCompanyId: '',
+  mergedCurrentCompanyId: 'kanai_suit',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'kanai_suit',
+      topic_label: 'オーダースーツ金井',
+      company_name: 'オーダースーツの金井',
+      score: 41,
+      byConversationContext: false,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'オーダースーツ金井',
+    replyMessage: 'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。',
+    companyId: 'kanai_suit',
+    matchedCompanyId: 'kanai_suit',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: 'kanai_suit',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'top_candidate_strong_enough'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'kanai_suit',
+  parsedMatchedCompanyId: 'kanai_suit',
+  finalCompanyId: 'kanai_suit',
+  finalTopicLabel: 'オーダースーツ金井',
+  currentCompanyId: 'kanai_suit',
+  replyText: '【オーダースーツ金井】\n' +
+    'オーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'kanai_suit',
+  v35MatchedCompanyId: 'kanai_suit',
+  v35TopicLabel: 'オーダースーツ金井',
+  v35CurrentCompanyId: 'kanai_suit',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'kanai_suit',
+  finalMatchedCompanyId: 'kanai_suit',
+  topicLabel: 'オーダースーツ金井',
+  historyCount: 0
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'kanai_suit',
+  successMatchedCompanyId: 'kanai_suit',
+  successTopicLabel: 'オーダースーツ金井',
+  successCurrentCompanyId: 'kanai_suit'
+}
+[1] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-005",
+  "text": "オーダースーツについて知りたい",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[1] AI   > v36 reply
+[1] RESULT > FAIL
+[1] EXPECT includes > [
+  "スーツ",
+  "金井"
+]
+[1] EXPECT excludes > []
+[1] RAW RESULT > {
+  "success": true,
+  "message": "v36 reply",
+  "data": {
+    "replyText": "【オーダースーツ金井】\nオーダースーツについては、オーダースーツの金井では、採寸や仕立てについて詳しい説明ができます。ビジネススーツや成人式用の礼服も取り扱っていますので、ぜひご来店ください。",
+    "topicLabel": "オーダースーツ金井",
+    "companyId": "kanai_suit",
+    "matchedCompanyId": "kanai_suit",
+    "isConversationContinuing": true,
+    "currentCompanyId": "kanai_suit",
+    "conversationHistoryCount": 0,
+    "summary": "",
+    "category": null,
+    "urgency_score": null,
+    "userId": "user-v36-005",
+    "bot_id": "voice-ai-dashboard",
+    "rid": "no_rid"
+  }
+}
+
+[2] USER > 予約は必要？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '予約は必要？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: 'kanai_suit',
+  isConversationContinuing: true,
+  companyTop: null
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "オーダースーツ金井",
+  "replyMessage": "ご予約をおすすめしております。",
+  "matchedCompanyId": "kanai_suit",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'ご予約をおすすめしております。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    company_name: 'オーダースーツ金井',
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true
+  }
+]
+context.currentCompanyId: kanai_suit
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'ご予約をおすすめしております。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'ご予約をおすすめしております。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'kanai_suit' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: 'ご予約をおすすめしております。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '予約は必要？',
+  rawCurrentCompanyId: 'kanai_suit',
+  mergedCurrentCompanyId: 'kanai_suit',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'kanai_suit',
+      topic_label: 'オーダースーツ金井',
+      company_name: 'オーダースーツ金井',
+      score: 0,
+      byConversationContext: true,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'オーダースーツ金井',
+    replyMessage: 'ご予約をおすすめしております。',
+    companyId: 'kanai_suit',
+    matchedCompanyId: 'kanai_suit',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: '',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'conversation_continuing'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'kanai_suit',
+  parsedMatchedCompanyId: 'kanai_suit',
+  finalCompanyId: 'kanai_suit',
+  finalTopicLabel: 'オーダースーツ金井',
+  currentCompanyId: 'kanai_suit',
+  replyText: '【オーダースーツ金井】\nご予約をおすすめしております。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'kanai_suit',
+  v35MatchedCompanyId: 'kanai_suit',
+  v35TopicLabel: 'オーダースーツ金井',
+  v35CurrentCompanyId: 'kanai_suit',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'kanai_suit',
+  finalMatchedCompanyId: 'kanai_suit',
+  topicLabel: 'オーダースーツ金井',
+  historyCount: 2
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'kanai_suit',
+  successMatchedCompanyId: 'kanai_suit',
+  successTopicLabel: 'オーダースーツ金井',
+  successCurrentCompanyId: 'kanai_suit'
+}
+[2] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-005",
+  "text": "予約は必要？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[2] AI   > v36 reply
+[2] RESULT > PASS
+
+[3] USER > 場所はどこ？
+### COLLECT V3.54 ### {
+  rid: 'no_rid',
+  userMessage: '場所はどこ？',
+  wikiCount: 0,
+  stockCount: 0,
+  companyCount: 0,
+  currentCompanyId: 'kanai_suit',
+  isConversationContinuing: true,
+  companyTop: null
+}
+### BUILD PROMPT V3.53 ###
+### PARSE V3.53 RAW ###
+rid: no_rid
+aiRawText: {
+  "topicLabel": "オーダースーツ金井",
+  "replyMessage": "場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。",
+  "matchedCompanyId": "kanai_suit",
+  "usedWiki": false,
+  "wikiAction": "none",
+  "wikiDraft": null,
+  "stockAction": "none",
+  "stockDraft": null,
+  "judgement": "general_reply"
+}
+rawObject: {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+context.companyCandidates: [
+  {
+    company_id: 'kanai_suit',
+    topic_label: 'オーダースーツ金井',
+    company_name: 'オーダースーツ金井',
+    keywords: [],
+    score: 0,
+    strongHitCount: 0,
+    weakHitCount: 0,
+    matchedTerms: [],
+    priority: 999,
+    sort_order: 9999,
+    byConversationContext: true
+  }
+]
+context.currentCompanyId: kanai_suit
+### PARSE V3.53 NORMALIZED ###
+parsed(beforeFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 AFTER FILL ###
+parsed(afterFill): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### PARSE V3.53 ALLOWED IDS ###
+allowedIds: [ 'kanai_suit' ]
+### PARSE V3.53 FINAL ###
+parsed(final): {
+  topicLabel: 'オーダースーツ金井',
+  replyMessage: '場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。',
+  matchedCompanyId: 'kanai_suit',
+  usedWiki: false,
+  wikiAction: 'none',
+  wikiDraft: null,
+  stockAction: 'none',
+  stockDraft: null,
+  judgement: 'general_reply'
+}
+### V35 DEBUG INPUT ### {
+  rid: 'no_rid',
+  userMessage: '場所はどこ？',
+  rawCurrentCompanyId: 'kanai_suit',
+  mergedCurrentCompanyId: 'kanai_suit',
+  isConversationContinuing: true
+}
+### V35 DEBUG CANDIDATES ### {
+  rid: 'no_rid',
+  companyCandidates: [
+    {
+      company_id: 'kanai_suit',
+      topic_label: 'オーダースーツ金井',
+      company_name: 'オーダースーツ金井',
+      score: 0,
+      byConversationContext: true,
+      byJudgeResult: false
+    }
+  ]
+}
+### V35 DEBUG ANSWER_RESULT ### {
+  rid: 'no_rid',
+  answerResult: {
+    topicLabel: 'オーダースーツ金井',
+    replyMessage: '場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。',
+    companyId: 'kanai_suit',
+    matchedCompanyId: 'kanai_suit',
+    usedWiki: false,
+    wikiAction: 'none',
+    wikiDraft: null,
+    stockAction: 'none',
+    stockDraft: null,
+    judgement: 'general_reply'
+  },
+  judgeResult: {
+    shouldUseCompany: true,
+    matchedCompanyId: '',
+    confidence: 'high',
+    needsClarification: false,
+    topicLabel: 'テーマ無し',
+    reason: 'conversation_continuing'
+  }
+}
+### V35 FINAL OUT ### {
+  rid: 'no_rid',
+  judgement: 'general_reply',
+  parsedCompanyId: 'kanai_suit',
+  parsedMatchedCompanyId: 'kanai_suit',
+  finalCompanyId: 'kanai_suit',
+  finalTopicLabel: 'オーダースーツ金井',
+  currentCompanyId: 'kanai_suit',
+  replyText: '【オーダースーツ金井】\n場所は当店の所在地は〇〇です。詳しい住所をお知りになりたい場合はお知らせください。'
+}
+### MESSAGE SERVICE IN ### {
+  rid: 'no_rid',
+  v35CompanyId: 'kanai_suit',
+  v35MatchedCompanyId: 'kanai_suit',
+  v35TopicLabel: 'オーダースーツ金井',
+  v35CurrentCompanyId: 'kanai_suit',
+  v35IsConversationContinuing: true
+}
+### MESSAGE SERVICE NORMALIZED ### {
+  rid: 'no_rid',
+  finalCompanyId: 'kanai_suit',
+  finalMatchedCompanyId: 'kanai_suit',
+  topicLabel: 'オーダースーツ金井',
+  historyCount: 4
+}
+### MESSAGE SERVICE OUT ### {
+  rid: 'no_rid',
+  successCompanyId: 'kanai_suit',
+  successMatchedCompanyId: 'kanai_suit',
+  successTopicLabel: 'オーダースーツ金井',
+  successCurrentCompanyId: 'kanai_suit'
+}
+[3] PAYLOAD > {
+  "botId": "test-bot-v36",
+  "userId": "user-v36-005",
+  "text": "場所はどこ？",
+  "replyToken": "dummy-reply-token",
+  "lineUserName": "ローカルテスト太郎",
+  "sourceType": "user_message",
+  "testMode": true,
+  "isLocalTest": true
+}
+[3] AI   > v36 reply
+[3] RESULT > PASS
+
+--- scenario summary ---
+name   : 会話継続の最重要確認 3ターン
+passed : 2
+failed : 1
+
+================================================================================
+ALL SUMMARY
+================================================================================
+テーマ無し -> スーツ金井 -> 駐車場 継続 | passed=1 failed=1
+法律へ遷移 -> 継続確認 | passed=1 failed=1
+ワイン -> 継続 -> テーマ外で解除されるか | passed=2 failed=1
+テーマ無し一般質問 | passed=1 failed=0
+会話継続の最重要確認 3ターン | passed=2 failed=1
+
+TOTAL
+passed=7
+failed=4
+
+START: 2026-04-11T13:14:45.114Z
+END  : 2026-04-11T13:15:51.078Z
+SEC  : 66

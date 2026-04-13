@@ -1,5 +1,70 @@
 "use strict";
 
+/**
+ * ============================================================
+ * V35 CORE ENGINE - SINGLE SOURCE OF TRUTH
+ * ============================================================
+ *
+ * 【役割】
+ * このファイルは「会話の最終意思決定」を担う唯一の中核である。
+ *
+ * 決定対象:
+ * - companyId（最終確定）
+ * - topicLabel（表示テーマ）
+ * - replyText（ユーザー返答）
+ *
+ * 上記3つはこのファイルの出力のみを正本とする。
+ *
+ * ============================================================
+ * 【絶対ルール（破ると齟齬が発生する）】
+ *
+ * 1. 外部で意思決定をしない
+ *    - messageService は絶対に companyId / topicLabel を決めない
+ *    - 他ファイルで補正・上書きしない
+ *
+ * 2. このファイルが唯一の決定者
+ *    - resolveFinalCompanyId()
+ *    - resolveFinalTopicLabel()
+ *    - buildFinalReplyText()
+ *    → この3箇所が最終決定ロジック
+ *
+ * 3. 判定ロジックの重複禁止
+ *    - classifyMessage 等で company 判定をしない
+ *    - 判定は必ず runJudgeAI → normalizeJudgeResult に集約
+ *
+ * 4. データの正本は常にここ
+ *    - companyId は normalizeCompanyId 済みを使う
+ *    - matchedCompanyId / currentCompanyId の再解釈禁止
+ *
+ * 5. 文脈補完は最小限
+ *    - currentCompanyId は「最後の保険」
+ *    - fresh candidate がある場合は絶対に使わない
+ *
+ * 6. 表示と内部IDを混同しない
+ *    - topicLabel は表示専用
+ *    - companyId は内部ID
+ *    - 相互変換は findTopicLabelByCompanyId のみ使用
+ *
+ * ============================================================
+ * 【設計禁止事項】
+ *
+ * - messageService 側で companyId を再決定する
+ * - buildReply 側で topicLabel を付け替える
+ * - 他サービスで conversationContinuing を上書きする
+ * - 複数箇所で company 判定ロジックを書く
+ *
+ * ============================================================
+ * 【設計意図】
+ *
+ * 「意思決定を一箇所に固定することで齟齬を防ぐ」
+ *
+ * このファイルを壊す変更は、
+ * “全会話ロジックに影響する変更” として扱うこと。
+ *
+ * ============================================================
+ */
+
+
 const { collectV35Context } = require("./collectV35Context");
 const { buildV35Prompt, DEFAULT_TOPIC_LABEL } = require("./buildV35Prompt");
 const {

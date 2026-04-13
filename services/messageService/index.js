@@ -1,24 +1,149 @@
 "use strict";
 
 /**
- * services/messageService/index.js
+ * ============================================
+ * 🔒 messageService/index.js 契約（V3.6+固定）
+ * ============================================
  *
- * V3.6 接続版
+ * 【役割（絶対遵守）】
+ * このファイルは「司令塔」であり、以下のみを行う。
  *
- * 役割:
- * - LINE handler から受けた userMessage を V3.6 へ渡す
- * - 会話履歴を取得して V35 に渡す
- * - V3.6の返答を conversation_history に保存する
- * - handler が使う replyText を返す
+ * 1. 入力受け取り
+ *    - userMessage
+ *    - userId
+ *    - bot_id
+ *    - rid
  *
- * 方針:
- * - 会話ロジック本体は services/v35/ に集約
- * - 会話継続に必要な履歴取得だけをここで行う
- * - messageService は入口と保存に絞る
+ * 2. 会話履歴取得
+ *    - historyService から履歴を取得する
+ *    - 履歴の意味判断はしない
+ *
+ * 3. 履歴整形処理の呼び出し
+ *    - normalizeConversationHistory を呼ぶ
+ *    - 自分では normalize ルールを持たない
+ *
+ * 4. AIコア呼び出し
+ *    - runV35 を呼ぶ
+ *    - 会話の最終判断は V35 に委譲する
+ *
+ * 5. 結果保存
+ *    - conversation_history へ user_message / ai_reply を保存する
+ *    - 保存値は V35 の最終結果をそのまま使う
+ *
+ * 6. handler返却形式へ整形
+ *    - buildReply を使って返却データを組み立てる
+ *    - ただし companyId / topicLabel の再決定はしない
+ *
+ * --------------------------------------------
+ * 【このファイルが絶対にやってはいけないこと】
+ *
+ * ❌ AIロジックの実装
+ *    - 判断
+ *    - 分類
+ *    - 推論
+ *
+ * ❌ company判定ロジックの実装
+ * ❌ topicLabel 決定ロジックの実装
+ * ❌ 会話継続ロジックの実装
+ * ❌ prompt生成ロジックの実装
+ * ❌ V35結果の補正・上書き
+ * ❌ currentCompanyId / matchedCompanyId の再解釈
+ *
+ * ❌ 会話意味に関わるデータ変換ロジックの新規追加
+ *    例:
+ *    - companyId の補正
+ *    - topicLabel の生成
+ *    - 継続判定の追加
+ *    - normalize rule の追加
+ *
+ * ❌ if / switch による条件分岐の肥大化
+ *
+ * → 上記はすべて外部サービスへ委譲すること。
+ *
+ * --------------------------------------------
+ * 【責務境界（どこに書くべきか）】
+ *
+ * - AI判断 / 分類 / 会話ロジック / 最終意思決定
+ *   → services/v35/
+ *
+ * - 履歴取得 / 保存
+ *   → services/historyService
+ *
+ * - 履歴整形（shape の統一）
+ *   → services/conversationContext/normalizeConversationHistory
+ *
+ * - 返信データ整形（handler返却用）
+ *   → services/messageService/buildReply
+ *
+ * --------------------------------------------
+ * 【設計原則】
+ *
+ * - このファイルは「薄く保つ」ことが最重要
+ * - 1ファイル1責務（司令塔のみ）
+ * - ここは「考える場所」ではなく「流す場所」
+ * - 変更理由の大半は runV35 側で解決する
+ * - index.js に判断ロジックを足す = 設計負債
+ *
+ * --------------------------------------------
+ * 【正本ルール】
+ *
+ * - companyId の正本
+ *   → runV35().data.companyId
+ *
+ * - matchedCompanyId の正本
+ *   → runV35().data.matchedCompanyId
+ *
+ * - topicLabel の正本
+ *   → runV35().data.topicLabel
+ *
+ * - replyText の正本
+ *   → runV35().data.replyText
+ *
+ * このファイルは上記を再決定しない。
+ * 再注入しない。
+ * 上書きしない。
+ *
+ * --------------------------------------------
+ * 【このファイルで許される処理】
+ *
+ * ✅ 入力チェック
+ * ✅ 履歴取得
+ * ✅ normalizeConversationHistory の呼び出し
+ * ✅ runV35 の呼び出し
+ * ✅ 保存
+ * ✅ ログ出力
+ * ✅ handler返却用データ整形
+ *
+ * ※ ただし「意味判断」を含まないこと。
+ *
+ * --------------------------------------------
+ * 【異常検知ルール】
+ *
+ * 以下が発生したら設計崩れのサイン。
+ *
+ * - 修正回数が急増（目安: 月10回超）
+ * - if文 / switch文 が増え続ける
+ * - 100行以上のロジック追加が必要になる
+ * - 「ここで少し判定した方が早い」が出てくる
+ * - V35の結果をここで補正したくなる
+ * - normalizeConversationHistory に無い変換をここへ足したくなる
+ *
+ * → その変更はこのファイルではなく、
+ *   v35 / conversationContext / 専用サービスへ切り出すこと。
+ *
+ * --------------------------------------------
+ * 【最重要メッセージ】
+ *
+ * 👉 index.js は「考えるな、指示だけ出せ」
+ * 👉 入口で賢くなるな。司令塔のままでいろ。
+ *
+ * ============================================
  */
-
 const { log, error: logError } = require("../../utils/logger");
 const { success, fail } = require("../../utils/serviceResponse");
+const {
+  normalizeConversationHistory,
+} = require("../conversationContext/normalizeConversationHistory");
 
 const {
   saveConversationHistory,
@@ -35,64 +160,6 @@ log("📦 messageService/index.js loaded:", new Date().toISOString());
 
 const DEFAULT_HISTORY_LIMIT = 8;
 
-/**
- * 取得履歴を V35 に渡しやすい形へ整える
- * repository / historyService 側の返り値揺れをここで吸収する
- */
-function normalizeConversationHistory(items = []) {
-  if (!Array.isArray(items)) {
-    return [];
-  }
-
-  return items
-    .map((item) => {
-      const sourceType = String(
-        item?.sourceType || item?.source_type || item?.type || ""
-      ).trim();
-
-      let role = "unknown";
-      if (sourceType === "user_message") role = "user";
-      if (sourceType === "ai_reply" || sourceType === "admin_message") {
-        role = "assistant";
-      }
-
-      const text = String(
-        item?.userMessage ||
-          item?.user_message ||
-          item?.aiReply ||
-          item?.ai_reply ||
-          item?.text ||
-          item?.message ||
-          ""
-      ).trim();
-
-      const companyId = String(
-        item?.companyId ||
-          item?.company_id ||
-          item?.matchedCompanyId ||
-          item?.matched_company_id ||
-          ""
-      ).trim();
-
-      const companyName = String(
-        item?.companyName ||
-          item?.company_name ||
-          item?.matchedCompanyName ||
-          item?.matched_company_name ||
-          ""
-      ).trim();
-
-      return {
-        role,
-        text,
-        companyId,
-        companyName,
-        sourceType,
-        timestamp: item?.timestamp || "",
-      };
-    })
-    .filter((item) => item.text);
-}
 
 /**
  * 会話履歴を取得する
