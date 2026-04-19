@@ -21,6 +21,7 @@ const { log, error: logError } = require("../utils/logger");
 const axios = require("axios");
 
 const { processMessage } = require("../services/messageService/index");
+const { executeCommand } = require("../services/commandService");
 const lineSender = require("../modules/lineSender");
 
 log("📦 handler.js loaded:", new Date().toISOString());
@@ -74,6 +75,36 @@ const handleEvent = async (event, ctx = {}) => {
     const bot_id = process.env.BOT_ID || "voice-ai-dashboard";
 
     const userId = event.source?.userId || "";
+
+    /**
+     * コマンド処理
+     * ユーザー入力がコマンドかどうか先に判定
+     */
+    const commandResult = await executeCommand({
+      botId: bot_id,
+      userId,
+      text: userText,
+    });
+
+    if (commandResult?.success && commandResult?.data?.handled) {
+      const replyText = commandResult.data.replyText || "受け付けました。";
+
+      const sendResult = await lineSender.sendReply(
+        event.replyToken,
+        [
+          {
+            type: "text",
+            text: replyText,
+          },
+        ]
+      );
+
+      if (!sendResult?.success) {
+        logError(`❌ [${rid}] LINE send failed:`, sendResult?.message || "unknown error");
+      }
+
+      return;
+    }
 
     /**
      * messageService 呼び出し

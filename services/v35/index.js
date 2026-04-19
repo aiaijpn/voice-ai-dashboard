@@ -516,6 +516,7 @@ async function runV35(input = {}) {
   const bot_id = toSafeString(input.bot_id) || "voice-ai-dashboard";
   const userId = toSafeString(input.userId);
   const userMessage = toSafeString(input.userMessage);
+  const forcedTheme = toSafeString(input.forcedTheme);
 
   try {
     const contextResult = await collectV35Context({
@@ -526,7 +527,16 @@ async function runV35(input = {}) {
 
     if (!contextResult.success) throw new Error(contextResult.message);
 
-    const rawContext = contextResult.data;
+    let rawContext = contextResult.data;
+
+    if (forcedTheme) {
+      rawContext = {
+        ...rawContext,
+        currentCompanyId: forcedTheme,
+        isConversationContinuing: true,
+      };
+    }
+
     const context = ensureContinuingCompanyCandidate(rawContext);
 
     const judgePhase = await runJudgeAI({

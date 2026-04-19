@@ -154,6 +154,7 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
+const { getCommandState } = require("../commandStateService");
 const { runConversationEngine } = require("../conversationEngine");
 
 const {
@@ -288,6 +289,19 @@ async function processMessage(context = {}) {
       : [];
 
     /**
+     * コマンド状態取得
+     * - ユーザーが設定したエンジン・テーマを反映
+     */
+    const commandStateResult = await getCommandState({
+      botId: bot_id,
+      userId,
+    });
+
+    const commandState = commandStateResult?.success
+      ? commandStateResult.data
+      : { currentEngine: "v35", currentTheme: "" };
+
+    /**
      * 1. 会話エンジン実行
      * - 実際に v35 / v37 のどちらを呼ぶかは conversationEngine に委譲する
      */
@@ -297,6 +311,8 @@ async function processMessage(context = {}) {
       userId,
       userMessage,
       conversationHistory,
+      currentEngine: commandState.currentEngine || "v35",
+      forcedTheme: commandState.currentTheme || "",
     });
 
     if (!engineResult?.success) {

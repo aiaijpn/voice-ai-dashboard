@@ -16,7 +16,12 @@ const { success, fail } = require("../../utils/serviceResponse");
 const { runV35 } = require("../v35");
 const { runV37 } = require("../v37");
 
-function getEngineVersion() {
+function getEngineVersion(params = {}) {
+  const fromParams = String(params.currentEngine || "").trim().toLowerCase();
+  if (fromParams) {
+    return fromParams;
+  }
+
   return String(process.env.CONVERSATION_ENGINE_VERSION || "v35")
     .trim()
     .toLowerCase();
@@ -35,7 +40,21 @@ function normalizeEngineData(result = {}) {
 
 async function runConversationEngine(params = {}) {
   try {
-    const engineVersion = getEngineVersion();
+    const engineVersion = getEngineVersion(params);
+
+    if (engineVersion === "off") {
+      return success(
+        {
+          replyText: "OFFです。AI会話は停止中です。",
+          topicLabel: "【OFF】",
+          companyId: null,
+          matchedCompanyId: null,
+          currentCompanyId: null,
+          isConversationContinuing: false,
+        },
+        "conversation engine ok: off"
+      );
+    }
 
     let rawResult = null;
 

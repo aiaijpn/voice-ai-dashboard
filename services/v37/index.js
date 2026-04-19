@@ -22,15 +22,27 @@ async function runV37({
   userId,
   userMessage,
   conversationHistory = [],
+  forcedTheme = "",
 }) {
   try {
-    const companyResult = await resolveCompany({
-      rid,
-      bot_id,
-      userId,
-      userMessage,
-      conversationHistory,
-    });
+    let companyResult = null;
+
+    if (forcedTheme) {
+      companyResult = {
+        resolvedCompanyId: String(forcedTheme).trim(),
+        needsClarification: false,
+        topicLabel: "",
+        isConversationContinuing: true,
+      };
+    } else {
+      companyResult = await resolveCompany({
+        rid,
+        bot_id,
+        userId,
+        userMessage,
+        conversationHistory,
+      });
+    }
 
     let wikiAnswer = null;
 
