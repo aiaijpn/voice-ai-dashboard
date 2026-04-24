@@ -2,16 +2,18 @@
 
 const { success, fail } = require("../../utils/serviceResponse");
 const { parseCommand } = require("./parseCommand");
+const { normalizeCompanyId } = require("../company/companyIdNormalizer");
 const {
-  normalizeCompanyId,
-} = require("../company/companyIdNormalizer");
+  getCompaniesForFixedTheme,
+  getCompanyById,
+} = require("../company/companyMasterReader");
 const {
   getCommandState,
   setCurrentEngine,
   setCurrentTheme,
 } = require("../commandStateService");
 
-const THEME_ALIAS_MAP = {
+const STATIC_THEME_ALIAS_MAP = {
   "金井": "kanai_suit",
   "スーツ金井": "kanai_suit",
   "オーダースーツ金井": "kanai_suit",
@@ -20,18 +22,95 @@ const THEME_ALIAS_MAP = {
   "池田法律相談": "ikeda_law",
 };
 
-const THEME_LABEL_MAP = {
+const STATIC_THEME_LABEL_MAP = {
   kanai_suit: "オーダースーツ金井",
   ikeda_law: "池田法律相談",
 };
 
-function getThemeLabel(companyId = "") {
-  return THEME_LABEL_MAP[String(companyId || "").trim()] || "なし";
+function toSafeString(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value).trim();
 }
 
-function buildStateReply(state = {}) {
+function normalizeThemeName(value = "") {
+  return toSafeString(value).replace(/[ 　]+/g, "").toLowerCase();
+}
+
+function buildThemeCandidateNames(company = {}) {
+  return Array.from(
+    new Set(
+      [
+        company.displayName,
+        company.shortName,
+        company.name,
+        ...(Array.isArray(company.aliases) ? company.aliases : []),
+      ]
+        .map((item) => toSafeString(item))
+        .filter(Boolean)
+    )
+  );
+}
+
+function isThemeNameMatch(themeName = "", company = {}) {
+  const normalizedInput = normalizeThemeName(themeName);
+
+  if (!normalizedInput) {
+    return false;
+  }
+
+  const candidates = buildThemeCandidateNames(company);
+
+  return candidates.some((candidate) => {
+    const normalizedCandidate = normalizeThemeName(candidate);
+
+    if (!normalizedCandidate) {
+      return false;
+    }
+
+    return (
+      normalizedCandidate === normalizedInput ||
+      normalizedCandidate.includes(normalizedInput) ||
+      normalizedInput.includes(normalizedCandidate)
+    );
+  });
+}
+
+async function getFixedThemeCompaniesSafe() {
+  try {
+    return await getCompaniesForFixedTheme();
+  } catch (_error) {
+    return [];
+  }
+}
+
+async function getThemeLabel(companyId = "") {
+  const normalizedCompanyId = normalizeCompanyId(companyId);
+
+  if (!normalizedCompanyId) {
+    return "なし";
+  }
+
+  try {
+    const company = await getCompanyById(normalizedCompanyId);
+
+    if (company?.displayName) {
+      return company.displayName;
+    }
+  } catch (_error) {
+    // Fall back to the static label map when the reader is unavailable.
+  }
+
+  return STATIC_THEME_LABEL_MAP[normalizedCompanyId] || "なし";
+}
+
+async function buildStateReply(state = {}) {
   const engine = String(state.currentEngine || "v35").toUpperCase();
-  const theme = state.currentTheme ? getThemeLabel(state.currentTheme) : "なし";
+  const theme = state.currentTheme
+    ? await getThemeLabel(state.currentTheme)
+    : "なし";
 
   return [
     "【現在の状態】",
@@ -45,23 +124,23 @@ function buildCommandListReply() {
     "【コマンド一覧】",
     "",
     "■ 基本",
-    "・＊コマンド：この一覧を表示",
-    "・＊使い方：使い方を表示",
-    "・＊状態：現在の設定を表示",
-    "・＊テーマ：現在の固定テーマを表示",
+    "・＊コマンド: この一覧を表示",
+    "・＊使い方: 使い方を表示",
+    "・＊状態: 現在の設定を表示",
+    "・＊テーマ: 現在の固定テーマを表示",
     "",
     "■ エンジン",
-    "・＊エンジン：エンジン一覧",
-    "・＊V37：安全ガード型エンジン",
-    "・＊V381：テーマ固定wiki判定エンジン",
-    "・＊通常：通常会話へ戻す",
+    "・＊エンジン: エンジン一覧",
+    "・＊V37: 安全ガード型エンジン",
+    "・＊V381: テーマ固定wiki判定エンジン",
+    "・＊通常: 通常会話へ戻す",
     "",
     "■ テーマ固定",
-    "・＊テーマ一覧：固定可能テーマ一覧",
-    "・＊固定 金井：金井に固定",
-    "・＊固定 池田：池田法律に固定",
-    "・＊解除：テーマ固定解除の確認",
-    "・＊解除する：テーマ固定を解除",
+    "・＊テーマ一覧: 固定可能テーマ一覧",
+    "・＊固定 金井: 金井に固定",
+    "・＊固定 池田: 池田法律に固定",
+    "・＊解除: テーマ固定解除の確認",
+    "・＊解除する: テーマ固定を解除",
     "",
     "まずは「＊状態」で現在設定を確認できます。",
   ].join("\n");
@@ -75,13 +154,13 @@ function buildUsageReply() {
     "",
     "コマンドを使うときは、先頭に ＊ を付けます。",
     "",
-    "例：",
+    "例:",
     "・＊状態",
     "・＊テーマ一覧",
     "・＊固定 金井",
     "・＊解除",
     "",
-    "現在のおすすめ手順：",
+    "現在のおすすめ手順:",
     "1. ＊V381",
     "2. ＊固定 金井",
     "3. 質問する",
@@ -89,14 +168,31 @@ function buildUsageReply() {
   ].join("\n");
 }
 
-function buildThemeListReply() {
+async function buildThemeListReply() {
+  const companies = await getFixedThemeCompaniesSafe();
+
+  if (companies.length > 0) {
+    const lines = companies
+      .map((company) => {
+        const shortName = toSafeString(company.shortName) || company.displayName;
+        return `・${shortName}: ${company.displayName}`;
+      })
+      .filter(Boolean);
+
+    return [
+      "【固定可能テーマ一覧】",
+      "",
+      ...lines,
+    ].join("\n");
+  }
+
   return [
     "【固定可能テーマ一覧】",
     "",
-    "・金井：オーダースーツ金井",
-    "・池田：池田法律相談",
+    "・金井: オーダースーツ金井",
+    "・池田: 池田法律相談",
     "",
-    "例：",
+    "例:",
     "＊固定 金井",
     "＊固定 池田",
   ].join("\n");
@@ -106,23 +202,40 @@ function buildEngineListReply() {
   return [
     "【エンジン一覧】",
     "",
-    "・＊V37：安全ガード型エンジン",
-    "・＊V381：テーマ固定wiki判定エンジン",
-    "・＊通常：通常会話へ戻す",
-    "・＊OFF：AI応答停止",
+    "・＊V37: 安全ガード型エンジン",
+    "・＊V381: テーマ固定wiki判定エンジン",
+    "・＊通常: 通常会話へ戻す",
+    "・＊OFF: AI応答停止",
     "",
     "現在の状態は「＊状態」で確認できます。",
   ].join("\n");
 }
 
-function buildShowThemeReply(state = {}) {
-  const theme = state.currentTheme ? getThemeLabel(state.currentTheme) : "なし";
-  return `現在のテーマ固定：${theme}`;
+async function buildShowThemeReply(state = {}) {
+  const theme = state.currentTheme
+    ? await getThemeLabel(state.currentTheme)
+    : "なし";
+
+  return `現在のテーマ固定: ${theme}`;
 }
 
-function resolveThemeNameToCompanyId(themeName = "") {
-  const key = String(themeName || "").trim();
-  return normalizeCompanyId(THEME_ALIAS_MAP[key] || "");
+async function resolveThemeNameToCompanyId(themeName = "") {
+  const safeThemeName = toSafeString(themeName);
+
+  if (!safeThemeName) {
+    return "";
+  }
+
+  const companies = await getFixedThemeCompaniesSafe();
+  const matchedCompany = companies.find((company) =>
+    isThemeNameMatch(safeThemeName, company)
+  );
+
+  if (matchedCompany?.companyId) {
+    return normalizeCompanyId(matchedCompany.companyId);
+  }
+
+  return normalizeCompanyId(STATIC_THEME_ALIAS_MAP[safeThemeName] || "");
 }
 
 async function executeCommand({ botId, userId, text }) {
@@ -167,7 +280,7 @@ async function executeCommand({ botId, userId, text }) {
     return success(
       {
         handled: true,
-        replyText: buildStateReply(stateResult.data),
+        replyText: await buildStateReply(stateResult.data),
       },
       "state shown"
     );
@@ -183,7 +296,7 @@ async function executeCommand({ botId, userId, text }) {
     return success(
       {
         handled: true,
-        replyText: buildShowThemeReply(stateResult.data),
+        replyText: await buildShowThemeReply(stateResult.data),
       },
       "theme shown"
     );
@@ -193,7 +306,7 @@ async function executeCommand({ botId, userId, text }) {
     return success(
       {
         handled: true,
-        replyText: buildThemeListReply(),
+        replyText: await buildThemeListReply(),
       },
       "theme list shown"
     );
@@ -262,7 +375,7 @@ async function executeCommand({ botId, userId, text }) {
           "現在テーマの自動固定は未実装です。",
           "固定する場合は、次のように入力してください。",
           "",
-          "例：",
+          "例:",
           "＊固定 金井",
           "＊固定 池田",
         ].join("\n"),
@@ -272,13 +385,13 @@ async function executeCommand({ botId, userId, text }) {
   }
 
   if (command.type === "set_theme") {
-    const companyId = resolveThemeNameToCompanyId(command.themeName);
+    const companyId = await resolveThemeNameToCompanyId(command.themeName);
 
     if (!companyId) {
       return success(
         {
           handled: true,
-          replyText: `テーマ「${command.themeName}」は未登録です。`,
+          replyText: `テーマ「${command.themeName}」は未対応です。`,
         },
         "theme not found"
       );
@@ -293,7 +406,7 @@ async function executeCommand({ botId, userId, text }) {
     return success(
       {
         handled: true,
-        replyText: `テーマを「${getThemeLabel(companyId)}」に固定しました。`,
+        replyText: `テーマを「${await getThemeLabel(companyId)}」に固定しました。`,
       },
       "theme set"
     );
@@ -310,5 +423,8 @@ async function executeCommand({ botId, userId, text }) {
 module.exports = {
   executeCommand,
   buildStateReply,
+  buildShowThemeReply,
+  buildThemeListReply,
+  getThemeLabel,
   resolveThemeNameToCompanyId,
 };

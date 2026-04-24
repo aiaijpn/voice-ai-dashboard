@@ -1,22 +1,123 @@
-V3.9-3.2 として、conversation_history の blank company_id を既知の過去履歴空欄として運用メモ化してください。
+# V3.9-3.2 company_id 整合運用メモ
 
-目的：
-company_id 整合監査は PASS しているが、conversation_history には旧仕様・テスト・会社未確定会話由来の blank company_id が残っている。
-これを無理に補正せず、既知の過去データとして扱う方針を明文化する。
+## 1. 目的
 
-記載候補：
-- docs/adr/ または docs/operation/
-- 既存の V3.9 メモがあればそこに追記
+- company_id 整合監査が PASS した現在状態を基準化する
+- blank company_id は無理に補正しない方針を明文化する
 
-書く内容：
-1. blank company_id は一括補正しない
-2. 理由：旧仕様、テスト行、会社未確定会話、雑談が混在するため
-3. 今後の正本は company_master の company_id
-4. legacy alias は補正済み
-5. audit-company-id-consistency.js は PASS
-6. 今後の分析では、blank company_id は「会社未確定または旧履歴」として扱う
+## 2. 対象
 
-出力形式：
-A. 作成/修正したメモファイル
-B. 記載内容の要約
-C. 次の最小一手
+- company_master
+- company_wiki
+- question_stock
+- conversation_history
+- data/companyMaster.js
+- data/answerRules.js
+- tmp/audit-company-id-consistency.js
+
+## 3. 現在の基準状態
+
+完了済み補正:
+
+- data/companyMaster.js の旧 company_id を live company_master に寄せた
+- data/answerRules.js の linked_company_id を live company_master に寄せた
+- question_stock の local_test_company テスト行を除去した
+- divider 行は非company要素として company_id 監査対象から除外した
+- conversation_history の legacy alias を補正した
+  - kanai_suits -> kanai_suit
+  - ikeda_legal -> ikeda_law
+
+## 4. 監査コマンド
+
+```powershell
+node tmp/audit-company-id-consistency.js
+```
+
+現在の期待結果:
+
+- status: PASS
+- unknown_ids_found: []
+- legacy_alias_ids_found: []
+- diffs_against_company_master: 全 source で空
+
+## 5. company_id の正本
+
+company_id の正本は live company_master の company_id とする。
+
+正規 company_id:
+
+- club_shamisen
+- ikeda_law
+- kanai_suit
+- nishikawa_beauty
+- ogata_souzoku
+- ozawa_wine
+- yabuki_shamisen
+- takamura_ai
+
+## 6. blank company_id の扱い
+
+conversation_history には blank company_id の過去行が残っている。
+これは補正対象にしない。
+
+理由:
+
+- 旧仕様時代の履歴が混在している
+- テスト行、雑談行、会社未確定会話が含まれる
+- 後から company_id を推定して埋めると誤補正リスクが高い
+- legacy alias 補正後、会社別集計に必要な正規IDは確保できている
+
+扱い:
+
+- データ異常ではなく「既知の過去履歴空欄」として扱う
+- 監査上の参考情報としては残す
+- FAIL / WARN 判定の主因にはしない
+
+## 7. 補正対象としないもの
+
+以下は company_id 補正対象にしない。
+
+- blank company_id
+- 雑談行
+- テスト行
+- OFF 応答
+- clarification 応答
+- 会社未確定の過去履歴
+
+## 8. 今後の運用ルール
+
+- 新規保存される company_id は live company_master の正規IDを使う
+- 旧 alias は、保存前または履歴読込時に normalizer で正規化する
+- blank company_id は今後の新規保存では減らす
+- ただし、過去履歴の blank company_id は無理に埋めない
+- company_id 整合確認は tmp/audit-company-id-consistency.js で定期的に確認する
+- company_master に存在しない company_id を wiki / question_stock / answerRules に入れない
+
+## 9. 次に見るべき観点
+
+次フェーズは V3.9-4: company_master 正本の段階接続 とする。
+
+優先順:
+
+1. company_master を読む共通 reader の段階接続
+2. show_in_list の運用接続
+3. allow_fixed_theme の運用接続
+4. allow_wiki の運用接続
+5. allow_question_stock の運用接続
+6. commandService や表示名解決の company_master 駆動化
+
+
+
+---
+
+## V3.9-4.4 allow_wiki / allow_question_stock 監査
+
+### 目的
+
+`company_master` の `allow_wiki` / `allow_question_stock` と、  
+`company_wiki` / `question_stock` の実データ `company_id` が矛盾していないか確認する。
+
+### 実行コマンド
+
+```powershell
+node tmp/audit-company-allow-flags.js
