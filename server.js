@@ -1,5 +1,8 @@
 ﻿"use strict";
 
+require("dotenv").config();
+
+
 const { log, error: logError } = require("./utils/logger");
 
 const express = require("express");
