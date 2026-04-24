@@ -3,6 +3,9 @@
 const { success, fail } = require("../../utils/serviceResponse");
 const { parseCommand } = require("./parseCommand");
 const {
+  normalizeCompanyId,
+} = require("../company/companyIdNormalizer");
+const {
   getCommandState,
   setCurrentEngine,
   setCurrentTheme,
@@ -119,7 +122,7 @@ function buildShowThemeReply(state = {}) {
 
 function resolveThemeNameToCompanyId(themeName = "") {
   const key = String(themeName || "").trim();
-  return THEME_ALIAS_MAP[key] || "";
+  return normalizeCompanyId(THEME_ALIAS_MAP[key] || "");
 }
 
 async function executeCommand({ botId, userId, text }) {

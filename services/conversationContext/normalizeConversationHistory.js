@@ -1,5 +1,9 @@
 "use strict";
 
+const {
+  normalizeCompanyId,
+} = require("../company/companyIdNormalizer");
+
 /**
  * ============================================================
  * normalizeConversationHistory
@@ -160,12 +164,14 @@ function extractHistoryText(item = {}) {
  * @returns {string}
  */
 function extractCompanyId(item = {}) {
-  return toSafeString(
+  return normalizeCompanyId(
+    toSafeString(
     item?.companyId ||
       item?.company_id ||
       item?.matchedCompanyId ||
       item?.matched_company_id ||
       ""
+    )
   );
 }
 
