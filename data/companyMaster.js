@@ -23,7 +23,7 @@ const companyMaster = [
   // 三味線ファンクラブ 矢吹
   // ===============================
   {
-    id: "yabuki_fanclub", // 一意ID（将来DB化時の主キー候補）
+    id: "club_shamisen", // live company_master に合わせた正規ID
     type: "company", // company / divider
 
     name: "三味線ファンクラブ 矢吹", // 正式名称（内部・将来用）
@@ -131,7 +131,7 @@ const companyMaster = [
   // 西川ヘレン美容医療院
   // ===============================
   {
-    id: "nishikawa_helen",
+    id: "nishikawa_beauty",
     type: "company",
     name: "西川ヘレン美容医療院",
     display_name: "西川ヘレン美容医療院",
@@ -173,7 +173,7 @@ const companyMaster = [
   // ザ・ワインベース銀座
   // ===============================
   {
-    id: "winebase_ginza",
+    id: "ozawa_wine",
     type: "company",
     name: "ザ・ワインベース銀座",
     display_name: "ザ・ワインベース銀座",
@@ -194,7 +194,7 @@ const companyMaster = [
   // 区切り線（UI用）
   // ===============================
   {
-    id: "divider_01",
+    id: "",
     type: "divider",
     label: "--------------------",
     show_in_list: true,

@@ -32,7 +32,7 @@ const answerRules = [
     question_example: "おすすめのクラブは？",
     preferred_answer:
       "三味線ファンクラブ矢吹があります。和の文化に触れられる場です。",
-    linked_company_id: "yabuki_fanclub",
+    linked_company_id: "club_shamisen",
     priority: 100,
     is_active: true,
   },
@@ -112,7 +112,7 @@ const answerRules = [
     question_example: "接待で使えるお店ある？",
     preferred_answer:
       "ザ・ワインベース銀座があります。接客や会話の場としても使いやすいワインバーです。",
-    linked_company_id: "winebase_ginza",
+    linked_company_id: "ozawa_wine",
     priority: 90,
     is_active: true,
   },

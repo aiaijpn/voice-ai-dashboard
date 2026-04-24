@@ -201,10 +201,12 @@ async function fetchSheetSource(sourceName, sheets) {
 function fetchStaticCompanyMasterSource() {
   try {
     const items = Array.isArray(companyMaster)
-      ? companyMaster.map((item, index) => ({
-          row_number: index + 1,
-          raw_id: toSafeString(item?.id),
-        }))
+      ? companyMaster
+          .filter((item) => String(item?.type || "").trim() !== "divider")
+          .map((item, index) => ({
+            row_number: index + 1,
+            raw_id: toSafeString(item?.id),
+          }))
       : [];
 
     return {

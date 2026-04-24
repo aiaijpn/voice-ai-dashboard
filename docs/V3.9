@@ -1,0 +1,22 @@
+V3.9-3.2 として、conversation_history の blank company_id を既知の過去履歴空欄として運用メモ化してください。
+
+目的：
+company_id 整合監査は PASS しているが、conversation_history には旧仕様・テスト・会社未確定会話由来の blank company_id が残っている。
+これを無理に補正せず、既知の過去データとして扱う方針を明文化する。
+
+記載候補：
+- docs/adr/ または docs/operation/
+- 既存の V3.9 メモがあればそこに追記
+
+書く内容：
+1. blank company_id は一括補正しない
+2. 理由：旧仕様、テスト行、会社未確定会話、雑談が混在するため
+3. 今後の正本は company_master の company_id
+4. legacy alias は補正済み
+5. audit-company-id-consistency.js は PASS
+6. 今後の分析では、blank company_id は「会社未確定または旧履歴」として扱う
+
+出力形式：
+A. 作成/修正したメモファイル
+B. 記載内容の要約
+C. 次の最小一手
