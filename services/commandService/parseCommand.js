@@ -1,76 +1,133 @@
 "use strict";
 
-/**
- * テキストを正規化する
- * 空値をチェックして、前後の空白を除去する
- * @param {string} text - 正規化対象のテキスト
- * @returns {string} 正規化されたテキスト
- */
 function normalizeText(text = "") {
   return String(text || "").trim();
 }
 
-/**
- * コマンド文字列をパースして、コマンドオブジェクトを返す
- * テーマ設定、エンジン切り替え、状態表示などのコマンドに対応
- * @param {string} text - パース対象のテキスト
- * @returns {object|null} パースされたコマンドオブジェクト、または null
- */
+function stripPrefix(text = "") {
+  return String(text || "").replace(/^[＊*]/, "").trim();
+}
+
+function hasCommandPrefix(text = "") {
+  return String(text || "").startsWith("＊") || String(text || "").startsWith("*");
+}
+
 function parseCommand(text = "") {
   const raw = normalizeText(text);
-  const upper = raw.toUpperCase();
 
-  // 空文字列の場合はコマンドなしと判定
   if (!raw) {
     return null;
   }
 
-  // エンジン設定: v35エンジンに切り替え
+  const prefixed = hasCommandPrefix(raw);
+  const commandText = prefixed ? stripPrefix(raw) : raw;
+  const upper = commandText.toUpperCase();
+
+  if (!commandText) {
+    return null;
+  }
+
   if (upper === "V35") {
     return { type: "set_engine", engine: "v35" };
   }
 
-  // エンジン設定: v37エンジンに切り替え
   if (upper === "V37") {
     return { type: "set_engine", engine: "v37" };
   }
 
-  // エンジン設定: エンジンをオフにする
+  if (upper === "V381" || upper === "V3.81") {
+    return { type: "set_engine", engine: "v381" };
+  }
+
   if (upper === "OFF") {
     return { type: "set_engine", engine: "off" };
   }
 
-  // 状態表示コマンド: 現在の状態を表示
-  if (raw === "状態") {
+  if (commandText === "通常") {
+    return { type: "set_engine", engine: "v35" };
+  }
+
+  if (commandText === "状態") {
     return { type: "show_state" };
   }
 
-  // テーマクリアコマンド: 現在のテーマ設定を解除
-  if (raw === "テーマ解除") {
+  if (prefixed && commandText === "テーマ") {
+    return { type: "show_theme" };
+  }
+
+  if (prefixed && (commandText === "テーマ一覧" || commandText === "会社一覧")) {
+    return { type: "show_theme_list" };
+  }
+
+  if (prefixed && (commandText === "エンジン" || commandText === "エンジン一覧")) {
+    return { type: "show_engine_list" };
+  }
+
+  if (
+    prefixed &&
+    (commandText === "コマンド" ||
+      commandText === "コマンド一覧" ||
+      commandText === "ヘルプ")
+  ) {
+    return { type: "show_command_list" };
+  }
+
+  if (prefixed && commandText === "使い方") {
+    return { type: "show_usage" };
+  }
+
+  if (commandText === "テーマ解除") {
     return { type: "clear_theme" };
   }
 
-  // テーマ設定コマンド: 「テーマ {テーマ名}」または「テーマ　{テーマ名}」の形式でテーマを設定
-  if (/^テーマ[\s　]+/.test(raw)) {
-    const themeName = raw.replace(/^テーマ[\s　]+/, "").trim();
+  if (prefixed && commandText === "解除") {
+    return { type: "request_clear_theme" };
+  }
 
-    // テーマ名が空の場合は無効なコマンド
-    if (!themeName) return null;
+  if (commandText === "解除する") {
+    return { type: "clear_theme" };
+  }
 
+  if (prefixed && commandText === "固定") {
+    return { type: "lock_current_theme" };
+  }
+
+  let match = commandText.match(/^固定[\s　]+(.+)$/);
+  if (match) {
     return {
       type: "set_theme",
-      themeName,
+      themeName: match[1].trim(),
     };
   }
 
-  // 上記のいずれにも該当しない場合はコマンドなしと判定
+  match = commandText.match(/^テーマ固定[\s　]+(.+)$/);
+  if (match) {
+    return {
+      type: "set_theme",
+      themeName: match[1].trim(),
+    };
+  }
+
+  match = commandText.match(/^テーマ[\s　]+(.+)$/);
+  if (match) {
+    return {
+      type: "set_theme",
+      themeName: match[1].trim(),
+    };
+  }
+
+  match = commandText.match(/^(.+?)[でに]固定$/);
+  if (match) {
+    return {
+      type: "set_theme",
+      themeName: match[1].trim(),
+    };
+  }
+
   return null;
 }
 
-/**
- * 公開インターフェース
- * parseCommand関数を外部に提供
- */
 module.exports = {
+  normalizeText,
   parseCommand,
 };

@@ -58,7 +58,7 @@ async function runConversationEngine(params = {}) {
 
     let rawResult = null;
 
-    if (engineVersion === "v37") {
+    if (engineVersion === "v37" || engineVersion === "v381") {
       rawResult = await runV37(params);
     } else {
       rawResult = await runV35(params);
