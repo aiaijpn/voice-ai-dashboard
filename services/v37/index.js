@@ -45,16 +45,34 @@ async function runV37({
     }
 
     let wikiAnswer = null;
+    let cleanedQuestion = "";
+    let wikiResult = null;
 
     if (companyResult.resolvedCompanyId) {
-      const cleanedQuestion = stripCompanyName(
+      cleanedQuestion = stripCompanyName(
         userMessage,
         companyResult.resolvedCompanyId
       );
 
-      const wikiResult = await companyWikiService.findCompanyWikiAnswer({
+      wikiResult = await companyWikiService.findCompanyWikiAnswer({
         companyId: companyResult.resolvedCompanyId,
         userQuestion: cleanedQuestion,
+      });
+
+      console.log("### V37 WIKI DEBUG ###", {
+        rid,
+        resolvedCompanyId: companyResult.resolvedCompanyId || "",
+        userMessage: String(userMessage || ""),
+        cleanedQuestion,
+        wikiFound: Boolean(wikiResult?.found),
+        wikiItemCompanyId: String(wikiResult?.item?.company_id || ""),
+        wikiItemStatus: String(wikiResult?.item?.status || ""),
+        wikiItemQuestionPattern: String(wikiResult?.item?.question_pattern || ""),
+        wikiItemNormalizedQuestion: String(
+          wikiResult?.item?.normalized_question || ""
+        ),
+        wikiItemAnswerLength: String(wikiResult?.item?.answer_text || "").trim()
+          .length,
       });
 
       if (wikiResult?.found && wikiResult?.item?.answer_text) {
@@ -66,6 +84,23 @@ async function runV37({
       resolvedCompanyId: companyResult.resolvedCompanyId,
       needsClarification: companyResult.needsClarification,
       wikiAnswer,
+    });
+
+    console.log("### V37 REPLY MODE DEBUG ###", {
+      rid,
+      resolvedCompanyId: companyResult.resolvedCompanyId || "",
+      userMessage: String(userMessage || ""),
+      cleanedQuestion,
+      wikiFound: Boolean(wikiResult?.found),
+      wikiItemCompanyId: String(wikiResult?.item?.company_id || ""),
+      wikiItemStatus: String(wikiResult?.item?.status || ""),
+      wikiItemQuestionPattern: String(wikiResult?.item?.question_pattern || ""),
+      wikiItemNormalizedQuestion: String(
+        wikiResult?.item?.normalized_question || ""
+      ),
+      wikiItemAnswerLength: String(wikiResult?.item?.answer_text || "").trim()
+        .length,
+      replyMode,
     });
 
     await saveQuestionStockIfNeeded({

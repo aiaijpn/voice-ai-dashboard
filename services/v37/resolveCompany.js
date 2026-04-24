@@ -43,12 +43,24 @@ async function resolveCompany({
   const companyCandidates = Array.isArray(context.companyCandidates)
     ? context.companyCandidates
     : [];
+  const currentCompanyId = normalizeCompanyId(context.currentCompanyId || "");
+  const isConversationContinuing = Boolean(context.isConversationContinuing);
 
   /**
    * V37:
    * 今回メッセージ由来の候補が無ければ clarification
    */
   if (companyCandidates.length === 0) {
+    if (currentCompanyId && isConversationContinuing) {
+      return {
+        resolvedCompanyId: currentCompanyId,
+        needsClarification: false,
+        currentCompanyId,
+        companyCandidates: [],
+        isConversationContinuing: true,
+      };
+    }
+
     return {
       resolvedCompanyId: null,
       needsClarification: true,
@@ -71,9 +83,9 @@ async function resolveCompany({
     return {
       resolvedCompanyId: null,
       needsClarification: true,
-      currentCompanyId: null,
+      currentCompanyId: currentCompanyId || null,
       companyCandidates,
-      isConversationContinuing: Boolean(context.isConversationContinuing),
+      isConversationContinuing,
     };
   }
 
@@ -82,7 +94,7 @@ async function resolveCompany({
     needsClarification: false,
     currentCompanyId: resolvedCompanyId,
     companyCandidates,
-    isConversationContinuing: Boolean(context.isConversationContinuing),
+    isConversationContinuing,
   };
 }
 

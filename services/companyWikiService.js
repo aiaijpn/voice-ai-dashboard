@@ -118,6 +118,25 @@ function getWikiMatchQuestion(item = {}) {
   return normalizeText(item.question_pattern);
 }
 
+function isWikiNearMatch(userQuestion = "", item = {}) {
+  const normalizedUserQuestion = normalizeText(userQuestion);
+  const normalizedQuestion = normalizeText(item.normalized_question);
+  const questionPattern = normalizeText(item.question_pattern);
+
+  if (!normalizedUserQuestion) {
+    return false;
+  }
+
+  return (
+    (normalizedQuestion &&
+      (normalizedQuestion.includes(normalizedUserQuestion) ||
+        normalizedUserQuestion.includes(normalizedQuestion))) ||
+    (questionPattern &&
+      (questionPattern.includes(normalizedUserQuestion) ||
+        normalizedUserQuestion.includes(questionPattern)))
+  );
+}
+
 /**
  * company_wiki 全件取得
  *
@@ -184,6 +203,22 @@ async function findCompanyWikiAnswer({ companyId = "", userQuestion = "" }) {
   });
 
   if (!matched) {
+    const fallbackCandidates = items.filter((item) => {
+      return (
+        item.status === "active" &&
+        item.company_id === safeCompanyId &&
+        String(item.answer_text || "").trim() &&
+        isWikiNearMatch(normalizedQuestion, item)
+      );
+    });
+
+    if (fallbackCandidates.length === 1) {
+      return {
+        found: true,
+        item: fallbackCandidates[0],
+      };
+    }
+
     return {
       found: false,
       item: null,
@@ -200,6 +235,7 @@ module.exports = {
   COMPANY_WIKI_SHEET_NAME,
   mapRowToWikiItem,
   getWikiMatchQuestion,
+  isWikiNearMatch,
   getAllCompanyWikiItems,
   findCompanyWikiAnswer,
 };

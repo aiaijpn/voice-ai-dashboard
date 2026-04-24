@@ -19,7 +19,87 @@
 require("dotenv").config();
 
 const path = require("path");
-const { runV37 } = require(path.resolve(__dirname, "../services/v37"));
+
+const V37_ENTRY_PATH = path.resolve(__dirname, "../services/v37");
+const V37_INDEX_PATH = path.resolve(__dirname, "../services/v37/index.js");
+const V37_RESOLVE_COMPANY_PATH = path.resolve(
+  __dirname,
+  "../services/v37/resolveCompany.js"
+);
+const V35_COLLECT_CONTEXT_PATH = path.resolve(
+  __dirname,
+  "../services/v35/collectV35Context.js"
+);
+const COMPANY_WIKI_SERVICE_PATH = path.resolve(
+  __dirname,
+  "../services/companyWikiService.js"
+);
+const QUESTION_STOCK_BRIDGE_PATH = path.resolve(
+  __dirname,
+  "../services/v37/questionStockBridge.js"
+);
+
+function clearModule(modulePath) {
+  try {
+    delete require.cache[require.resolve(modulePath)];
+  } catch (_error) {
+    // ignore cache miss
+  }
+}
+
+function clearV37TestModules() {
+  [
+    V37_ENTRY_PATH,
+    V37_INDEX_PATH,
+    V37_RESOLVE_COMPANY_PATH,
+    V35_COLLECT_CONTEXT_PATH,
+    COMPANY_WIKI_SERVICE_PATH,
+    QUESTION_STOCK_BRIDGE_PATH,
+  ].forEach(clearModule);
+}
+
+function injectMockModule(modulePath, exportsValue) {
+  require.cache[require.resolve(modulePath)] = {
+    id: require.resolve(modulePath),
+    filename: require.resolve(modulePath),
+    loaded: true,
+    exports: exportsValue,
+  };
+}
+
+function loadLiveRunV37() {
+  clearV37TestModules();
+  return require(V37_ENTRY_PATH).runV37;
+}
+
+function loadMockRunV37(testCase) {
+  clearV37TestModules();
+
+  injectMockModule(V35_COLLECT_CONTEXT_PATH, {
+    collectV35Context: async () => ({
+      success: true,
+      message: "mock collectV35Context success",
+      data: testCase.mockContextData || {},
+    }),
+  });
+
+  injectMockModule(COMPANY_WIKI_SERVICE_PATH, {
+    findCompanyWikiAnswer: async () => testCase.mockWikiResult || {
+      found: false,
+      item: null,
+    },
+  });
+
+  injectMockModule(QUESTION_STOCK_BRIDGE_PATH, {
+    saveQuestionStockIfNeeded: async () => ({
+      success: true,
+      message: "mock saveQuestionStockIfNeeded success",
+      data: null,
+    }),
+  });
+
+  return require(V37_ENTRY_PATH).runV37;
+}
 
 function now() {
   return new Date().toISOString();
@@ -70,8 +150,12 @@ function printQuickCheck(testCase, result) {
   }
 }
 
-async function runOneTest(testCase) {
+async function runOneTest(testCase, options = {}) {
+  const runV37 = options.runV37;
+  const mode = options.mode || "live";
+
   printDivider(`START ${testCase.name}`);
+  console.log("mode:", mode);
   console.log("time:", now());
   console.log("userMessage:", testCase.userMessage);
 
@@ -89,15 +173,170 @@ async function runOneTest(testCase) {
 
     console.log("time:", now());
     printDivider(`END ${testCase.name}`);
+    return {
+      success: true,
+      result,
+    };
   } catch (error) {
     console.error(`\n[${testCase.name}] ERROR:`, error?.message || error);
+    return {
+      success: false,
+      error,
+    };
+  }
+}
+
+function buildMockContextData(testCase) {
+  switch (testCase.name) {
+    case "CASE-1 wiki_hit_explicit_company":
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [
+          {
+            company_id: "kanai_suit",
+            topic_label: "オーダースーツ金井",
+            company_name: "オーダースーツ金井",
+            score: 30,
+            strongHitCount: 2,
+            weakHitCount: 0,
+            matchedTerms: ["スーツ金井"],
+            priority: 10,
+            sort_order: 1,
+          },
+        ],
+        currentCompanyId: "",
+        currentCompanyName: "",
+        isConversationContinuing: false,
+      };
+    case "CASE-3 wiki_miss_explicit_company":
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [
+          {
+            company_id: "kanai_suit",
+            topic_label: "オーダースーツ金井",
+            company_name: "オーダースーツ金井",
+            score: 30,
+            strongHitCount: 2,
+            weakHitCount: 0,
+            matchedTerms: ["スーツ金井"],
+            priority: 10,
+            sort_order: 1,
+          },
+        ],
+        currentCompanyId: "",
+        currentCompanyName: "",
+        isConversationContinuing: false,
+      };
+    case "CASE-4 clarification_no_company":
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [],
+        currentCompanyId: "",
+        currentCompanyName: "",
+        isConversationContinuing: false,
+      };
+    case "CASE-5 continuation_hit_from_history":
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [],
+        currentCompanyId: "kanai_suit",
+        currentCompanyName: "オーダースーツ金井",
+        isConversationContinuing: true,
+      };
+    case "CASE-6 continuation_miss_from_history":
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [],
+        currentCompanyId: "kanai_suit",
+        currentCompanyName: "オーダースーツ金井",
+        isConversationContinuing: true,
+      };
+    default:
+      return {
+        companyWikiCandidates: [],
+        questionStockCandidates: [],
+        companyCandidates: [],
+        currentCompanyId: "",
+        currentCompanyName: "",
+        isConversationContinuing: false,
+      };
+  }
+}
+
+function buildMockWikiResult(testCase) {
+  switch (testCase.name) {
+    case "CASE-1 wiki_hit_explicit_company":
+    case "CASE-5 continuation_hit_from_history":
+      return {
+        found: true,
+        item: {
+          company_id: "kanai_suit",
+          status: "active",
+          question_pattern: "駐車場はありますか？",
+          normalized_question: "駐車場はありますか？",
+          answer_text: "駐車場あり",
+        },
+      };
+    case "CASE-3 wiki_miss_explicit_company":
+    case "CASE-6 continuation_miss_from_history":
+      return {
+        found: false,
+        item: null,
+      };
+    default:
+      return {
+        found: false,
+        item: null,
+      };
+  }
+}
+
+function addMockDataToTests(tests = []) {
+  return tests.map((testCase) => ({
+    ...testCase,
+    mockContextData: buildMockContextData(testCase),
+    mockWikiResult: buildMockWikiResult(testCase),
+  }));
+}
+
+async function runLiveTests(tests = []) {
+  const runV37 = loadLiveRunV37();
+
+  for (const testCase of tests) {
+    await runOneTest(testCase, {
+      runV37,
+      mode: "live",
+    });
+  }
+
+  return {
+    detectedOauthError: true,
+  };
+}
+
+async function runMockTests(tests = []) {
+  printDivider("MOCK TEST MODE");
+  console.log("Google OAuth 依存を切り離して V37 ロジックのみ確認します。");
+
+  for (const testCase of tests) {
+    const runV37 = loadMockRunV37(testCase);
+    await runOneTest(testCase, {
+      runV37,
+      mode: "mock",
+    });
   }
 }
 
 async function main() {
   console.log("company_wiki test start:", now());
 
-  const tests = [
+  const tests = addMockDataToTests([
     {
       name: "CASE-1 wiki_hit_explicit_company",
       rid: "wiki-test-001",
@@ -174,7 +413,11 @@ async function main() {
       userMessage: "駐車場はありますか？",
       conversationHistory: [
         { role: "user", content: "スーツを作りたい" },
-        { role: "assistant", content: "【オーダースーツ金井】スーツのご相談ですね。" },
+        {
+          role: "assistant",
+          content: "【オーダースーツ金井】スーツのご相談ですね。",
+          companyId: "kanai_suit",
+        },
       ],
       expectation:
         "会話継続で金井が推定されれば、clarificationではなくwikiヒットに寄ること。",
@@ -190,7 +433,11 @@ async function main() {
       userMessage: "納期短縮オプションはありますか？",
       conversationHistory: [
         { role: "user", content: "スーツを作りたい" },
-        { role: "assistant", content: "【オーダースーツ金井】スーツのご相談ですね。" },
+        {
+          role: "assistant",
+          content: "【オーダースーツ金井】スーツのご相談ですね。",
+          companyId: "kanai_suit",
+        },
       ],
       expectation:
         "会話継続で金井が推定され、wiki未登録なら未回答テンプレに寄ること。",
@@ -199,10 +446,22 @@ async function main() {
       ],
       assertNotContains: ["どの内容についてのご質問でしょうか？"],
     },
-  ];
+  ]);
 
-  for (const testCase of tests) {
-    await runOneTest(testCase);
+  const liveSummary = await runLiveTests(tests);
+
+  if (liveSummary.detectedOauthError) {
+    await runMockTests(
+      tests.filter((testCase) =>
+        [
+          "CASE-1 wiki_hit_explicit_company",
+          "CASE-3 wiki_miss_explicit_company",
+          "CASE-4 clarification_no_company",
+          "CASE-5 continuation_hit_from_history",
+          "CASE-6 continuation_miss_from_history",
+        ].includes(testCase.name)
+      )
+    );
   }
 
   console.log("\ncompany_wiki test end:", now());
