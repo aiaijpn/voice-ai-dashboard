@@ -7,6 +7,7 @@ function buildDefaultState() {
   return {
     currentEngine: "v35",
     currentTheme: "",
+    pendingThemeConfirm: null,
   };
 }
 
@@ -58,9 +59,39 @@ async function setCurrentTheme({ botId, userId, companyId }) {
   });
 }
 
+async function setPendingThemeConfirm({ botId, userId, pendingThemeConfirm }) {
+  if (!botId || !userId) {
+    return fail("setPendingThemeConfirm: botId and userId are required");
+  }
+
+  return commandStateRepository.saveState({
+    botId,
+    userId,
+    patch: {
+      pendingThemeConfirm: pendingThemeConfirm || null,
+    },
+  });
+}
+
+async function clearPendingThemeConfirm({ botId, userId }) {
+  if (!botId || !userId) {
+    return fail("clearPendingThemeConfirm: botId and userId are required");
+  }
+
+  return commandStateRepository.saveState({
+    botId,
+    userId,
+    patch: {
+      pendingThemeConfirm: null,
+    },
+  });
+}
+
 module.exports = {
   buildDefaultState,
   getCommandState,
   setCurrentEngine,
   setCurrentTheme,
+  setPendingThemeConfirm,
+  clearPendingThemeConfirm,
 };

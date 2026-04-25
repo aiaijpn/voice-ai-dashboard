@@ -154,8 +154,17 @@ const {
   getConversationHistory,
 } = require("../historyService");
 
-const { getCommandState } = require("../commandStateService");
+const {
+  getCommandState,
+  setPendingThemeConfirm,
+  clearPendingThemeConfirm,
+} = require("../commandStateService");
 const { runConversationEngine } = require("../conversationEngine");
+const {
+  matchCompanyTheme,
+  handlePendingThemeConfirm,
+  buildThemeConfirmReply,
+} = require("../companyThemePolicy");
 
 const {
   buildProcessMessageSuccessData,
@@ -299,7 +308,66 @@ async function processMessage(context = {}) {
 
     const commandState = commandStateResult?.success
       ? commandStateResult.data
-      : { currentEngine: "v35", currentTheme: "" };
+      : { currentEngine: "v35", currentTheme: "", pendingThemeConfirm: null };
+
+    let skipThemeMatch = false;
+
+    if (
+      commandState.pendingThemeConfirm &&
+      Array.isArray(commandState.pendingThemeConfirm.candidates)
+    ) {
+      const pendingResult = await handlePendingThemeConfirm({
+        userMessage,
+        pendingThemeConfirm: commandState.pendingThemeConfirm,
+        botId: bot_id,
+        userId,
+      });
+
+      if (pendingResult?.handled) {
+        return success(
+          {
+            replyText: pendingResult.replyText,
+            userId,
+            bot_id,
+            rid,
+          },
+          "pending theme confirm handled"
+        );
+      }
+
+      skipThemeMatch = true;
+    }
+
+    const forcedTheme = String(commandState.currentTheme || "").trim();
+
+    if (!forcedTheme && !skipThemeMatch) {
+      const themeMatchResult = await matchCompanyTheme({ userMessage });
+
+      if (
+        Array.isArray(themeMatchResult.candidates) &&
+        themeMatchResult.candidates.length > 0
+      ) {
+        await setPendingThemeConfirm({
+          botId: bot_id,
+          userId,
+          pendingThemeConfirm: {
+            originalText: userMessage,
+            candidates: themeMatchResult.candidates,
+            createdAt: new Date().toISOString(),
+          },
+        });
+
+        return success(
+          {
+            replyText: buildThemeConfirmReply(themeMatchResult.candidates),
+            userId,
+            bot_id,
+            rid,
+          },
+          "pending theme confirm"
+        );
+      }
+    }
 
     /**
      * 1. 会話エンジン実行
@@ -312,7 +380,7 @@ async function processMessage(context = {}) {
       userMessage,
       conversationHistory,
       currentEngine: commandState.currentEngine || "v35",
-      forcedTheme: commandState.currentTheme || "",
+      forcedTheme,
     });
 
     if (!engineResult?.success) {
