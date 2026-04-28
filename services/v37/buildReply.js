@@ -17,11 +17,13 @@ function buildClarificationReply() {
 }
 
 function buildWikiMissReply(topicLabel) {
-  return [
-    "そのご質問についての情報は現在登録されておりません。",
-    "お時間いただきますが、お調べいたします。",
-    topicLabel,
-  ].join("\n");
+  const lines = ["この内容は未登録です。記録して改善対象にします。"];
+
+  if (topicLabel) {
+    lines.push(topicLabel);
+  }
+
+  return lines.join("\n");
 }
 
 /**
