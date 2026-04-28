@@ -8,6 +8,7 @@ const { buildReply } = require("./buildReply");
 const { saveQuestionStockIfNeeded } = require("./questionStockBridge");
 
 const companyWikiService = require("../companyWikiService");
+const { resolveFaqIntent } = require("../faqIntentResolver");
 
 function stripCompanyName(text = "", companyId = "") {
   if (!text || !companyId) return text;
@@ -47,16 +48,19 @@ async function runV37({
     let wikiAnswer = null;
     let cleanedQuestion = "";
     let wikiResult = null;
+    let faqIntent = null;
 
     if (companyResult.resolvedCompanyId) {
       cleanedQuestion = stripCompanyName(
         userMessage,
         companyResult.resolvedCompanyId
       );
+      faqIntent = resolveFaqIntent(cleanedQuestion);
 
       wikiResult = await companyWikiService.findCompanyWikiAnswer({
         companyId: companyResult.resolvedCompanyId,
         userQuestion: cleanedQuestion,
+        faqKey: faqIntent.matched ? faqIntent.faqKey : "",
       });
 
       console.log("### V37 WIKI DEBUG ###", {
@@ -64,6 +68,7 @@ async function runV37({
         resolvedCompanyId: companyResult.resolvedCompanyId || "",
         userMessage: String(userMessage || ""),
         cleanedQuestion,
+        faqKey: faqIntent?.matched ? faqIntent.faqKey : "",
         wikiFound: Boolean(wikiResult?.found),
         wikiItemCompanyId: String(wikiResult?.item?.company_id || ""),
         wikiItemStatus: String(wikiResult?.item?.status || ""),
@@ -91,6 +96,7 @@ async function runV37({
       resolvedCompanyId: companyResult.resolvedCompanyId || "",
       userMessage: String(userMessage || ""),
       cleanedQuestion,
+      faqKey: faqIntent?.matched ? faqIntent.faqKey : "",
       wikiFound: Boolean(wikiResult?.found),
       wikiItemCompanyId: String(wikiResult?.item?.company_id || ""),
       wikiItemStatus: String(wikiResult?.item?.status || ""),
