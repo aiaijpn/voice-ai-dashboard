@@ -1,10 +1,10 @@
 "use strict";
 
 const express = require("express");
-const axios = require("axios");
 
 const { log, error: logError } = require("../utils/logger");
 const { sendOperatorMessage } = require("../services/operatorSendService");
+const lineSender = require("../modules/lineSender");
 
 const router = express.Router();
 
@@ -205,31 +205,22 @@ router.post("/broadcast", async (req, res) => {
   const message = String(req.body?.message || "").trim();
   if (!message) return res.status(400).send("message is required");
 
-  const token = process.env.CHANNEL_ACCESS_TOKEN;
-  if (!token) return res.status(500).send("CHANNEL_ACCESS_TOKEN missing");
-
   try {
     log("========================================");
     log("📣 OPERATOR broadcast requested");
     log("⏱️  time:", new Date().toISOString());
     log("📝 message length:", message.length);
-    log("🔑 OPERATOR broadcast token prefix:", String(token).slice(0, 10));
 
-    const lineResponse = await axios.post(
-      "https://api.line.me/v2/bot/message/broadcast",
-      { messages: [{ type: "text", text: message }] },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-      }
-    );
+    const sendResult = await lineSender.sendBroadcast([
+      { type: "text", text: message },
+    ]);
+
+    if (!sendResult.success) {
+      return res.status(500).send(`broadcast failed: ${sendResult.message}`);
+    }
 
     log("✅ OPERATOR broadcast LINE success", {
-      status: lineResponse.status,
-      statusText: lineResponse.statusText,
+      lineResult: sendResult.data || null,
     });
 
     log(
