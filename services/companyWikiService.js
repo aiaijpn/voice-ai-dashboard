@@ -15,6 +15,7 @@
  */
 
 const { google } = require("googleapis");
+const { resolveFaqIntent } = require("./faqIntentResolver");
 const { normalizeText } = require("../utils/textMatch");
 
 const SPREADSHEET_ID = String(process.env.SPREADSHEET_ID || "").trim();
@@ -137,6 +138,42 @@ function isWikiNearMatch(userQuestion = "", item = {}) {
   );
 }
 
+function isActiveCompanyWikiAnswer(item = {}, companyId = "") {
+  return (
+    item.status === "active" &&
+    item.company_id === companyId &&
+    Boolean(String(item.answer_text || "").trim())
+  );
+}
+
+function getWikiItemFaqKey(item = {}) {
+  const resolved = resolveFaqIntent(item.normalized_question || "");
+
+  if (!resolved.matched) {
+    return "";
+  }
+
+  return resolved.faqKey;
+}
+
+function pickFaqKeyCandidate(candidates = []) {
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const answerTexts = new Set(
+    candidates
+      .map((item) => String(item.answer_text || "").trim())
+      .filter(Boolean)
+  );
+
+  if (answerTexts.size !== 1) {
+    return null;
+  }
+
+  return candidates[0];
+}
+
 /**
  * company_wiki 全件取得
  *
@@ -177,13 +214,19 @@ async function getAllCompanyWikiItems() {
  * @param {Object} params
  * @param {string} params.companyId
  * @param {string} params.userQuestion
+ * @param {string} [params.faqKey]
  * @returns {Promise<{found:boolean,item:Object|null}>}
  */
-async function findCompanyWikiAnswer({ companyId = "", userQuestion = "" }) {
+async function findCompanyWikiAnswer({
+  companyId = "",
+  userQuestion = "",
+  faqKey = "",
+}) {
   const safeCompanyId = String(companyId || "").trim();
   const normalizedQuestion = normalizeText(userQuestion);
+  const safeFaqKey = String(faqKey || "").trim();
 
-  if (!safeCompanyId || !normalizedQuestion) {
+  if (!safeCompanyId || (!normalizedQuestion && !safeFaqKey)) {
     return {
       found: false,
       item: null,
@@ -191,6 +234,30 @@ async function findCompanyWikiAnswer({ companyId = "", userQuestion = "" }) {
   }
 
   const items = await getAllCompanyWikiItems();
+
+  if (safeFaqKey) {
+    const faqKeyCandidates = items.filter((item) => {
+      return (
+        isActiveCompanyWikiAnswer(item, safeCompanyId) &&
+        getWikiItemFaqKey(item) === safeFaqKey
+      );
+    });
+    const faqKeyMatched = pickFaqKeyCandidate(faqKeyCandidates);
+
+    if (faqKeyMatched) {
+      return {
+        found: true,
+        item: faqKeyMatched,
+      };
+    }
+  }
+
+  if (!normalizedQuestion) {
+    return {
+      found: false,
+      item: null,
+    };
+  }
 
   const matched = items.find((item) => {
     const wikiMatchQuestion = getWikiMatchQuestion(item);
