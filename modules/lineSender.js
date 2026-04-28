@@ -7,6 +7,34 @@ const { success, fail } = require("../utils/serviceResponse");
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
 const LINE_API_BASE = "https://api.line.me/v2/bot/message";
 
+function getAppEnv() {
+  return String(process.env.APP_ENV || "production").trim() || "production";
+}
+
+function isStagingEnv() {
+  return getAppEnv() === "staging";
+}
+
+function isEnvEnabled(key) {
+  return String(process.env[key] || "").trim().toLowerCase() === "true";
+}
+
+function ensureSendEnabled({ method, envKey }) {
+  if (!isStagingEnv() || isEnvEnabled(envKey)) {
+    return null;
+  }
+
+  logError(`lineSender.${method}: ${envKey} is not true in staging`, {
+    appEnv: getAppEnv(),
+  });
+
+  return fail("LINE send disabled", {
+    method,
+    reason: `${envKey} is not true in staging`,
+    appEnv: getAppEnv(),
+  });
+}
+
 function buildHeaders() {
   return {
     "Content-Type": "application/json",
@@ -24,6 +52,12 @@ function normalizeMessages(messages) {
 
 async function sendReply(replyToken, messages) {
   try {
+    const enabledGuard = ensureSendEnabled({
+      method: "reply",
+      envKey: "LINE_REPLY_ENABLED",
+    });
+    if (enabledGuard) return enabledGuard;
+
     if (!CHANNEL_ACCESS_TOKEN) {
       logError("lineSender.sendReply: CHANNEL_ACCESS_TOKEN is missing");
       return fail("LINE send failed", {
@@ -89,6 +123,12 @@ async function sendReply(replyToken, messages) {
 
 async function sendPush(userId, messages) {
   try {
+    const enabledGuard = ensureSendEnabled({
+      method: "push",
+      envKey: "LINE_PUSH_ENABLED",
+    });
+    if (enabledGuard) return enabledGuard;
+
     if (!CHANNEL_ACCESS_TOKEN) {
       logError("lineSender.sendPush: CHANNEL_ACCESS_TOKEN is missing");
       return fail("LINE send failed", {
@@ -155,6 +195,12 @@ async function sendPush(userId, messages) {
 
 async function sendBroadcast(messages) {
   try {
+    const enabledGuard = ensureSendEnabled({
+      method: "broadcast",
+      envKey: "LINE_BROADCAST_ENABLED",
+    });
+    if (enabledGuard) return enabledGuard;
+
     if (!CHANNEL_ACCESS_TOKEN) {
       logError("lineSender.sendBroadcast: CHANNEL_ACCESS_TOKEN is missing");
       return fail("LINE send failed", {
