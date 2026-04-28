@@ -11,6 +11,8 @@ const operatorProfileRoutes = require("./routes/operatorProfile");
 const basicAuth = require("./middleware/basicAuth");
 const healthRoutes = require("./routes/health");
 const operatorPanelRoutes = require("./routes/operatorPanel");
+const scheduledDeliveryRoutes = require("./routes/scheduledDelivery");
+const webappDeliveryRoutes = require("./routes/webappDelivery");
 
 const app = express();
 
@@ -20,16 +22,27 @@ app.use("/api/operator", operatorProfileRoutes);
 log("🚀 SERVER BOOT: server.js is running");
 log("⏱️  BOOT TIME:", new Date().toISOString());
 log("### ENTRY V3.53 ###");
+log("🔧 APP_ENV:", process.env.APP_ENV || "production");
 
 // 環境変数の存在チェック（値は出さない）
 const requiredEnv = [
+  "APP_ENV",
   "CHANNEL_ACCESS_TOKEN",
+  "LINE_REPLY_ENABLED",
+  "LINE_PUSH_ENABLED",
+  "LINE_BROADCAST_ENABLED",
   "OPENAI_API_KEY",
   "OPENAI_MODEL",
   "SPREADSHEET_ID",
   "GOOGLE_SERVICE_ACCOUNT_JSON",
   "BASIC_USER",
   "BASIC_PASS",
+  "STAGING_ALLOWED_LINE_USER_IDS",
+  "SCHEDULE_SECRET",
+  "SCHEDULE_DELIVERY_ENABLED",
+  "SCHEDULE_TARGET_LINE_USER_IDS",
+  "WEBAPP_TRIGGER_SECRET",
+  "WEBAPP_DELIVERY_ENABLED",
 ];
 
 for (const key of requiredEnv) {
@@ -49,6 +62,8 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use("/", healthRoutes);
 app.use("/operator", basicAuth, operatorPanelRoutes);
+app.use("/scheduled", scheduledDeliveryRoutes);
+app.use("/api/delivery", webappDeliveryRoutes);
 
 // =============================
 // Webhook受信

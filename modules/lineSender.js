@@ -7,6 +7,108 @@ const { success, fail } = require("../utils/serviceResponse");
 const CHANNEL_ACCESS_TOKEN = process.env.CHANNEL_ACCESS_TOKEN;
 const LINE_API_BASE = "https://api.line.me/v2/bot/message";
 
+function getAppEnv() {
+  return String(process.env.APP_ENV || "production").trim() || "production";
+}
+
+function isEnvEnabled(key) {
+  return String(process.env[key] || "").trim().toLowerCase() === "true";
+}
+
+function getCsvValues(key) {
+  return String(process.env[key] || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function ensureChannelAccessToken(method) {
+  if (CHANNEL_ACCESS_TOKEN) {
+    return null;
+  }
+
+  logError(`lineSender.${method}: CHANNEL_ACCESS_TOKEN is missing`);
+  return fail("LINE send failed", {
+    method,
+    reason: "CHANNEL_ACCESS_TOKEN is missing",
+  });
+}
+
+function ensureReplyAllowed() {
+  const appEnv = getAppEnv();
+
+  if (isEnvEnabled("LINE_REPLY_ENABLED")) {
+    return null;
+  }
+
+  logError("lineSender.sendReply: LINE_REPLY_ENABLED is not true", {
+    appEnv,
+  });
+
+  return fail("LINE reply disabled", {
+    method: "reply",
+    reason: "LINE_REPLY_ENABLED is not true",
+    appEnv,
+  });
+}
+
+function ensurePushAllowed(userId) {
+  const appEnv = getAppEnv();
+
+  if (!isEnvEnabled("LINE_PUSH_ENABLED")) {
+    logError("lineSender.sendPush: LINE_PUSH_ENABLED is not true", {
+      appEnv,
+      userId,
+    });
+
+    return fail("LINE push disabled", {
+      method: "push",
+      reason: "LINE_PUSH_ENABLED is not true",
+      appEnv,
+      userId,
+    });
+  }
+
+  if (appEnv === "staging") {
+    const allowedUserIds = getCsvValues("STAGING_ALLOWED_LINE_USER_IDS");
+
+    if (!allowedUserIds.includes(userId)) {
+      logError("lineSender.sendPush: staging userId is not allowlisted", {
+        appEnv,
+        userId,
+        allowedCount: allowedUserIds.length,
+      });
+
+      return fail("LINE push rejected by staging allowlist", {
+        method: "push",
+        reason: "userId is not in STAGING_ALLOWED_LINE_USER_IDS",
+        appEnv,
+        userId,
+      });
+    }
+  }
+
+  return null;
+}
+
+function ensureBroadcastAllowed() {
+  const appEnv = getAppEnv();
+
+  if (isEnvEnabled("LINE_BROADCAST_ENABLED")) {
+    return null;
+  }
+
+  logError("lineSender.sendBroadcast: LINE_BROADCAST_ENABLED is not true", {
+    appEnv,
+  });
+
+  return fail("LINE broadcast disabled", {
+    method: "broadcast",
+    reason: "LINE_BROADCAST_ENABLED is not true",
+    appEnv,
+  });
+}
+
 function buildHeaders() {
   return {
     "Content-Type": "application/json",
@@ -24,12 +126,11 @@ function normalizeMessages(messages) {
 
 async function sendReply(replyToken, messages) {
   try {
-    if (!CHANNEL_ACCESS_TOKEN) {
-      logError("lineSender.sendReply: CHANNEL_ACCESS_TOKEN is missing");
-      return fail("LINE send failed", {
-        reason: "CHANNEL_ACCESS_TOKEN is missing",
-      });
-    }
+    const tokenGuard = ensureChannelAccessToken("sendReply");
+    if (tokenGuard) return tokenGuard;
+
+    const enabledGuard = ensureReplyAllowed();
+    if (enabledGuard) return enabledGuard;
 
     if (!replyToken) {
       logError("lineSender.sendReply: replyToken is missing");
@@ -89,12 +190,8 @@ async function sendReply(replyToken, messages) {
 
 async function sendPush(userId, messages) {
   try {
-    if (!CHANNEL_ACCESS_TOKEN) {
-      logError("lineSender.sendPush: CHANNEL_ACCESS_TOKEN is missing");
-      return fail("LINE send failed", {
-        reason: "CHANNEL_ACCESS_TOKEN is missing",
-      });
-    }
+    const tokenGuard = ensureChannelAccessToken("sendPush");
+    if (tokenGuard) return tokenGuard;
 
     if (!userId) {
       logError("lineSender.sendPush: userId is missing");
@@ -102,6 +199,9 @@ async function sendPush(userId, messages) {
         reason: "userId is missing",
       });
     }
+
+    const enabledGuard = ensurePushAllowed(userId);
+    if (enabledGuard) return enabledGuard;
 
     const normalizedMessages = normalizeMessages(messages);
 
@@ -155,12 +255,11 @@ async function sendPush(userId, messages) {
 
 async function sendBroadcast(messages) {
   try {
-    if (!CHANNEL_ACCESS_TOKEN) {
-      logError("lineSender.sendBroadcast: CHANNEL_ACCESS_TOKEN is missing");
-      return fail("LINE send failed", {
-        reason: "CHANNEL_ACCESS_TOKEN is missing",
-      });
-    }
+    const tokenGuard = ensureChannelAccessToken("sendBroadcast");
+    if (tokenGuard) return tokenGuard;
+
+    const enabledGuard = ensureBroadcastAllowed();
+    if (enabledGuard) return enabledGuard;
 
     const normalizedMessages = normalizeMessages(messages);
 

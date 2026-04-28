@@ -29,12 +29,11 @@
   の責務が明確になる。
 */
 
-const axios = require("axios");
-
 const { log, error: logError } = require("../utils/logger");
 const { saveAdminMessageHistory } = require("./adminMessageService");
 const { saveConversationHistory } = require("./historyService");
 const { success, fail } = require("../utils/serviceResponse");
+const lineSender = require("../modules/lineSender");
 
 /*
   sendOperatorMessage
@@ -72,12 +71,6 @@ async function sendOperatorMessage(input = {}) {
   /*
     LINEアクセストークン取得
   */
-  const token = process.env.CHANNEL_ACCESS_TOKEN;
-
-  if (!token) {
-    return fail("CHANNEL_ACCESS_TOKEN missing");
-  }
-
   try {
     /*
       ログ
@@ -91,36 +84,20 @@ async function sendOperatorMessage(input = {}) {
     log("👤 userId:", userId);
     log("📝 message length:", message.length);
 
-    /*
-      セキュリティ配慮
-      tokenは先頭のみログ
-    */
-    log("🔑 OPERATOR send token prefix:", String(token).slice(0, 10));
-
-    /*
-      LINE push API
-      ----------------------------
-      https://developers.line.biz
-    */
-    const lineResponse = await axios.post(
-      "https://api.line.me/v2/bot/message/push",
+    const sendResult = await lineSender.sendPush(userId, [
       {
-        to: userId,
-        messages: [
-          {
-            type: "text",
-            text: message,
-          },
-        ],
+        type: "text",
+        text: message,
       },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-      }
-    );
+    ]);
+
+    if (!sendResult.success) {
+      return fail(sendResult.message || "LINE push failed", {
+        botId,
+        userId,
+        lineResult: sendResult.data || null,
+      });
+    }
 
     /*
       LINE送信成功
@@ -128,8 +105,7 @@ async function sendOperatorMessage(input = {}) {
     log("✅ OPERATOR LINE push success", {
       botId,
       userId,
-      status: lineResponse.status,
-      statusText: lineResponse.statusText,
+      lineResult: sendResult.data || null,
     });
 
     /*
@@ -230,7 +206,7 @@ async function sendOperatorMessage(input = {}) {
       botId,
       userId,
       messageLength: message.length,
-      lineStatus: lineResponse.status,
+      lineResult: sendResult.data || null,
     });
   } catch (err) {
     /*
