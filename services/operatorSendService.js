@@ -29,11 +29,12 @@
   の責務が明確になる。
 */
 
+const axios = require("axios");
+
 const { log, error: logError } = require("../utils/logger");
 const { saveAdminMessageHistory } = require("./adminMessageService");
 const { saveConversationHistory } = require("./historyService");
 const { success, fail } = require("../utils/serviceResponse");
-const lineSender = require("../modules/lineSender");
 
 /*
   sendOperatorMessage
@@ -71,6 +72,12 @@ async function sendOperatorMessage(input = {}) {
   /*
     LINEアクセストークン取得
   */
+  const token = process.env.CHANNEL_ACCESS_TOKEN;
+
+  if (!token) {
+    return fail("CHANNEL_ACCESS_TOKEN missing");
+  }
+
   try {
     /*
       ログ
@@ -84,20 +91,36 @@ async function sendOperatorMessage(input = {}) {
     log("👤 userId:", userId);
     log("📝 message length:", message.length);
 
-    const sendResult = await lineSender.sendPush(userId, [
-      {
-        type: "text",
-        text: message,
-      },
-    ]);
+    /*
+      セキュリティ配慮
+      tokenは先頭のみログ
+    */
+    log("🔑 OPERATOR send token prefix:", String(token).slice(0, 10));
 
-    if (!sendResult.success) {
-      return fail(sendResult.message || "LINE push failed", {
-        botId,
-        userId,
-        lineResult: sendResult.data || null,
-      });
-    }
+    /*
+      LINE push API
+      ----------------------------
+      https://developers.line.biz
+    */
+    const lineResponse = await axios.post(
+      "https://api.line.me/v2/bot/message/push",
+      {
+        to: userId,
+        messages: [
+          {
+            type: "text",
+            text: message,
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 15000,
+      }
+    );
 
     /*
       LINE送信成功
@@ -105,7 +128,8 @@ async function sendOperatorMessage(input = {}) {
     log("✅ OPERATOR LINE push success", {
       botId,
       userId,
-      lineResult: sendResult.data || null,
+      status: lineResponse.status,
+      statusText: lineResponse.statusText,
     });
 
     /*
@@ -206,7 +230,7 @@ async function sendOperatorMessage(input = {}) {
       botId,
       userId,
       messageLength: message.length,
-      lineResult: sendResult.data || null,
+      lineStatus: lineResponse.status,
     });
   } catch (err) {
     /*

@@ -1,10 +1,10 @@
 "use strict";
 
 const express = require("express");
+const axios = require("axios");
 
 const { log, error: logError } = require("../utils/logger");
 const { sendOperatorMessage } = require("../services/operatorSendService");
-const lineSender = require("../modules/lineSender");
 
 const router = express.Router();
 
@@ -13,9 +13,6 @@ const router = express.Router();
 // =============================
 router.get("/", (req, res) => {
   const current = globalThis.OPERATOR_AI_TONE || "polite";
-  const appEnv = String(process.env.APP_ENV || "production").trim() || "production";
-  const broadcastEnabled =
-    String(process.env.LINE_BROADCAST_ENABLED || "").trim().toLowerCase() === "true";
 
   res.status(200).send(`<!doctype html>
 <html lang="ja">
@@ -26,11 +23,6 @@ router.get("/", (req, res) => {
 </head>
 <body style="font-family: system-ui; padding: 16px;">
   <h2>Operator Panel（実験機）</h2>
-
-  <div style="margin:12px 0; padding:12px; max-width:720px; background:#fff8c5; border:1px solid #d4a72c; border-radius:8px;">
-    <div style="font-weight:700;">Environment: ${appEnv}</div>
-    <div style="font-size:14px;color:#444;">Broadcast enabled: ${broadcastEnabled ? "true" : "false"}</div>
-  </div>
 
   <div style="margin:12px 0; padding:12px; max-width:720px; background:#f6f8fa; border:1px solid #d0d7de; border-radius:8px;">
     <div style="font-weight:700; margin-bottom:6px;">ADR-013C 反映済み</div>
@@ -213,22 +205,31 @@ router.post("/broadcast", async (req, res) => {
   const message = String(req.body?.message || "").trim();
   if (!message) return res.status(400).send("message is required");
 
+  const token = process.env.CHANNEL_ACCESS_TOKEN;
+  if (!token) return res.status(500).send("CHANNEL_ACCESS_TOKEN missing");
+
   try {
     log("========================================");
     log("📣 OPERATOR broadcast requested");
     log("⏱️  time:", new Date().toISOString());
     log("📝 message length:", message.length);
+    log("🔑 OPERATOR broadcast token prefix:", String(token).slice(0, 10));
 
-    const sendResult = await lineSender.sendBroadcast([
-      { type: "text", text: message },
-    ]);
-
-    if (!sendResult.success) {
-      return res.status(403).send(sendResult.message);
-    }
+    const lineResponse = await axios.post(
+      "https://api.line.me/v2/bot/message/broadcast",
+      { messages: [{ type: "text", text: message }] },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 15000,
+      }
+    );
 
     log("✅ OPERATOR broadcast LINE success", {
-      lineResult: sendResult.data || null,
+      status: lineResponse.status,
+      statusText: lineResponse.statusText,
     });
 
     log(
@@ -237,10 +238,12 @@ router.post("/broadcast", async (req, res) => {
 
     return res.redirect("/operator");
   } catch (err) {
-    logError("❌ OPERATOR broadcast failed:", err?.message || err);
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    logError("❌ OPERATOR broadcast failed:", status, data || err?.message || err);
     return res
       .status(500)
-      .send(`broadcast failed: ${err?.message || String(err)}`);
+      .send(`broadcast failed: ${status || ""} ${JSON.stringify(data || {})}`);
   }
 });
 
