@@ -14,7 +14,13 @@ router.get("/", (req, res) => {
 });
 
 router.get("/healthz", (req, res) => {
-  res.status(200).json({ ok: true, time: new Date().toISOString() });
+  const appEnv = String(process.env.APP_ENV || "production").trim() || "production";
+
+  res.status(200).json({
+    ok: true,
+    time: new Date().toISOString(),
+    appEnv,
+  });
 });
 
 // ===============================

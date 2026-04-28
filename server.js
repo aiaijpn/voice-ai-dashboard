@@ -13,6 +13,7 @@ const healthRoutes = require("./routes/health");
 const operatorPanelRoutes = require("./routes/operatorPanel");
 
 const app = express();
+const APP_ENV = String(process.env.APP_ENV || "production").trim() || "production";
 
 app.use("/api/operator", operatorProfileRoutes);
 
@@ -20,6 +21,7 @@ app.use("/api/operator", operatorProfileRoutes);
 log("🚀 SERVER BOOT: server.js is running");
 log("⏱️  BOOT TIME:", new Date().toISOString());
 log("### ENTRY V3.53 ###");
+log("🔧 APP_ENV:", APP_ENV);
 
 // 環境変数の存在チェック（値は出さない）
 const requiredEnv = [
